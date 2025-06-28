@@ -1,0 +1,50 @@
+{
+  "recommendations": [
+    // Python 개발
+    "ms-python.python",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.mypy-type-checker",
+    "ms-python.flake8",
+
+    // 코드 품질
+    "ms-python.pylint",
+    "charliermarsh.ruff",
+
+    // 데이터베이스
+    "ms-mssql.sql-database-projects-vscode",
+    "cweijan.vscode-postgresql-client2",
+
+    // API 개발
+    "humao.rest-client",
+    "rangav.vscode-thunder-client",
+
+    // Git
+    "eamodio.gitlens",
+    "donjayamanne.githistory",
+
+    // Docker
+    "ms-azuretools.vscode-docker",
+
+    // 문서화
+    "shd101wyy.markdown-preview-enhanced",
+    "davidanson.vscode-markdownlint",
+
+    // 기타 유용한 확장
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+
+    // 테마 및 아이콘
+    "pkief.material-icon-theme",
+    "github.github-vscode-theme",
+
+    // 생산성
+    "streetsidesoftware.code-spell-checker",
+    "gruntfuggly.todo-tree",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense"
+  ]
+}

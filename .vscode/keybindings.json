@@ -1,0 +1,22 @@
+[
+  {
+    "key": "ctrl+shift+f",
+    "command": "python.formatDocument",
+    "when": "editorTextFocus && editorLangId == 'python'"
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "python.sortImports",
+    "when": "editorTextFocus && editorLangId == 'python'"
+  },
+  {
+    "key": "ctrl+shift+l",
+    "command": "python.linting.runLinting",
+    "when": "editorTextFocus && editorLangId == 'python'"
+  },
+  {
+    "key": "f5",
+    "command": "python.debugInTerminal",
+    "when": "editorTextFocus && editorLangId == 'python'"
+  }
+]

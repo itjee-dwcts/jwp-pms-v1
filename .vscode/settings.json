@@ -1,0 +1,334 @@
+{
+  // ============================================================================
+  // Python 환경 및 인터프리터 설정 (IntelliSense 핵심)
+  // ============================================================================
+  "python.defaultInterpreterPath": "./backend/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.envFile": "./backend/.env",
+
+  // ============================================================================
+  // Pylance 언어 서버 설정 (IntelliSense 엔진)
+  // ============================================================================
+  "python.languageServer": "Pylance", // 명시적으로 Pylance 지정
+
+  // Python 경로 설정 (가장 중요!)
+  "python.analysis.extraPaths": [
+    "./backend/src",
+    "./backend",
+    "./backend/.venv/Lib/site-packages" // 가상환경 패키지 명시적 추가
+  ],
+  "python.analysis.autoSearchPaths": true,
+
+  // 타입 체킹 모드 (IntelliSense vs 성능 균형)
+  "python.analysis.typeCheckingMode": "basic", // strict 대신 basic으로 안정성 확보
+
+  // IntelliSense 핵심 기능들
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.indexing": true,
+  "python.analysis.completeFunctionParens": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+
+  // 성능 vs 기능 균형 설정
+  "python.analysis.diagnosticMode": "openFilesOnly", // 성능 개선
+  "python.analysis.memory.keepLibraryAst": true, // IntelliSense 품질 향상
+  "python.analysis.stubPath": "./backend/typings",
+  "python.analysis.logLevel": "Information", // 문제 진단용
+
+  // 주요 패키지 인덱싱 깊이 (성능과 기능 최적화)
+  "python.analysis.packageIndexDepths": [
+    { "name": "fastapi", "depth": 3 },
+    { "name": "pydantic", "depth": 3 },
+    { "name": "sqlalchemy", "depth": 3 },
+    { "name": "pytest", "depth": 2 },
+    { "name": "alembic", "depth": 2 },
+    { "name": "requests", "depth": 2 },
+    { "name": "pandas", "depth": 2 },
+    { "name": "numpy", "depth": 2 }
+  ],
+
+  // ============================================================================
+  // Linting 설정 (코드 품질 검사)
+  // ============================================================================
+  "python.linting.enabled": true,
+  "python.linting.lintOnSave": true,
+
+  // Pylint 비활성화 (Pylance와 중복, 성능 부담)
+  "python.linting.pylintEnabled": false,
+
+  // Flake8 설정 (PEP 8 준수)
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Path": "./backend/.venv/Scripts/flake8.exe",
+  "python.linting.flake8Args": [
+    "--max-line-length=88", // Black과 일치
+    "--extend-ignore=E203,E501,W503,F401,F403,F405"
+  ],
+
+  // MyPy 설정 (타입 검사 - CI/CD용)
+  "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--ignore-missing-imports",
+    "--strict-optional",
+    "--warn-return-any",
+    "--show-error-codes"
+  ],
+
+  // ============================================================================
+  // 코드 포맷팅 설정
+  // ============================================================================
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--line-length=88", // Black 기본값
+    "--target-version=py39"
+  ],
+
+  // Import 정렬 (isort + Black 호환)
+  "python.sortImports.args": ["--profile", "black"],
+  "isort.args": ["--profile", "black", "--line-length=88"],
+
+  // ============================================================================
+  // 테스트 설정
+  // ============================================================================
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "./backend/src",
+    "-v", // verbose
+    "--tb=short" // 간결한 traceback
+  ],
+
+  // ============================================================================
+  // 터미널 설정 (환경 변수 포함)
+  // ============================================================================
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.cwd": "./backend",
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "./backend/src;./backend;./backend/.venv/Lib/site-packages"
+  },
+
+  // ============================================================================
+  // 에디터 일반 설정
+  // ============================================================================
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "editor.defaultFormatter": "ms-python.black-formatter",
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.autoIndent": "advanced",
+  "editor.rulers": [88, 120], // Black 기본 + 최대 길이
+  "editor.wordWrap": "off",
+
+  // ============================================================================
+  // IntelliSense 및 자동완성 강화 설정
+  // ============================================================================
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "off",
+    "strings": "on"
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnCommitCharacter": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.tabCompletion": "on",
+  "editor.wordBasedSuggestions": "matchingDocuments",
+  "editor.parameterHints.enabled": true,
+  "editor.parameterHints.cycle": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggest.insertMode": "insert",
+  "editor.suggest.filterGraceful": true,
+  "editor.suggest.showKeywords": true,
+  "editor.suggest.showSnippets": true,
+
+  // ============================================================================
+  // 파일 관리 설정 (성능 최적화)
+  // ============================================================================
+  "files.autoSave": "onWindowChange",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // 파일/폴더 제외 설정 (IntelliSense 고려)
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    "**/node_modules": true,
+    "**/.git": true,
+    ".venv": false, // .venv는 보이도록 (IntelliSense가 패키지 정보 필요)
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/.coverage": true,
+    "**/htmlcov": true
+  },
+
+  // 파일 감시 제외 설정 (성능 vs IntelliSense 균형)
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/__pycache__/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.pytest_cache/**": true
+    // .venv는 제외하지 않음 (Pylance가 패키지 정보 읽어야 함)
+  },
+
+  // 검색 제외 설정 (성능 최적화)
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/.venv": true, // 검색에서는 제외 (성능)
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true
+  },
+
+  // ============================================================================
+  // 언어별 특화 설정
+  // ============================================================================
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.rulers": [88],
+    // Python IntelliSense 강화
+    "editor.suggest.showClasses": true,
+    "editor.suggest.showFunctions": true,
+    "editor.suggest.showVariables": true,
+    "editor.suggest.showModules": true
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
+
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on",
+    "editor.rulers": [80]
+  },
+
+  // ============================================================================
+  // Git 설정
+  // ============================================================================
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+
+  // ============================================================================
+  // 워크벤치 및 UI 설정
+  // ============================================================================
+  "workbench.editor.enablePreview": false, // 미리보기 비활성화
+  "workbench.startupEditor": "none",
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": true,
+
+  // 미니맵 설정
+  "editor.minimap.enabled": true,
+  "editor.minimap.maxColumn": 120,
+
+  // 브래킷 매칭
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+
+  // ============================================================================
+  // 맞춤법 검사 사전 (확장)
+  // ============================================================================
+  "cSpell.words": [
+    // Python 기본
+    "addinivalue",
+    "asyncio",
+    "asyncpg",
+    "autoflush",
+    "fromlist",
+    "levelname",
+    "onupdate",
+    "poolclass",
+    "sess",
+    "sessionmaker",
+    "uvicorn",
+    "venv",
+    "pylance",
+    "mypy",
+
+    // 웹 프레임워크
+    "fastapi",
+    "pydantic",
+    "sqlalchemy",
+    "alembic",
+    "strawberry",
+    "pytest",
+    "pythonjsonlogger",
+    "redoc",
+    "ASGI",
+    "starlette",
+
+    // 데이터베이스
+    "createdb",
+    "ilike",
+    "selectinload",
+    "trustedhost",
+    "psycopg",
+
+    // 보안 및 인증
+    "TOTP",
+    "letmein",
+    "secretpassword",
+    "bcrypt",
+    "passlib",
+
+    // 개발 도구
+    "autopep",
+    "isort",
+    "flake",
+    "linting",
+    "intellisense",
+
+    // 기타
+    "datagram",
+    "Gantt",
+    "incompleted",
+    "jsonlogger",
+    "typehints"
+  ],
+
+  // ============================================================================
+  // 성능 및 안정성 설정
+  // ============================================================================
+  // 확장 추천
+  "extensions.showRecommendationsOnlyOnDemand": false,
+
+  // 자동 업데이트 (선택사항)
+  "extensions.autoUpdate": true,
+
+  // 에러 리포팅 (문제 해결용)
+  "telemetry.telemetryLevel": "error" // 최소한의 텔레메트리만
+}
