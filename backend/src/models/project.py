@@ -4,17 +4,17 @@ Project Models
 SQLAlchemy models for project management.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
-from enum import Enum as PyEnum
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
+from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
+from core.database import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
     Integer,
     Numeric,
@@ -25,13 +25,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
-from core.database import Base
-
 if TYPE_CHECKING:
-    from models.calendar import Event
-    from models.task import Task
-    from models.user import User
+    pass
 
 
 class Project(Base):
@@ -50,7 +45,7 @@ class Project(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Project creation timestamp",
     )
@@ -62,7 +57,7 @@ class Project(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         onupdate=func.now(),
         nullable=False,
         doc="Project last update timestamp",
@@ -96,7 +91,9 @@ class Project(Base):
     start_date = Column(
         DateTime(timezone=True), nullable=True, doc="Project start date"
     )
-    end_date = Column(DateTime(timezone=True), nullable=True, doc="Project end date")
+    end_date = Column(
+        DateTime(timezone=True), nullable=True, doc="Project end date"
+    )
     actual_start_date = Column(
         DateTime(timezone=True), nullable=True, doc="Actual project start date"
     )
@@ -106,7 +103,10 @@ class Project(Base):
 
     # Progress and Budget
     progress = Column(
-        Integer, default=0, nullable=False, doc="Project progress percentage (0-100)"
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Project progress percentage (0-100)",
     )
     budget = Column(Numeric(15, 2), nullable=True, doc="Project budget")
     actual_cost = Column(
@@ -124,15 +124,25 @@ class Project(Base):
         doc="User who created the project",
     )
     is_active = Column(
-        Boolean, default=True, nullable=False, doc="Whether the project is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether the project is active",
     )
     is_public = Column(
-        Boolean, default=False, nullable=False, doc="Whether the project is public"
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether the project is public",
     )
 
     # Additional Information
-    repository_url = Column(String(500), nullable=True, doc="Git repository URL")
-    documentation_url = Column(String(500), nullable=True, doc="Documentation URL")
+    repository_url = Column(
+        String(500), nullable=True, doc="Git repository URL"
+    )
+    documentation_url = Column(
+        String(500), nullable=True, doc="Documentation URL"
+    )
     tags = Column(Text, nullable=True, doc="Project tags (comma-separated)")
 
     # Relationships
@@ -144,14 +154,20 @@ class Project(Base):
         "ProjectMember", back_populates="project", cascade="all, delete-orphan"
     )
 
-    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    tasks = relationship(
+        "Task", back_populates="project", cascade="all, delete-orphan"
+    )
 
     comments = relationship(
-        "ProjectComment", back_populates="project", cascade="all, delete-orphan"
+        "ProjectComment",
+        back_populates="project",
+        cascade="all, delete-orphan",
     )
 
     attachments = relationship(
-        "ProjectAttachment", back_populates="project", cascade="all, delete-orphan"
+        "ProjectAttachment",
+        back_populates="project",
+        cascade="all, delete-orphan",
     )
 
     events = relationship("Event", back_populates="project")
@@ -162,8 +178,12 @@ class Project(Base):
             "progress >= 0 AND progress <= 100", name="ck_project_progress"
         ),
         CheckConstraint("budget >= 0", name="ck_project_budget_positive"),
-        CheckConstraint("actual_cost >= 0", name="ck_project_actual_cost_positive"),
-        CheckConstraint("start_date <= end_date", name="ck_project_date_order"),
+        CheckConstraint(
+            "actual_cost >= 0", name="ck_project_actual_cost_positive"
+        ),
+        CheckConstraint(
+            "start_date <= end_date", name="ck_project_date_order"
+        ),
     )
 
     def __repr__(self) -> str:
@@ -175,7 +195,9 @@ class Project(Base):
             self.progress = 0
             return
 
-        completed_tasks = sum(1 for task in self.tasks if task.status == "completed")
+        completed_tasks = sum(
+            1 for task in self.tasks if task.status == "completed"
+        )
         total_tasks = len(self.tasks)
         self.progress = int((completed_tasks / total_tasks) * 100)
 
@@ -196,7 +218,7 @@ class ProjectMember(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Project member creation timestamp",
     )
@@ -208,7 +230,7 @@ class ProjectMember(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         onupdate=func.now(),
         nullable=False,
         doc="Project member last update timestamp",
@@ -224,7 +246,9 @@ class ProjectMember(Base):
     project_id = Column(
         Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="User ID")
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, doc="User ID"
+    )
     role = Column(
         String(20),  # Enum(ProjectMemberRole),
         default=ProjectMemberRole.DEVELOPER,
@@ -238,7 +262,10 @@ class ProjectMember(Base):
         doc="When the user joined the project",
     )
     is_active = Column(
-        Boolean, default=True, nullable=False, doc="Whether the membership is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether the membership is active",
     )
 
     # Relationships
@@ -257,11 +284,17 @@ class ProjectMember(Base):
 
     def can_manage_project(self) -> bool:
         """Check if member can manage the project"""
-        return self.role in [ProjectMemberRole.OWNER, ProjectMemberRole.MANAGER]
+        return self.role in [
+            ProjectMemberRole.OWNER,
+            ProjectMemberRole.MANAGER,
+        ]
 
     def can_assign_tasks(self) -> bool:
         """Check if member can assign tasks"""
-        return self.role in [ProjectMemberRole.OWNER, ProjectMemberRole.MANAGER]
+        return self.role in [
+            ProjectMemberRole.OWNER,
+            ProjectMemberRole.MANAGER,
+        ]
 
 
 class ProjectComment(Base):
@@ -280,7 +313,7 @@ class ProjectComment(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Comment creation timestamp",
     )
@@ -292,8 +325,8 @@ class ProjectComment(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Comment last update timestamp",
     )
@@ -309,7 +342,10 @@ class ProjectComment(Base):
         Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
     )
     author_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="Comment author ID"
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        doc="Comment author ID",
     )
     content = Column(Text, nullable=False, doc="Comment content")
     parent_id = Column(
@@ -339,7 +375,10 @@ class ProjectComment(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<ProjectComment(id={self.id}, project_id={self.project_id}, author_id={self.author_id})>"
+        return (
+            f"<ProjectComment(id={self.id}, project_id={self.project_id}, "
+            f"author_id={self.author_id})>"
+        )
 
 
 class ProjectAttachment(Base):
@@ -358,7 +397,7 @@ class ProjectAttachment(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Attachment creation timestamp",
     )
@@ -370,8 +409,8 @@ class ProjectAttachment(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Attachment last update timestamp",
     )
@@ -403,4 +442,7 @@ class ProjectAttachment(Base):
     uploader = relationship("User")
 
     def __repr__(self) -> str:
-        return f"<ProjectAttachment(id={self.id}, filename='{self.filename}', project_id={self.project_id})>"
+        return (
+            f"<ProjectAttachment(id={self.id}, filename='{self.filename}', "
+            f"project_id={self.project_id})>"
+        )

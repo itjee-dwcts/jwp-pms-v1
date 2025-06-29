@@ -4,9 +4,11 @@ User Models
 SQLAlchemy models for user management and authentication.
 """
 
-from datetime import datetime
-from typing import TYPE_CHECKING, List
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
+from core.constants import UserRole, UserStatus
+from core.database import Base
 from sqlalchemy import (
     Boolean,
     Column,
@@ -17,15 +19,9 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-
-from core.constants import UserRole, UserStatus
-from core.database import Base
 
 if TYPE_CHECKING:
-    from models.calendar import Calendar, Event
-    from models.project import Project, ProjectMember
-    from models.task import Task, TaskAssignment
+    pass
 
 
 class User(Base):
@@ -36,16 +32,20 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True, doc="User ID")
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    created_by = Column(Integer, nullable=True, doc="User who created this record")
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    updated_by = Column(Integer, nullable=True, doc="User who last updated this record")
-
-    # Basic Information
-    name = Column(
-        String(100), unique=True, index=True, nullable=False, doc="Username (unique)"
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.now(timezone.utc)
+    )
+    created_by = Column(
+        Integer, nullable=True, doc="User who created this record"
+    )
+    updated_at = Column(
+        DateTime(timezone=True), onupdate=datetime.now(timezone.utc)
+    )
+    updated_by = Column(
+        Integer, nullable=True, doc="User who last updated this record"
     )
 
+    # Basic Information
     email = Column(
         String(255),
         unique=True,
@@ -57,12 +57,25 @@ class User(Base):
     full_name = Column(String(200), nullable=True, doc="User's full name")
 
     # Authentication
+    username = Column(
+        String(100),
+        unique=True,
+        index=True,
+        nullable=False,
+        doc="Username (unique)",
+    )
     password = Column(String(255), nullable=False, doc="Hashed password")
     is_active = Column(
-        Boolean, default=True, nullable=False, doc="Whether the user account is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether the user account is active",
     )
     is_verified = Column(
-        Boolean, default=False, nullable=False, doc="Whether the user email is verified"
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether the user email is verified",
     )
 
     # Profile Information
@@ -78,7 +91,9 @@ class User(Base):
         nullable=False,
         doc="User account status",
     )
-    avatar_url = Column(String(500), nullable=True, doc="URL to user's avatar image")
+    avatar_url = Column(
+        String(500), nullable=True, doc="URL to user's avatar image"
+    )
     bio = Column(Text, nullable=True, doc="User biography")
 
     # Contact Information
@@ -87,8 +102,12 @@ class User(Base):
     position = Column(String(100), nullable=True, doc="User's job position")
 
     # OAuth Information
-    google_id = Column(String(100), nullable=True, index=True, doc="Google OAuth ID")
-    github_id = Column(String(100), nullable=True, index=True, doc="GitHub OAuth ID")
+    google_id = Column(
+        String(100), nullable=True, index=True, doc="Google OAuth ID"
+    )
+    github_id = Column(
+        String(100), nullable=True, index=True, doc="GitHub OAuth ID"
+    )
 
     # Activity Tracking
     last_login = Column(
@@ -105,7 +124,9 @@ class User(Base):
 
     project_memberships = relationship("ProjectMember", back_populates="user")
 
-    task_assignments = relationship("TaskAssignment", back_populates="assignee")
+    task_assignments = relationship(
+        "TaskAssignment", back_populates="assignee"
+    )
 
     created_tasks = relationship(
         "Task", back_populates="creator", foreign_keys="Task.creator_id"
@@ -121,16 +142,19 @@ class User(Base):
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint("email", name="ux_users_email"),
-        UniqueConstraint("name", name="ux_users_name"),
+        UniqueConstraint("email", name="ux_users__email"),
+        UniqueConstraint("username", name="ux_users__username"),
     )
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
+        return (
+            f"<User(id={self.id}, username='{self.username}', "
+            f"email='{self.email}')>"
+        )
 
     def update_last_active(self):
         """Update the last active timestamp to the current time"""
-        self.last_active = datetime.utcnow()
+        self.last_active = datetime.now(timezone.utc)
 
     def is_admin(self) -> bool:
         """Check if user is admin"""
@@ -156,13 +180,18 @@ class UserActivityLog(Base):
 
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=datetime.now(timezone.utc),
         doc="Timestamp of the log entry",
     )
-    created_by = Column(Integer, nullable=True, doc="User who created this log entry")
+    created_by = Column(
+        Integer, nullable=True, doc="User who created this log entry"
+    )
 
     user_id = Column(
-        Integer, nullable=False, index=True, doc="User ID who performed the action"
+        Integer,
+        nullable=False,
+        index=True,
+        doc="User ID who performed the action",
     )
 
     action = Column(
@@ -177,23 +206,34 @@ class UserActivityLog(Base):
         doc="Type of resource affected (e.g., 'project', 'task')",
     )
 
-    resource_id = Column(String(50), nullable=True, doc="ID of the affected resource")
+    resource_id = Column(
+        String(50), nullable=True, doc="ID of the affected resource"
+    )
 
-    description = Column(Text, nullable=True, doc="Detailed description of the action")
+    description = Column(
+        Text, nullable=True, doc="Detailed description of the action"
+    )
 
     ip_address = Column(
-        String(45), nullable=True, doc="IP address from which action was performed"
+        String(45),
+        nullable=True,
+        doc="IP address from which action was performed",
     )
 
     user_agent = Column(String(500), nullable=True, doc="User agent string")
 
-    extra_data = Column(Text, nullable=True, doc="Additional metadata as JSON string")
+    extra_data = Column(
+        Text, nullable=True, doc="Additional metadata as JSON string"
+    )
 
     # Relationships
     user = relationship("User", back_populates="activity_logs")
 
     def __repr__(self) -> str:
-        return f"<UserActivityLog(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
+        return (
+            f"<UserActivityLog(id={self.id}, user_id={self.user_id}, "
+            f"action='{self.action}')>"
+        )
 
 
 class UserSession(Base):
@@ -204,28 +244,42 @@ class UserSession(Base):
     __tablename__ = "user_sessions"
 
     id = Column(Integer, primary_key=True, index=True, doc="Session ID")
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    created_by = Column(Integer, nullable=True, doc="User who created this session")
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.now(timezone.utc)
+    )
+    created_by = Column(
+        Integer, nullable=True, doc="User who created this session"
+    )
 
     user_id = Column(String(50), nullable=False, index=True, doc="User ID")
     session_token = Column(
         String(255), unique=True, nullable=False, doc="Session token"
     )
-    refresh_token = Column(String(255), unique=True, nullable=True, doc="Refresh token")
+    refresh_token = Column(
+        String(255), unique=True, nullable=True, doc="Refresh token"
+    )
     expires_at = Column(
         DateTime(timezone=True), nullable=False, doc="Session expiration time"
     )
     is_active = Column(
-        Boolean, default=True, nullable=False, doc="Whether the session is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether the session is active",
     )
-    ip_address = Column(String(45), nullable=True, doc="IP address of the session")
+    ip_address = Column(
+        String(45), nullable=True, doc="IP address of the session"
+    )
     user_agent = Column(String(500), nullable=True, doc="User agent string")
 
     # Relationships
     user = relationship("User")
 
     def __repr__(self) -> str:
-        return f"<UserSession(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
+        return (
+            f"<UserSession(id={self.id}, user_id={self.user_id}, "
+            f"expires_at={self.expires_at})>"
+        )
 
     def revoke(self):
         """Revoke the session"""

@@ -5,9 +5,10 @@ Pydantic settings for environment variable management.
 """
 
 import secrets
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Optional, Union
 
-from pydantic import AnyHttpUrl, EmailStr, PostgresDsn, field_validator  # type: ignore
+from pydantic import field_validator  # type: ignore
+from pydantic import AnyHttpUrl, EmailStr
 from pydantic_settings import BaseSettings  # type: ignore
 
 
@@ -33,7 +34,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database
-    DATABASE_URL: PostgresDsn
+    # DATABASE_URL: PostgresDsn
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://pms_admin:PmsAdmin!!@10.10.150.85:6297/pms"
+    )
     DATABASE_URL_SYNC: Optional[str] = None
 
     # Redis
@@ -44,7 +48,12 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    def assemble_cors_origins(
+        cls, v: Union[str, List[str]]
+    ) -> Union[List[str], str]:
+        """
+        Assemble CORS origins from a comma-separated string or list.
+        """
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):
@@ -82,6 +91,10 @@ class Settings(BaseSettings):
     SENTRY_DSN: Optional[str] = None
 
     class Config:
+        """
+        Pydantic configuration for settings
+        """
+
         env_file = ".env"
         case_sensitive = True
 

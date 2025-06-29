@@ -8,12 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, cast
 
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.database import get_async_session
 from models.project import ProjectAttachment, ProjectMember
-from models.task import TaskAttachment
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class FileService:
@@ -39,7 +37,7 @@ class FileService:
                 and_(
                     ProjectMember.project_id == project_id,
                     ProjectMember.user_id == uploaded_by,
-                    ProjectMember.is_active == True,
+                    ProjectMember.is_active.is_(True),
                 )
             )
             member_result = await self.db.execute(member_query)
@@ -62,7 +60,9 @@ class FileService:
         elif task_id:
             # TODO: Implement task file attachment
             # Similar logic for task attachments
-            raise NotImplementedError("Task file attachments not yet implemented")
+            raise NotImplementedError(
+                "Task file attachments not yet implemented"
+            )
 
         else:
             raise ValueError("Either project_id or task_id must be provided")
@@ -84,7 +84,7 @@ class FileService:
                     ProjectAttachment.id == file_id,
                     ProjectMember.project_id == ProjectAttachment.project_id,
                     ProjectMember.user_id == user_id,
-                    ProjectMember.is_active == True,
+                    ProjectMember.is_active.is_(True),
                 )
             )
         )

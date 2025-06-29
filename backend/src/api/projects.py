@@ -7,19 +7,18 @@ Project management endpoints.
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
-from schemas.projects import (
+from schemas.project import (
     ProjectCreateRequest,
     ProjectMemberResponse,
     ProjectResponse,
     ProjectUpdateRequest,
 )
-from services.project_service import ProjectService
+from services.project import ProjectService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,9 +27,15 @@ router = APIRouter()
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Number of records to return"),
-    search: Optional[str] = Query(None, description="Search by name or description"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(
+        50, ge=1, le=100, description="Number of records to return"
+    ),
+    search: Optional[str] = Query(
+        None, description="Search by name or description"
+    ),
+    project_status: Optional[str] = Query(
+        None, description="Filter by status"
+    ),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -44,7 +49,7 @@ async def list_projects(
             skip=skip,
             limit=limit,
             search=search,
-            status=status,
+            status=project_status,
         )
 
         return [ProjectResponse.from_orm(project) for project in projects]
@@ -74,7 +79,8 @@ async def get_project(
 
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
             )
 
         return ProjectResponse.from_orm(project)
@@ -89,7 +95,9 @@ async def get_project(
         )
 
 
-@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_project(
     project_data: ProjectCreateRequest,
     current_user: User = Depends(get_current_active_user),
@@ -100,7 +108,9 @@ async def create_project(
     """
     try:
         project_service = ProjectService(db)
-        project = await project_service.create_project(project_data, current_user.id)
+        project = await project_service.create_project(
+            project_data, current_user.id
+        )
 
         logger.info(f"Project created by {current_user.name}: {project.name}")
 
@@ -133,7 +143,8 @@ async def update_project(
 
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
             )
 
         logger.info(f"Project updated by {current_user.name}: {project.name}")
@@ -162,11 +173,14 @@ async def delete_project(
     """
     try:
         project_service = ProjectService(db)
-        success = await project_service.delete_project(project_id, current_user.id)
+        success = await project_service.delete_project(
+            project_id, current_user.id
+        )
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
             )
 
         logger.info(f"Project deleted by {current_user.name}: {project_id}")
@@ -184,7 +198,9 @@ async def delete_project(
         )
 
 
-@router.get("/{project_id}/members", response_model=List[ProjectMemberResponse])
+@router.get(
+    "/{project_id}/members", response_model=List[ProjectMemberResponse]
+)
 async def list_project_members(
     project_id: int,
     current_user: User = Depends(get_current_active_user),

@@ -52,10 +52,18 @@ class AuthManager:
             )
 
         to_encode.update(
-            {"exp": expire, "iat": datetime.now(timezone.utc), "type": "access"}
+            {
+                "exp": expire,
+                "iat": datetime.now(timezone.utc),
+                "type": "access",
+            }
         )
 
-        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        encoded_jwt = jwt.encode(
+            to_encode,
+            self.secret_key,
+            algorithm=self.algorithm,
+        )
         return encoded_jwt
 
     def create_refresh_token(self, data: Dict[str, Any]) -> str:
@@ -66,24 +74,32 @@ class AuthManager:
         )
 
         to_encode.update(
-            {"exp": expire, "iat": datetime.now(timezone.utc), "type": "refresh"}
+            {
+                "exp": expire,
+                "iat": datetime.now(timezone.utc),
+                "type": "refresh",
+            }
         )
 
-        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        encoded_jwt = jwt.encode(
+            to_encode, self.secret_key, algorithm=self.algorithm
+        )
         return encoded_jwt
 
     def decode_token(self, token: str) -> TokenData:
         """Decode JWT token"""
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(
+                token, self.secret_key, algorithms=[self.algorithm]
+            )
             return TokenData(**payload)
         except JWTError as e:
-            logger.warning(f"Token decode error: {e}")
+            logger.warning("Token decode error: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
+            ) from e
 
 
 # Global auth manager instance
@@ -216,7 +232,9 @@ class SecurityHeaders:
         }
 
 
-def check_password_strength(password: str) -> Dict[str, Union[bool, str, list[str]]]:
+def check_password_strength(
+    password: str,
+) -> Dict[str, Union[bool, str, list[str]]]:
     """Check password strength and return validation result"""
     result: Dict[str, Union[bool, str, list[str]]] = {
         "is_valid": True,

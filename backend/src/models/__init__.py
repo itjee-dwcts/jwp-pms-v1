@@ -44,7 +44,13 @@ from models.task import (
 )
 
 # User models
-from models.user import User, UserActivityLog, UserRole, UserSession, UserStatus
+from models.user import (
+    User,
+    UserActivityLog,
+    UserRole,
+    UserSession,
+    UserStatus,
+)
 
 __all__ = [
     # Base class

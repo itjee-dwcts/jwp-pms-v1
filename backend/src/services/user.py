@@ -8,30 +8,22 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, cast
 
-from anyio import create_unix_datagram_socket
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
-from core.config import settings
 from core.constants import UserRole, UserStatus
 from core.database import get_async_session
-from models.user import User, UserActivityLog, UserSession, UserStatus
+from models.user import User, UserActivityLog
 from schemas.user import (
-    UserCreate,
+    UserCreateRequest,
     UserListResponse,
     UserPasswordChange,
     UserResponse,
     UserStatsResponse,
-    UserUpdate,
+    UserUpdateRequest,
 )
+from sqlalchemy import desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import func
 from utils.auth import get_password_hash, verify_password
-from utils.exceptions import (
-    AuthenticationError,
-    ConflictError,
-    NotFoundError,
-    ValidationError,
-)
+from utils.exceptions import AuthenticationError, ConflictError, NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +35,7 @@ class UserService:
         self.db = db
 
     async def create_user(
-        self, user_data: UserCreate, created_by: Optional[int] = None
+        self, user_data: UserCreateRequest, created_by: Optional[int] = None
     ) -> User:
         """
         Create a new user
@@ -105,12 +97,12 @@ class UserService:
             await self.db.commit()
             await self.db.refresh(user)
 
-            logger.info(f"User created successfully: {user.name}")
+            logger.info("User created successfully: %s", user.name)
             return user
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to create user: {e}")
+            logger.error("Failed to create user: %s", e)
             raise
 
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
@@ -129,7 +121,7 @@ class UserService:
             return result.scalar_one_or_none()
 
         except Exception as e:
-            logger.error(f"Failed to get user by ID {user_id}: {e}")
+            logger.error("Failed to get user by ID %d: %s", user_id, e)
             raise
 
     async def get_user_by_ids(self, user_ids: List[int]) -> List[User]:
@@ -151,7 +143,7 @@ class UserService:
             return list(result.scalars().all())
 
         except Exception as e:
-            logger.error(f"Failed to get user by IDs: {e}")
+            logger.error("Failed to get user by IDs: %s", e)
             raise
 
     async def get_user_by_name(self, name: str) -> Optional[User]:
@@ -170,7 +162,7 @@ class UserService:
             return result.scalar_one_or_none()
 
         except Exception as e:
-            logger.error(f"Failed to get user by username {name}: {e}")
+            logger.error("Failed to get user by username %s: %s", name, e)
             raise
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
@@ -189,7 +181,7 @@ class UserService:
             return result.scalar_one_or_none()
 
         except Exception as e:
-            logger.error(f"Failed to get user by email {email}: {e}")
+            logger.error("Failed to get user by email %s: %s", email, e)
             raise
 
     async def get_user_by_email_or_username(
@@ -205,13 +197,15 @@ class UserService:
         Returns:
             User object if found, None otherwise
         """
-        query = select(User).where(or_(User.email == email, User.name == username))
+        query = select(User).where(
+            or_(User.email == email, User.name == username)
+        )
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def update_user(
-        self, user_id: int, user_data: UserUpdate, updated_by: int
+        self, user_id: int, user_data: UserUpdateRequest, updated_by: int
     ) -> Optional[User]:
         """
         Update user information
@@ -251,12 +245,12 @@ class UserService:
             await self.db.commit()
             await self.db.refresh(user)
 
-            logger.info(f"User updated successfully: {user.name}")
+            logger.info("User updated successfully: %s", user.name)
             return user
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to update user {user_id}: {e}")
+            logger.error("Failed to update user %d: %s", user_id, e)
             raise
 
     async def change_password(
@@ -264,18 +258,24 @@ class UserService:
     ) -> bool:
         """Change user password"""
         try:
-            result = await self.db.execute(select(User).where(User.id == user_id))
+            result = await self.db.execute(
+                select(User).where(User.id == user_id)
+            )
             user = result.scalar_one_or_none()
 
             if not user:
                 raise NotFoundError(f"User with ID {user_id} not found")
 
             # Verify current password
-            if not verify_password(password_data.current_password, user.password_hash):
+            if not verify_password(
+                password_data.current_password, user.password_hash
+            ):
                 raise AuthenticationError("Current password is incorrect")
 
             # Update password
-            setattr(user, "password", get_password_hash(password_data.new_password))
+            setattr(
+                user, "password", get_password_hash(password_data.new_password)
+            )
             setattr(user, "password_changed_at", datetime.utcnow())
             setattr(user, "updated_at", datetime.utcnow())
 
@@ -283,7 +283,9 @@ class UserService:
 
             # Log activity
             await self._log_activity(
-                user_id=user_id, action="password_changed", details={"user_id": user_id}
+                user_id=user_id,
+                action="password_changed",
+                details={"user_id": user_id},
             )
 
             await self.db.commit()
@@ -420,7 +422,9 @@ class UserService:
             for soft delete functionality.
         """
         try:
-            result = await self.db.execute(select(User).where(User.id == user_id))
+            result = await self.db.execute(
+                select(User).where(User.id == user_id)
+            )
             user = result.scalar_one_or_none()
 
             if not user:
@@ -454,10 +458,10 @@ class UserService:
     async def list_users(
         self,
         page: int = 1,
-        per_page: int = 20,
+        size: int = 20,
         search: Optional[str] = None,
-        role: Optional[str] = None,
-        status: Optional[str] = None,
+        user_role: Optional[str] = None,
+        user_status: Optional[str] = None,
     ) -> UserListResponse:
         """
         List users with filtering and pagination
@@ -487,11 +491,11 @@ class UserService:
                     )
                 )
 
-            if role:
-                query = query.where(User.role == role)
+            if user_role:
+                query = query.where(User.role == user_role)
 
-            if status:
-                query = query.where(User.status == status)
+            if user_status:
+                query = query.where(User.status == user_status)
 
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
@@ -499,26 +503,30 @@ class UserService:
             total = total_result.scalar()
 
             # Apply pagination
-            offset = (page - 1) * per_page
-            query = query.offset(offset).limit(per_page).order_by(desc(User.created_at))
+            offset = (page - 1) * size
+            query = (
+                query.offset(offset)
+                .limit(size)
+                .order_by(desc(User.created_at))
+            )
 
             # Execute query
             result = await self.db.execute(query)
             users = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + per_page - 1) // per_page
+            pages = ((total if total is not None else 0) + size - 1) // size
 
             return UserListResponse(
                 users=[UserResponse.from_orm(user) for user in users],
                 total=total if total is not None else 0,
                 page=page,
-                per_page=per_page,
+                size=size,
                 pages=pages,
             )
 
         except Exception as e:
-            logger.error(f"Failed to list users: {e}")
+            logger.error("Failed to list users: %s", e)
             raise
 
     async def count_users(
@@ -540,7 +548,6 @@ class UserService:
         Returns:
             Total count of users matching criteria
         """
-        from sqlalchemy import func
 
         query = select(func.count(User.id))
 
@@ -611,14 +618,16 @@ class UserService:
                 total_users=total_users if total_users is not None else 0,
                 active_users=active_users if active_users is not None else 0,
                 new_users_this_month=(
-                    new_users_this_month if new_users_this_month is not None else 0
+                    new_users_this_month
+                    if new_users_this_month is not None
+                    else 0
                 ),
                 users_by_role=users_by_role,
                 users_by_status=users_by_status,
             )
 
         except Exception as e:
-            logger.error(f"Failed to get user stats: {e}")
+            logger.error("Failed to get user stats: %s", e)
             raise
 
     async def update_last_login(self, user_id: int, ip_address: str) -> bool:
@@ -651,7 +660,9 @@ class UserService:
             return False
 
         except Exception as e:
-            logger.error(f"Failed to update last login for user {user_id}: {e}")
+            logger.error(
+                "Failed to update last login for user %d: %s", user_id, e
+            )
             raise
 
     async def verify_user_credentials(
@@ -670,7 +681,10 @@ class UserService:
         try:
             # Query user by username or email
             query = select(User).where(
-                or_(User.name == username_or_email, User.email == username_or_email)
+                or_(
+                    User.name == username_or_email,
+                    User.email == username_or_email,
+                )
             )
 
             result = await self.db.execute(query)
@@ -694,7 +708,7 @@ class UserService:
             return user
 
         except Exception as e:
-            logger.error(f"Failed to verify credentials: {e}")
+            logger.error("Failed to verify credentials: %s", e)
             raise
 
     async def _log_activity(
@@ -721,8 +735,8 @@ class UserService:
             self.db.add(activity_log)
             await self.db.flush()
 
-        except Exception as e:
-            logger.error(f"Failed to log activity: {e}")
+        except (ValueError, TypeError) as e:
+            logger.error("Failed to log activity: %s", e)
 
     async def get_user_activity_logs(
         self, user_id: int, skip: int = 0, limit: int = 50

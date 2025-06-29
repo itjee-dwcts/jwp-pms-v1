@@ -5,12 +5,11 @@ Helper functions for database operations and health checks.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
+from core.database import AsyncSessionLocal, Base, engine
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from core.database import AsyncSessionLocal, engine
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -39,31 +38,33 @@ async def check_database_health() -> Dict[str, Any]:
                 version_row = version_result.fetchone()
                 if version_row:
                     health_info["version"] = version_row[0]
-            except Exception as e:
-                logger.warning(f"Could not get database version: {e}")
+            except SQLAlchemyError as e:
+                logger.warning("Could not get database version: %s", e)
 
             # Check if our tables exist
             try:
                 tables_result = await conn.execute(
                     text(
                         """
-                    SELECT table_name 
-                    FROM information_schema.tables 
+                    SELECT table_name
+                    FROM information_schema.tables
                     WHERE table_schema = 'public'
                     ORDER BY table_name
                 """
                     )
                 )
-                health_info["tables"] = [row[0] for row in tables_result.fetchall()]
-            except Exception as e:
-                logger.warning(f"Could not list tables: {e}")
+                health_info["tables"] = [
+                    row[0] for row in tables_result.fetchall()
+                ]
+            except SQLAlchemyError as e:
+                logger.warning("Could not list tables: %s", e)
 
             health_info["status"] = "healthy"
 
-    except Exception as e:
+    except SQLAlchemyError as e:
         health_info["status"] = "unhealthy"
         health_info["error"] = str(e)
-        logger.error(f"Database health check failed: {e}")
+        logger.error("Database health check failed: %s", e)
 
     return health_info
 
@@ -105,9 +106,9 @@ async def test_database_operations() -> Dict[str, Any]:
                 await session.rollback()
                 raise e
 
-    except Exception as e:
+    except SQLAlchemyError as e:
         test_results["error"] = str(e)
-        logger.error(f"Database operations test failed: {e}")
+        logger.error("Database operations test failed: %s", e)
 
     return test_results
 
@@ -138,8 +139,8 @@ async def get_database_stats() -> Dict[str, Any]:
                 size_row = size_result.fetchone()
                 if size_row:
                     stats["database_size"] = size_row[0]
-            except Exception as e:
-                logger.warning(f"Could not get database size: {e}")
+            except SQLAlchemyError as e:
+                logger.warning("Could not get database size: %s", e)
 
             # Get table count
             try:
@@ -147,7 +148,7 @@ async def get_database_stats() -> Dict[str, Any]:
                     text(
                         """
                     SELECT COUNT(*)
-                    FROM information_schema.tables 
+                    FROM information_schema.tables
                     WHERE table_schema = 'public'
                 """
                     )
@@ -155,16 +156,16 @@ async def get_database_stats() -> Dict[str, Any]:
                 count_row = count_result.fetchone()
                 if count_row:
                     stats["table_count"] = count_row[0]
-            except Exception as e:
-                logger.warning(f"Could not get table count: {e}")
+            except SQLAlchemyError as e:
+                logger.warning("Could not get table count: %s", e)
 
             # Get connection count
             try:
                 conn_result = await conn.execute(
                     text(
                         """
-                    SELECT COUNT(*) 
-                    FROM pg_stat_activity 
+                    SELECT COUNT(*)
+                    FROM pg_stat_activity
                     WHERE state = 'active'
                 """
                     )
@@ -172,27 +173,30 @@ async def get_database_stats() -> Dict[str, Any]:
                 conn_row = conn_result.fetchone()
                 if conn_row:
                     stats["connection_count"] = conn_row[0]
-            except Exception as e:
-                logger.warning(f"Could not get connection count: {e}")
+            except SQLAlchemyError as e:
+                logger.warning("Could not get connection count: %s", e)
 
             # Get uptime
             try:
                 uptime_result = await conn.execute(
                     text(
                         """
-                    SELECT date_trunc('second', current_timestamp - pg_postmaster_start_time())
+                    SELECT date_trunc(
+                        'second',
+                        current_timestamp - pg_postmaster_start_time()
+                    )
                 """
                     )
                 )
                 uptime_row = uptime_result.fetchone()
                 if uptime_row:
                     stats["uptime"] = str(uptime_row[0])
-            except Exception as e:
-                logger.warning(f"Could not get uptime: {e}")
+            except SQLAlchemyError as e:
+                logger.warning("Could not get uptime: %s", e)
 
-    except Exception as e:
+    except SQLAlchemyError as e:
         stats["error"] = str(e)
-        logger.error(f"Failed to get database stats: {e}")
+        logger.error("Failed to get database stats: %s", e)
 
     return stats
 
@@ -207,38 +211,25 @@ async def initialize_database():
         # Check connection
         health = await check_database_health()
         if health["status"] != "healthy":
-            raise Exception(
+            raise ValueError(
                 f"Database unhealthy: {health.get('error', 'Unknown error')}"
             )
 
         # Import all models to ensure they're registered
-        from models import (
-            Calendar,
-            Event,
-            Project,
-            ProjectMember,
-            Tag,
-            Task,
-            TaskAssignment,
-            User,
-        )
 
         # Create tables
         async with engine.begin() as conn:
             await conn.run_sync(
                 lambda sync_conn: logger.info("📊 Creating database tables...")
             )
-            await conn.run_sync(
-                lambda sync_conn: __import__(
-                    "core.database", fromlist=["Base"]
-                ).Base.metadata.create_all(sync_conn)
-            )
+
+            await conn.run_sync(Base.metadata.create_all)
 
         logger.info("✅ Database initialization completed")
         return True
 
-    except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
+    except SQLAlchemyError as e:
+        logger.error("❌ Database initialization failed: %s", e)
         return False
 
 
@@ -249,7 +240,6 @@ async def reset_database():
     logger.warning("⚠️ Resetting database - all data will be lost!")
 
     try:
-        from core.database import Base
 
         async with engine.begin() as conn:
             # Drop all tables
@@ -263,6 +253,6 @@ async def reset_database():
         logger.info("✅ Database reset completed")
         return True
 
-    except Exception as e:
-        logger.error(f"❌ Database reset failed: {e}")
+    except SQLAlchemyError as e:
+        logger.error("❌ Database reset failed: %s", e)
         return False

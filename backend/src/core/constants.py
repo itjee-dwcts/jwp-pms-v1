@@ -288,7 +288,12 @@ class TaskStatus:
     @classmethod
     def is_active(cls, status: str) -> bool:
         """Check if task status indicates active work"""
-        return status in [cls.TODO, cls.IN_PROGRESS, cls.IN_REVIEW, cls.TESTING]
+        return status in [
+            cls.TODO,
+            cls.IN_PROGRESS,
+            cls.IN_REVIEW,
+            cls.TESTING,
+        ]
 
     @classmethod
     def is_blocked(cls, status: str) -> bool:
@@ -298,12 +303,20 @@ class TaskStatus:
     @classmethod
     def is_review_required(cls, status: str) -> bool:
         """Check if task status indicates it requires review"""
-        return status in [cls.IN_REVIEW, cls.TESTING]
+        return status in [
+            cls.IN_REVIEW,
+            cls.TESTING,
+        ]
 
     @classmethod
     def is_open(cls, status: str) -> bool:
         """Check if task status indicates it is open for work"""
-        return status in [cls.TODO, cls.IN_PROGRESS, cls.IN_REVIEW, cls.TESTING]
+        return status in [
+            cls.TODO,
+            cls.IN_PROGRESS,
+            cls.IN_REVIEW,
+            cls.TESTING,
+        ]
 
     @classmethod
     def is_closed(cls, status: str) -> bool:
@@ -327,10 +340,18 @@ class TaskStatus:
 
     @classmethod
     def get_incomplete_statuses(cls):
-        return [cls.TODO, cls.IN_PROGRESS, cls.IN_REVIEW, cls.TESTING, cls.BLOCKED]
+        """Get all statuses that indicate the task is not yet complete"""
+        return [
+            cls.TODO,
+            cls.IN_PROGRESS,
+            cls.IN_REVIEW,
+            cls.TESTING,
+            cls.BLOCKED,
+        ]
 
     @classmethod
     def get_complete_statuses(cls):
+        """Get all statuses that indicate the task is complete"""
         return [cls.DONE, cls.CLOSED]
 
 
@@ -541,14 +562,22 @@ class RecurrenceType:
         return value != cls.NONE
 
     @classmethod
-    def get_frequency_description(cls, recurrence_type: str, interval: int = 1):
+    def get_frequency_description(
+        cls, recurrence_type: str, interval: int = 1
+    ):
         """Get human-readable frequency description"""
         descriptions = {
             cls.NONE: "One-time event",
             cls.DAILY: f"Every {interval} day(s)" if interval > 1 else "Daily",
-            cls.WEEKLY: f"Every {interval} week(s)" if interval > 1 else "Weekly",
-            cls.MONTHLY: f"Every {interval} month(s)" if interval > 1 else "Monthly",
-            cls.YEARLY: f"Every {interval} year(s)" if interval > 1 else "Yearly",
+            cls.WEEKLY: (
+                f"Every {interval} week(s)" if interval > 1 else "Weekly"
+            ),
+            cls.MONTHLY: (
+                f"Every {interval} month(s)" if interval > 1 else "Monthly"
+            ),
+            cls.YEARLY: (
+                f"Every {interval} year(s)" if interval > 1 else "Yearly"
+            ),
             cls.WEEKDAYS: "Every weekday (Mon-Fri)",
             cls.CUSTOM: "Custom recurrence pattern",
         }
@@ -578,7 +607,13 @@ class EventAttendeeStatus:
     @classmethod
     def values(cls):
         """Get all available values as list"""
-        return [cls.INVITED, cls.ACCEPTED, cls.DECLINED, cls.TENTATIVE, cls.NO_RESPONSE]
+        return [
+            cls.INVITED,
+            cls.ACCEPTED,
+            cls.DECLINED,
+            cls.TENTATIVE,
+            cls.NO_RESPONSE,
+        ]
 
     @classmethod
     def is_valid(cls, value: str) -> bool:

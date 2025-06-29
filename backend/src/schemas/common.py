@@ -8,8 +8,6 @@ from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
-from pydantic.fields import FieldInfo
-from pydantic.generics import GenericModel
 
 T = TypeVar("T")
 
@@ -29,6 +27,7 @@ class PaginationParams(BaseModel):
     @field_validator("sort_order")
     @classmethod
     def validate_sort_order(cls, v: str) -> str:
+        """Validate sort order"""
         if v not in ["asc", "desc"]:
             raise ValueError('Sort order must be "asc" or "desc"')
         return v
@@ -43,6 +42,7 @@ class SortParams(BaseModel):
     @field_validator("order")
     @classmethod
     def validate_order(cls, v: str) -> str:
+        """Validate sort order"""
         if v not in ["asc", "desc"]:
             raise ValueError('Sort order must be "asc" or "desc"')
         return v
@@ -70,6 +70,7 @@ class FilterParams(BaseModel):
     @field_validator("operator")
     @classmethod
     def validate_operator(cls, v: str) -> str:
+        """Validate filter operator"""
         valid_operators = [
             "eq",
             "ne",
@@ -89,7 +90,7 @@ class FilterParams(BaseModel):
         return v
 
 
-class PaginatedResponse(GenericModel, Generic[T]):
+class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response schema"""
 
     items: List[T]
@@ -110,6 +111,8 @@ class DateRangeFilter(BaseModel):
     @field_validator("end_date")
     @classmethod
     def validate_end_date(cls, v: str, values: Any) -> str:
+        """Validate end date"""
+        # Ensure end date is after start date
         if (
             v
             and "start_date" in values
@@ -170,8 +173,8 @@ class BulkOperationRequest(BaseModel):
     ids: Annotated[
         List[int],
         Field(
-            min_items=1,
-            max_items=100,
+            min_length=1,
+            max_length=100,
             description="List of IDs to operate on",
         ),
     ]
@@ -251,7 +254,10 @@ class ExportRequest(BaseModel):
     fields: Optional[List[str]] = Field(None, description="Fields to include")
 
     @field_validator("format")
+    @classmethod
     def validate_format(cls, v: str):
+        """Validate export format"""
+        # Ensure format is one of the supported types
         valid_formats = ["csv", "xlsx", "json", "pdf"]
         if v not in valid_formats:
             raise ValueError(
@@ -291,6 +297,8 @@ class ImportRequest(BaseModel):
     @field_validator("format", mode="before")
     @classmethod
     def validate_format(cls, v: str):
+        """Validate import format"""
+        # Ensure format is one of the supported types
         valid_formats = ["csv", "xlsx", "json"]
         if v not in valid_formats:
             raise ValueError(
@@ -365,6 +373,8 @@ class ActivityLogEntry(BaseModel):
     timestamp: datetime = Field(..., description="Action timestamp")
 
     class Config:
+        """Pydantic configuration"""
+
         from_attributes = True
 
 
@@ -387,6 +397,8 @@ class TimeRange(BaseModel):
     @field_validator("end", mode="after")
     @classmethod
     def validate_end(cls, v: str, values: Any):
+        """Validate end time"""
+        # Ensure end time is after start time
         if "start" in values and v <= values["start"]:
             raise ValueError("End time must be after start time")
         return v
@@ -442,4 +454,7 @@ class Metadata(BaseModel):
     tags: List[str] = Field(default=[], description="Associated tags")
 
     class Config:
+        """Pydantic configuration"""
+
+        # Enable ORM mode to allow model instantiation from ORM objects
         from_attributes = True

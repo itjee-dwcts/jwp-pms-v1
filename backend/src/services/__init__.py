@@ -20,4 +20,8 @@ __all__ = [
     "get_task_service",
     "CalendarService",
     "get_calendar_service",
+    "DashboardService",
+    "get_dashboard_service",
+    "FileService",
+    "get_file_service",
 ]

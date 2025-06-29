@@ -4,10 +4,17 @@ Calendar Models
 SQLAlchemy models for calendar and event management.
 """
 
-import re
-from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Optional
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
+from core.constants import (
+    EventAttendeeStatus,
+    EventReminder,
+    EventStatus,
+    EventType,
+    RecurrenceType,
+)
+from core.database import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -21,19 +28,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.constants import (
-    EventAttendeeStatus,
-    EventReminder,
-    EventStatus,
-    EventType,
-    RecurrenceType,
-)
-from core.database import Base
-
 if TYPE_CHECKING:
-    from models.project import Project
-    from models.task import Task
-    from models.user import User
+    pass
 
 
 class Calendar(Base):
@@ -45,9 +41,13 @@ class Calendar(Base):
 
     id = Column(Integer, primary_key=True, index=True, doc="Calendar ID")
     created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), doc="Creation time"
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        doc="Creation time",
     )
-    created_by = Column(Integer, nullable=True, doc="User who created this calendar")
+    created_by = Column(
+        Integer, nullable=True, doc="User who created this calendar"
+    )
     updated_at = Column(
         DateTime(timezone=True), onupdate=func.now(), doc="Last update time"
     )
@@ -59,7 +59,10 @@ class Calendar(Base):
     name = Column(String(100), nullable=False, doc="Calendar name")
     description = Column(Text, nullable=True, doc="Calendar description")
     color = Column(
-        String(7), default="#3B82F6", nullable=False, doc="Calendar color (hex)"
+        String(7),
+        default="#3B82F6",
+        nullable=False,
+        doc="Calendar color (hex)",
     )
 
     # Ownership and Visibility
@@ -73,10 +76,16 @@ class Calendar(Base):
         doc="Whether this is the user's default calendar",
     )
     is_public = Column(
-        Boolean, default=False, nullable=False, doc="Whether the calendar is public"
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether the calendar is public",
     )
     is_active = Column(
-        Boolean, default=True, nullable=False, doc="Whether the calendar is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether the calendar is active",
     )
 
     # Relationships
@@ -86,7 +95,10 @@ class Calendar(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Calendar(id={self.id}, name='{self.name}', owner_id={self.owner_id})>"
+        return (
+            f"<Calendar(id={self.id}, name='{self.name}', "
+            f"owner_id={self.owner_id})>"
+        )
 
 
 class Event(Base):
@@ -98,13 +110,21 @@ class Event(Base):
 
     id = Column(Integer, primary_key=True, index=True, doc="Event ID")
     created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), doc="Creation time"
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        doc="Creation time",
     )
-    created_by = Column(Integer, nullable=True, doc="User who created this event")
+    created_by = Column(
+        Integer, nullable=True, doc="User who created this event"
+    )
     updated_at = Column(
-        DateTime(timezone=True), onupdate=func.now(), doc="Last update time"
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        doc="Last update time",
     )
-    updated_by = Column(Integer, nullable=True, doc="User who last updated this event")
+    updated_by = Column(
+        Integer, nullable=True, doc="User who last updated this event"
+    )
 
     # Basic Information
     title = Column(String(200), nullable=False, doc="Event title")
@@ -113,13 +133,22 @@ class Event(Base):
 
     # Timing
     start_time = Column(
-        DateTime(timezone=True), nullable=False, index=True, doc="Event start time"
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        doc="Event start time",
     )
     end_time = Column(
-        DateTime(timezone=True), nullable=False, index=True, doc="Event end time"
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        doc="Event end time",
     )
     is_all_day = Column(
-        Boolean, default=False, nullable=False, doc="Whether the event is all-day"
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether the event is all-day",
     )
     timezone = Column(String(50), nullable=True, doc="Event timezone")
 
@@ -139,7 +168,10 @@ class Event(Base):
 
     # Associations
     calendar_id = Column(
-        Integer, ForeignKey("calendars.id"), nullable=False, doc="Associated calendar"
+        Integer,
+        ForeignKey("calendars.id"),
+        nullable=False,
+        doc="Associated calendar",
     )
     project_id = Column(
         Integer,
@@ -148,7 +180,10 @@ class Event(Base):
         doc="Associated project (optional)",
     )
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=True, doc="Associated task (optional)"
+        Integer,
+        ForeignKey("tasks.id"),
+        nullable=True,
+        doc="Associated task (optional)",
     )
     creator_id = Column(
         Integer, ForeignKey("users.id"), nullable=False, doc="Event creator"
@@ -194,7 +229,9 @@ class Event(Base):
         String(500), nullable=True, doc="Meeting URL (e.g., Zoom, Teams)"
     )
     meeting_id = Column(String(100), nullable=True, doc="Meeting ID")
-    meeting_password = Column(String(100), nullable=True, doc="Meeting password")
+    meeting_password = Column(
+        String(100), nullable=True, doc="Meeting password"
+    )
 
     # Relationships
     calendar = relationship("Calendar", back_populates="events")
@@ -206,7 +243,9 @@ class Event(Base):
 
     # parent_event = relationship("Event", remote_side=[Base.id])
     parent_event = relationship(
-        "Event", remote_side=lambda: Event.id, back_populates="recurring_instances"
+        "Event",
+        remote_side=lambda: Event.id,
+        back_populates="recurring_instances",
     )
 
     recurring_instances = relationship(
@@ -221,13 +260,15 @@ class Event(Base):
     __table_args__ = (
         CheckConstraint("start_time <= end_time", name="ck_event_time_order"),
         CheckConstraint(
-            "recurrence_interval > 0", name="ck_event_recurrence_interval_positive"
+            "recurrence_interval > 0",
+            name="ck_event_recurrence_interval_positive",
         ),
     )
 
     def __repr__(self) -> str:
         return (
-            f"<Event(id={self.id}, title='{self.title}', start_time={self.start_time})>"
+            f"<Event(id={self.id}, title='{self.title}', "
+            f"start_time={self.start_time})>"
         )
 
 
@@ -240,21 +281,29 @@ class EventAttendee(Base):
 
     id = Column(Integer, primary_key=True, index=True, doc="Attendee ID")
     created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), doc="Creation time"
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        doc="Creation time",
     )
     created_by = Column(
         Integer, nullable=True, doc="User who created this attendee record"
     )
     updated_at = Column(
-        DateTime(timezone=True), onupdate=func.now(), doc="Last update time"
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        doc="Last update time",
     )
     updated_by = Column(
-        Integer, nullable=True, doc="User who last updated this attendee record"
+        Integer,
+        nullable=True,
+        doc="User who last updated this attendee record",
     )
 
     # Basic Information
 
-    event_id = Column(Integer, ForeignKey("events.id"), nullable=False, doc="Event ID")
+    event_id = Column(
+        Integer, ForeignKey("events.id"), nullable=False, doc="Event ID"
+    )
     user_id = Column(
         Integer, ForeignKey("users.id"), nullable=False, doc="Attendee user ID"
     )
@@ -281,4 +330,8 @@ class EventAttendee(Base):
     user = relationship("User")
 
     def __repr__(self) -> str:
-        return f"<EventAttendee(event_id={self.event_id}, user_id={self.user_id}, status='{self.status}')>"
+        return (
+            f"<EventAttendee(event_id={self.event_id}, "
+            f"user_id={self.user_id}, "
+            f"status='{self.status}')>"
+        )

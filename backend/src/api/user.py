@@ -7,15 +7,14 @@ User management endpoints for administrators.
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.database import get_async_session
 from core.dependencies import get_current_active_user, require_admin
-from models.user import User, UserRole, UserStatus
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from models.user import User
 from schemas.auth import UserResponse
-from schemas.users import UserCreateRequest, UserUpdateRequest
-from services.user_service import UserService
+from schemas.user import UserCreateRequest, UserUpdateRequest
+from services.user import UserService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -23,11 +22,13 @@ router = APIRouter()
 
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Number of records to return"),
+    page: int = Query(0, ge=0, description="Number of records to skip"),
+    size: int = Query(
+        50, ge=1, le=100, description="Number of records to return"
+    ),
     search: Optional[str] = Query(None, description="Search by name or email"),
-    role: Optional[UserRole] = Query(None, description="Filter by role"),
-    status: Optional[UserStatus] = Query(None, description="Filter by status"),
+    user_role: Optional[str] = Query(None, description="Filter by role"),
+    user_status: Optional[str] = Query(None, description="Filter by status"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -37,17 +38,21 @@ async def list_users(
     try:
         user_service = UserService(db)
         users = await user_service.list_users(
-            skip=skip, limit=limit, search=search, role=role, status=status
+            page=page,
+            size=size,
+            search=search,
+            user_role=user_role,
+            user_status=user_status,
         )
 
         return [UserResponse.from_orm(user) for user in users]
 
     except Exception as e:
-        logger.error(f"Error listing users: {e}")
+        logger.error("Error listing users: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve users",
-        )
+        ) from e
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -73,14 +78,16 @@ async def get_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting user {user_id}: {e}")
+        logger.error("Error getting user %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user",
-        )
+        ) from e
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_user(
     user_data: UserCreateRequest,
     current_user: User = Depends(require_admin),
@@ -103,7 +110,9 @@ async def create_user(
                 detail="User with this email or username already exists",
             )
 
-        user = await user_service.create_user(user_data, created_by=current_user.id)
+        user = await user_service.create_user(
+            user_data, created_by=int(str(current_user.id))
+        )
 
         logger.info(f"User created by admin {current_user.name}: {user.name}")
 
@@ -112,12 +121,12 @@ async def create_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating user: {e}")
+        logger.error("Error creating user: %s", e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user",
-        )
+        ) from e
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -133,7 +142,7 @@ async def update_user(
     try:
         user_service = UserService(db)
         user = await user_service.update_user(
-            user_id, user_data, updated_by=current_user.id
+            user_id, user_data, updated_by=int(str(current_user.id))
         )
 
         if not user:
@@ -141,19 +150,21 @@ async def update_user(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        logger.info(f"User updated by admin {current_user.name}: {user.name}")
+        logger.info(
+            "User updated by admin %s: %s", current_user.name, user.name
+        )
 
         return UserResponse.from_orm(user)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating user {user_id}: {e}")
+        logger.error("Error updating user %s: %s", user_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user",
-        )
+        ) from e
 
 
 @router.delete("/{user_id}")
@@ -167,23 +178,33 @@ async def delete_user(
     """
     try:
         user_service = UserService(db)
-        success = await user_service.delete_user(user_id)
+        success = await user_service.delete_user(
+            user_id, int(str(current_user.id))
+        )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        logger.info(f"User deleted by admin {current_user.name}: {user_id}")
+        logger.info("User deleted by admin %s: %s", current_user.name, user_id)
 
         return {"message": "User deleted successfully"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting user {user_id}: {e}")
+        logger.error("Error deleting user %s: %s", user_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user",
-        )
+        ) from e
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_my_profile(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get current user profile"""
+    return UserResponse.from_orm(current_user)

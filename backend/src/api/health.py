@@ -1,378 +1,282 @@
 """
 Health Check API Routes
 
-System health monitoring endpoints.
+System health and monitoring endpoints.
 """
 
+import logging
+import platform
 from datetime import datetime
+from typing import Any, Dict
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+import psutil
+from core.config import settings
+from core.database import get_async_session, get_database_health
+from fastapi import APIRouter, Depends, HTTPException
+from schemas.common import HealthCheckResponse, SystemInfoResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings
-from core.database import get_async_session
-from core.db_utils import (
-    check_database_health,
-    get_database_stats,
-    test_database_operations,
-)
-
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """
     Basic health check endpoint
     """
-    return JSONResponse(
-        {
-            "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "environment": settings.ENVIRONMENT,
-        }
-    )
+    try:
+        return HealthCheckResponse(
+            status="healthy",
+            timestamp=datetime.utcnow(),
+            version=settings.VERSION,
+            environment=settings.ENVIRONMENT,
+            details={},
+        )
+    except Exception as e:
+        logger.error("Health check failed: %s", e)
+        raise HTTPException(
+            status_code=503, detail="Service unavailable"
+        ) from e
 
 
 @router.get("/health/detailed")
-async def detailed_health_check():
+async def detailed_health_check(db: AsyncSession = Depends(get_async_session)):
     """
-    Detailed health check with database and service status
+    Detailed health check with database and system information
     """
-    health_status = {
+    health_data: Dict[str, Any] = {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
         "checks": {},
     }
 
-    # Database health check
     try:
-        db_health = await check_database_health()
-        health_status["checks"]["database"] = {
-            "status": "healthy" if db_health["status"] == "healthy" else "unhealthy",
-            "connection": db_health["connection"],
-            "tables_count": len(db_health["tables"]),
-            "version": db_health["version"],
-            "error": db_health.get("error"),
-        }
 
-        if db_health["status"] != "healthy":
-            health_status["status"] = "degraded"
+        # Database health
+        try:
+            db_health = await get_database_health()
+            health_data["database"] = db_health
+        except Exception as e:  # pylint: disable=broad-except
+            health_data["database"] = {"status": "error", "error": str(e)}
+            health_data["status"] = "degraded"
+
+        # System information
+        try:
+            health_data["system"] = get_system_info()
+        except Exception as e:  # pylint: disable=broad-except
+            health_data["system"] = {"error": str(e)}
+
+        return health_data
 
     except Exception as e:
-        health_status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
-        health_status["status"] = "degraded"
-
-    # API check
-    health_status["checks"]["api"] = {
-        "status": "healthy",
-        "message": "API is responding",
-    }
-
-    # File system check
-    try:
-        from pathlib import Path
-
-        uploads_path = Path(settings.UPLOAD_PATH)
-        uploads_path.mkdir(exist_ok=True)
-        health_status["checks"]["filesystem"] = {
-            "status": "healthy",
-            "upload_directory": str(uploads_path),
-            "writable": uploads_path.exists() and uploads_path.is_dir(),
-        }
-    except Exception as e:
-        health_status["checks"]["filesystem"] = {"status": "unhealthy", "error": str(e)}
-        health_status["status"] = "degraded"
-
-    # Set final status
-    if health_status["status"] == "degraded":
-        return JSONResponse(status_code=503, content=health_status)
-
-    return JSONResponse(health_status)
+        logger.error("Detailed health check failed: %s", e)
+        raise HTTPException(
+            status_code=503, detail="Service unavailable"
+        ) from e
 
 
 @router.get("/health/database")
 async def database_health_check():
     """
-    Comprehensive database health check
+    Database-specific health check
     """
     try:
-        # Get database health
-        db_health = await check_database_health()
+        db_health = await get_database_health()
 
-        # Test database operations
-        db_operations = await test_database_operations()
-
-        # Get database statistics
-        db_stats = await get_database_stats()
-
-        result = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "health": db_health,
-            "operations": db_operations,
-            "statistics": db_stats,
-            "overall_status": (
-                "healthy"
-                if (
-                    db_health["status"] == "healthy"
-                    and db_operations["connection"]
-                    and db_operations["create_session"]
-                )
-                else "unhealthy"
-            ),
-        }
-
-        if result["overall_status"] == "unhealthy":
-            return JSONResponse(status_code=503, content=result)
-
-        return JSONResponse(result)
+        if db_health.get("status") == "healthy":
+            return db_health
+        else:
+            raise HTTPException(status_code=503, detail=db_health)
 
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "timestamp": datetime.utcnow().isoformat(),
-                "status": "error",
-                "error": str(e),
+        logger.error("Database health check failed: %s", e)
+        raise HTTPException(
+            status_code=503, detail="Database unavailable"
+        ) from e
+
+
+@router.get("/system/info", response_model=SystemInfoResponse)
+async def get_system_info_endpoint():
+    """
+    Get system information
+    """
+    try:
+        system_info = get_system_info()
+
+        return SystemInfoResponse(
+            application={
+                "name": settings.PROJECT_NAME,
+                "version": settings.VERSION,
+                "environment": settings.ENVIRONMENT,
             },
+            system={
+                "uptime": system_info.get("uptime", "unknown"),
+                "memory": system_info.get("memory", {}),
+                "cpu_percent": system_info.get("cpu_percent", 0.0),
+                "disk": system_info.get("disk", {}),
+            },
+            configuration={},
+            features={},
         )
 
+    except Exception as e:
+        logger.error("System info retrieval failed: %s", e)
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve system information"
+        ) from e
 
-@router.get("/health/ready")
+
+def get_system_info() -> Dict[str, Any]:
+    """
+    Get system information
+    """
+    try:
+        # CPU information
+        cpu_percent = psutil.cpu_percent(interval=1)
+        cpu_count = psutil.cpu_count()
+
+        # Memory information
+        memory = psutil.virtual_memory()
+        memory_info = {
+            "total": memory.total,
+            "used": memory.used,
+            "available": memory.available,
+            "percentage": memory.percent,
+        }
+
+        # Disk information
+        disk = psutil.disk_usage("/")
+        disk_info = {
+            "total": disk.total,
+            "used": disk.used,
+            "free": disk.free,
+            "percentage": (disk.used / disk.total) * 100,
+        }
+
+        # System uptime
+        boot_time = psutil.boot_time()
+        uptime_seconds = datetime.now().timestamp() - boot_time
+        uptime_str = format_uptime(uptime_seconds)
+
+        return {
+            "platform": platform.platform(),
+            "architecture": platform.architecture()[0],
+            "processor": platform.processor(),
+            "python_version": platform.python_version(),
+            "cpu_count": cpu_count,
+            "cpu_percent": cpu_percent,
+            "memory": memory_info,
+            "disk": disk_info,
+            "uptime": uptime_str,
+            "uptime_seconds": uptime_seconds,
+        }
+
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("Failed to get system info: %s", e)
+        return {"error": str(e)}
+
+
+def format_uptime(seconds: float) -> str:
+    """
+    Format uptime seconds into human-readable string
+    """
+    try:
+        days = int(seconds // 86400)
+        hours = int((seconds % 86400) // 3600)
+        minutes = int((seconds % 3600) // 60)
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
+        if hours > 0:
+            parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+        if minutes > 0:
+            parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+
+        if not parts:
+            return "less than a minute"
+
+        return ", ".join(parts)
+
+    except Exception:  # pylint: disable=broad-except
+        return "unknown"
+
+
+@router.get("/health/readiness")
 async def readiness_check():
     """
     Kubernetes readiness probe endpoint
     """
     try:
-        # Quick database check
-        db_health = await check_database_health()
+        # Check if the application is ready to serve requests
+        db_health = await get_database_health()
 
-        if db_health["status"] == "healthy" and db_health["connection"]:
-            return JSONResponse(
-                {
-                    "status": "ready",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "database": "connected",
-                    "tables": len(db_health["tables"]),
-                }
-            )
-        else:
-            return JSONResponse(
-                status_code=503,
-                content={
-                    "status": "not ready",
-                    "reason": "Database not accessible",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "error": db_health.get("error"),
-                },
-            )
-    except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "not ready",
-                "reason": str(e),
+        if db_health.get("status") == "healthy":
+            return {
+                "status": "ready",
                 "timestamp": datetime.utcnow().isoformat(),
-            },
-        )
+            }
+        else:
+            raise HTTPException(status_code=503, detail="Not ready")
+
+    except Exception as e:
+        logger.error("Readiness check failed: %s", e)
+        raise HTTPException(status_code=503, detail="Not ready") from e
 
 
-@router.get("/health/live")
+@router.get("/health/liveness")
 async def liveness_check():
     """
     Kubernetes liveness probe endpoint
     """
-    return JSONResponse(
-        {
-            "status": "alive",
-            "timestamp": datetime.utcnow().isoformat(),
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-        }
-    )
+    try:
+        # Basic check to see if the application is alive
+        return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
+
+    except Exception as e:
+        logger.error("Liveness check failed: %s", e)
+        raise HTTPException(status_code=503, detail="Not alive") from e
 
 
-@router.get("/health/info")
-async def health_info():
+@router.get("/metrics")
+async def get_metrics():
     """
-    Health check information endpoint
-    """
-    return JSONResponse(
-        {
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "environment": settings.ENVIRONMENT,
-            "documentation": {
-                "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
-                "redoc": "/redoc" if settings.DEBUG else "Disabled",
-                "openapi_spec": (
-                    f"{settings.API_V1_STR}/openapi.json"
-                    if settings.DEBUG
-                    else "Disabled"
-                ),
-            },
-        }
-    )
-
-
-@router.get("/health/endpoints")
-async def health_endpoints():
-    """
-    List available health check endpoints
-    """
-    return JSONResponse(
-        {
-            "endpoints": {
-                "basic": "/health",
-                "detailed": "/health/detailed",
-                "database": "/health/database",
-                "readiness": "/health/ready",
-                "liveness": "/health/live",
-                "info": "/health/info",
-            },
-            "documentation": {
-                "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
-                "redoc": "/redoc" if settings.DEBUG else "Disabled",
-            },
-        }
-    )
-
-
-@router.get("/health/system")
-async def system_health_check():
-    """
-    System health check endpoint
+    Basic metrics endpoint (Prometheus-compatible format could be added)
     """
     try:
-        # Perform basic health checks
-        db_health = await check_database_health()
-        if db_health["status"] != "healthy":
-            return JSONResponse(
-                status_code=503,
-                content={
-                    "status": "unhealthy",
-                    "reason": "Database connection failed",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "error": db_health.get("error"),
-                },
-            )
+        system_info = get_system_info()
+        db_health = await get_database_health()
 
-        return JSONResponse(
-            {
-                "status": "healthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "service": settings.PROJECT_NAME,
+        metrics = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "system": {
+                "cpu_usage_percent": system_info.get("cpu_percent", 0),
+                "memory_usage_percent": system_info.get("memory", {}).get(
+                    "percentage", 0
+                ),
+                "disk_usage_percent": system_info.get("disk", {}).get(
+                    "percentage", 0
+                ),
+            },
+            "database": {
+                "status": db_health.get("status", "unknown"),
+                "connection_count": db_health.get("performance", {}).get(
+                    "active_connections", 0
+                ),
+            },
+            "application": {
                 "version": settings.VERSION,
                 "environment": settings.ENVIRONMENT,
-            }
-        )
+            },
+        }
+
+        return metrics
+
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-            },
-        )
-
-
-@router.get("/health/system/info")
-async def system_health_info():
-    """
-    System health information endpoint
-    """
-    return JSONResponse(
-        {
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "environment": settings.ENVIRONMENT,
-            "documentation": {
-                "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
-                "redoc": "/redoc" if settings.DEBUG else "Disabled",
-                "openapi_spec": (
-                    f"{settings.API_V1_STR}/openapi.json"
-                    if settings.DEBUG
-                    else "Disabled"
-                ),
-            },
-        }
-    )
-
-
-@router.get("/health/system/endpoints")
-async def system_health_endpoints():
-    """
-    List available system health check endpoints
-    """
-    return JSONResponse(
-        {
-            "endpoints": {
-                "basic": "/health/system",
-                "info": "/health/system/info",
-            },
-            "documentation": {
-                "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
-                "redoc": "/redoc" if settings.DEBUG else "Disabled",
-            },
-        }
-    )
-
-
-@router.get("/health/system/ready")
-async def system_readiness_check():
-    """
-    System readiness check endpoint
-    """
-    try:
-        # Perform database readiness check
-        db_health = await check_database_health()
-        if db_health["status"] != "healthy":
-            return JSONResponse(
-                status_code=503,
-                content={
-                    "status": "not ready",
-                    "reason": "Database not accessible",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "error": db_health.get("error"),
-                },
-            )
-
-        return JSONResponse(
-            {
-                "status": "ready",
-                "timestamp": datetime.utcnow().isoformat(),
-                "service": settings.PROJECT_NAME,
-                "version": settings.VERSION,
-            }
-        )
-    except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "not ready",
-                "reason": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-            },
-        )
-
-
-@router.get("/health/system/live")
-async def system_liveness_check():
-    """
-    System liveness check endpoint
-    """
-    return JSONResponse(
-        {
-            "status": "alive",
-            "timestamp": datetime.utcnow().isoformat(),
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-        }
-    )
+        logger.error("Metrics retrieval failed: %s", e)
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve metrics"
+        ) from e

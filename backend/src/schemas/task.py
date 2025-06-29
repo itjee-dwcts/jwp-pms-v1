@@ -5,17 +5,19 @@ Request/Response schemas for task management.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, validator
-
+from core.constants import TaskPriority, TaskStatus, TaskType
+from pydantic import BaseModel, Field, field_validator
 from schemas.user import UserPublic
 
 
 class TaskBase(BaseModel):
     """Base task schema"""
 
-    title: str = Field(..., min_length=1, max_length=200, description="Task title")
+    title: str = Field(
+        ..., min_length=1, max_length=200, description="Task title"
+    )
     description: Optional[str] = Field(
         None, max_length=5000, description="Task description"
     )
@@ -23,51 +25,57 @@ class TaskBase(BaseModel):
     priority: str = Field(default="medium", description="Task priority")
     task_type: str = Field(default="feature", description="Task type")
 
-    @validator("status")
-    def validate_status(cls, v):
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        """Validate task status"""
+        # Ensure status is one of the defined statuses
         valid_statuses = [
-            "todo",
-            "in_progress",
-            "in_review",
-            "testing",
-            "done",
-            "blocked",
-            "on_hold",
-            "cancelled",
+            TaskStatus.TODO,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.IN_REVIEW,
+            TaskStatus.TESTING,
+            TaskStatus.DONE,
+            TaskStatus.BLOCKED,
         ]
         if v not in valid_statuses:
-            raise ValueError(f'Status must be one of: {", ".join(valid_statuses)}')
+            raise ValueError(
+                f'Status must be one of: {", ".join(valid_statuses)}'
+            )
         return v
 
-    @validator("priority")
-    def validate_priority(cls, v):
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str):
+        """Validate task priority"""
         valid_priorities = ["low", "medium", "high", "urgent"]
         if v not in valid_priorities:
-            raise ValueError(f'Priority must be one of: {", ".join(valid_priorities)}')
+            raise ValueError(
+                f'Priority must be one of: {", ".join(valid_priorities)}'
+            )
         return v
 
-    @validator("task_type")
-    def validate_task_type(cls, v):
+    @field_validator("task_type")
+    @classmethod
+    def validate_task_type(cls, v: str):
+        """Validate task type"""
         valid_types = [
-            "feature",
-            "bug",
-            "task",
-            "enhancement",
-            "improvement",
-            "refactoring",
-            "debt",
-            "research",
-            "documentation",
-            "support",
-            "testing",
-            "maintenance",
+            TaskType.FEATURE,
+            TaskType.BUG,
+            TaskType.IMPROVEMENT,
+            TaskType.RESEARCH,
+            TaskType.DOCUMENTATION,
+            TaskType.TESTING,
+            TaskType.MAINTENANCE,
         ]
         if v not in valid_types:
-            raise ValueError(f'Task type must be one of: {", ".join(valid_types)}')
+            raise ValueError(
+                f'Task type must be one of: {", ".join(valid_types)}'
+            )
         return v
 
 
-class TaskCreate(TaskBase):
+class TaskCreateRequest(TaskBase):
     """Schema for creating a task"""
 
     project_id: int = Field(..., description="Project ID")
@@ -76,7 +84,9 @@ class TaskCreate(TaskBase):
     )
     start_date: Optional[datetime] = Field(None, description="Task start date")
     due_date: Optional[datetime] = Field(None, description="Task due date")
-    estimated_hours: Optional[int] = Field(None, ge=0, description="Estimated hours")
+    estimated_hours: Optional[int] = Field(
+        None, ge=0, description="Estimated hours"
+    )
     story_points: Optional[int] = Field(None, ge=0, description="Story points")
     acceptance_criteria: Optional[str] = Field(
         None, max_length=2000, description="Acceptance criteria"
@@ -87,10 +97,14 @@ class TaskCreate(TaskBase):
     assignee_ids: Optional[List[int]] = Field(
         default=[], description="List of assignee user IDs"
     )
-    tag_ids: Optional[List[int]] = Field(default=[], description="List of tag IDs")
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of tag IDs"
+    )
 
-    @validator("due_date")
-    def validate_due_date(cls, v, values):
+    @field_validator("due_date")
+    @classmethod
+    def validate_due_date(cls, v: str, values: Any):
+        """Validate due date"""
         if (
             v
             and "start_date" in values
@@ -101,7 +115,7 @@ class TaskCreate(TaskBase):
         return v
 
 
-class TaskUpdate(BaseModel):
+class TaskUpdateRequest(BaseModel):
     """Schema for updating a task"""
 
     title: Optional[str] = Field(None, min_length=1, max_length=200)
@@ -118,52 +132,60 @@ class TaskUpdate(BaseModel):
     acceptance_criteria: Optional[str] = Field(None, max_length=2000)
     external_id: Optional[str] = Field(None, max_length=100)
 
-    @validator("status")
-    def validate_status(cls, v):
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str):
+        """Validate task status"""
         if v is not None:
             valid_statuses = [
-                "todo",
-                "in_progress",
-                "in_review",
-                "testing",
-                "done",
-                "blocked",
-                "on_hold",
-                "cancelled",
+                TaskStatus.TODO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.IN_REVIEW,
+                TaskStatus.TESTING,
+                TaskStatus.DONE,
+                TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f'Status must be one of: {", ".join(valid_statuses)}')
+                raise ValueError(
+                    f'Status must be one of: {", ".join(valid_statuses)}'
+                )
         return v
 
-    @validator("priority")
-    def validate_priority(cls, v):
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str):
+        """Validate task priority"""
         if v is not None:
-            valid_priorities = ["low", "medium", "high", "urgent"]
+            valid_priorities = [
+                TaskPriority.LOW,
+                TaskPriority.MEDIUM,
+                TaskPriority.HIGH,
+                TaskPriority.CRITICAL,
+            ]
             if v not in valid_priorities:
                 raise ValueError(
                     f'Priority must be one of: {", ".join(valid_priorities)}'
                 )
         return v
 
-    @validator("task_type")
-    def validate_task_type(cls, v):
+    @field_validator("task_type")
+    @classmethod
+    def validate_task_type(cls, v: str) -> str:
+        """Validate task type"""
         if v is not None:
             valid_types = [
-                "feature",
-                "bug",
-                "task",
-                "enhancement",
-                "improvement",
-                "refactoring",
-                "debt",
-                "research",
-                "documentation",
-                "support",
-                "testing",
-                "maintenance",
+                TaskType.FEATURE,
+                TaskType.BUG,
+                TaskType.IMPROVEMENT,
+                TaskType.RESEARCH,
+                TaskType.DOCUMENTATION,
+                TaskType.TESTING,
+                TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(f'Task type must be one of: {", ".join(valid_types)}')
+                raise ValueError(
+                    f'Task type must be one of: {", ".join(valid_types)}'
+                )
         return v
 
 
@@ -180,6 +202,8 @@ class TaskAssignmentResponse(BaseModel):
     assigner: UserPublic
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -191,13 +215,15 @@ class TaskCommentBase(BaseModel):
     )
 
 
-class TaskCommentCreate(TaskCommentBase):
+class TaskCommentCreateRequest(TaskCommentBase):
     """Schema for creating task comment"""
 
-    parent_id: Optional[int] = Field(None, description="Parent comment ID for replies")
+    parent_id: Optional[int] = Field(
+        None, description="Parent comment ID for replies"
+    )
 
 
-class TaskCommentUpdate(BaseModel):
+class TaskCommentUpdateRequest(BaseModel):
     """Schema for updating task comment"""
 
     content: str = Field(
@@ -220,6 +246,8 @@ class TaskCommentResponse(BaseModel):
     replies: List["TaskCommentResponse"] = []
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -238,6 +266,8 @@ class TaskAttachmentResponse(BaseModel):
     uploader: UserPublic
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -250,7 +280,7 @@ class TaskTimeLogBase(BaseModel):
     )
 
 
-class TaskTimeLogCreate(TaskTimeLogBase):
+class TaskTimeLogCreateRequest(TaskTimeLogBase):
     """Schema for creating task time log"""
 
     work_date: Optional[datetime] = Field(
@@ -258,7 +288,7 @@ class TaskTimeLogCreate(TaskTimeLogBase):
     )
 
 
-class TaskTimeLogUpdate(TaskTimeLogBase):
+class TaskTimeLogUpdateRequest(TaskTimeLogBase):
     """Schema for updating task time log"""
 
     work_date: Optional[datetime] = None
@@ -278,6 +308,8 @@ class TaskTimeLogResponse(BaseModel):
     user: UserPublic
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -285,22 +317,24 @@ class TagBase(BaseModel):
     """Base tag schema"""
 
     name: str = Field(..., min_length=1, max_length=50, description="Tag name")
-    color: Optional[str] = Field("#3B82F6", max_length=7, description="Tag color (hex)")
+    color: Optional[str] = Field(
+        "#3B82F6", max_length=7, description="Tag color (hex)"
+    )
     description: Optional[str] = Field(
         None, max_length=200, description="Tag description"
     )
 
-    @validator("color")
-    def validate_color(cls, v):
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str):
+        """Validate tag color"""
         if v is not None and not v.startswith("#"):
             raise ValueError("Color must be in hex format (e.g., #ff0000)")
         return v
 
 
-class TagCreate(TagBase):
+class TagCreateRequest(TagBase):
     """Schema for creating a tag"""
-
-    pass
 
 
 class TagUpdate(BaseModel):
@@ -310,8 +344,10 @@ class TagUpdate(BaseModel):
     color: Optional[str] = Field(None, max_length=7)
     description: Optional[str] = Field(None, max_length=200)
 
-    @validator("color")
-    def validate_color(cls, v):
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str):
+        """Validate tag color"""
         if v is not None and not v.startswith("#"):
             raise ValueError("Color must be in hex format (e.g., #ff0000)")
         return v
@@ -325,6 +361,8 @@ class TagResponse(TagBase):
     created_at: datetime
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -354,6 +392,8 @@ class TaskResponse(TaskBase):
     subtasks: List["TaskResponse"] = []
 
     class Config:
+        """Configuration for Pydantic model"""
+
         from_attributes = True
 
 
@@ -386,7 +426,7 @@ class TaskSearchRequest(BaseModel):
 
     query: Optional[str] = Field(None, description="Search query")
     project_id: Optional[int] = None
-    status: Optional[str] = None
+    task_status: Optional[str] = None
     priority: Optional[str] = None
     task_type: Optional[str] = None
     assignee_id: Optional[int] = None
@@ -397,52 +437,60 @@ class TaskSearchRequest(BaseModel):
     created_from: Optional[datetime] = None
     created_to: Optional[datetime] = None
 
-    @validator("status")
-    def validate_status(cls, v):
+    @field_validator("task_status")
+    @classmethod
+    def validate_status(cls, v: str):
+        """Validate task status"""
         if v is not None:
             valid_statuses = [
-                "todo",
-                "in_progress",
-                "in_review",
-                "testing",
-                "done",
-                "blocked",
-                "on_hold",
-                "cancelled",
+                TaskStatus.TODO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.IN_REVIEW,
+                TaskStatus.TESTING,
+                TaskStatus.DONE,
+                TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f'Status must be one of: {", ".join(valid_statuses)}')
+                raise ValueError(
+                    f'Status must be one of: {", ".join(valid_statuses)}'
+                )
         return v
 
-    @validator("priority")
-    def validate_priority(cls, v):
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str):
+        """Validate task priority"""
         if v is not None:
-            valid_priorities = ["low", "medium", "high", "urgent"]
+            valid_priorities = [
+                TaskPriority.LOW,
+                TaskPriority.MEDIUM,
+                TaskPriority.HIGH,
+                TaskPriority.CRITICAL,
+            ]
             if v not in valid_priorities:
                 raise ValueError(
                     f'Priority must be one of: {", ".join(valid_priorities)}'
                 )
         return v
 
-    @validator("task_type")
-    def validate_task_type(cls, v):
+    @field_validator("task_type")
+    @classmethod
+    def validate_task_type(cls, v: str) -> str:
+        """Validate task type"""
         if v is not None:
             valid_types = [
-                "feature",
-                "bug",
-                "task",
-                "enhancement",
-                "improvement",
-                "refactoring",
-                "debt",
-                "research",
-                "documentation",
-                "support",
-                "testing",
-                "maintenance",
+                TaskType.FEATURE,
+                TaskType.BUG,
+                TaskType.IMPROVEMENT,
+                TaskType.RESEARCH,
+                TaskType.DOCUMENTATION,
+                TaskType.TESTING,
+                TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(f'Task type must be one of: {", ".join(valid_types)}')
+                raise ValueError(
+                    f'Task type must be one of: {", ".join(valid_types)}'
+                )
         return v
 
 
@@ -467,7 +515,7 @@ class TaskDashboardResponse(BaseModel):
     task_completion_stats: dict
 
 
-class TaskKanbanBoard(BaseModel):
+class TaskKanbanBoardResponse(BaseModel):
     """Schema for Kanban board response"""
 
     todo: List[TaskResponse]
@@ -477,7 +525,7 @@ class TaskKanbanBoard(BaseModel):
     done: List[TaskResponse]
 
 
-class TaskGanttChart(BaseModel):
+class TaskGanttChartResponse(BaseModel):
     """Schema for Gantt chart response"""
 
     task_id: int
@@ -491,11 +539,14 @@ class TaskGanttChart(BaseModel):
 class TaskGanttResponse(BaseModel):
     """Schema for Gantt chart data response"""
 
-    tasks: List[TaskGanttChart]
+    tasks: List[TaskGanttChartResponse]
     project_start: Optional[datetime]
     project_end: Optional[datetime]
 
 
 # Update forward references
 TaskCommentResponse.model_rebuild()
+TaskResponse.model_rebuild()
+TaskResponse.model_rebuild()
+TaskResponse.model_rebuild()
 TaskResponse.model_rebuild()

@@ -4,18 +4,13 @@ Calendar Service
 Business logic for calendar and event management operations.
 """
 
-import calendar
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional, cast
-
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from core.database import get_async_session
 from models.calendar import Calendar, Event, EventAttendee
-from models.project import Project, ProjectMember
+from models.project import Project
 from models.task import Task
 from models.user import User
 from schemas.calendar import (
@@ -32,12 +27,11 @@ from schemas.calendar import (
     EventSearchRequest,
     EventUpdate,
 )
-from utils.exceptions import (
-    AuthorizationError,
-    ConflictError,
-    NotFoundError,
-    ValidationError,
-)
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import func
+from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +103,10 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(
+                    f"Calendar with ID {calendar_id} not found"
+                )
 
-            calendar_is_public = getattr(calendar, "is_public", False)
             calendar_owner_id = getattr(calendar, "owner_id", None)
 
             # If user_id is provided, check if they are the owner
@@ -124,7 +119,11 @@ class CalendarService:
                 return CalendarResponse.from_orm(calendar)
 
             # Check access permissions
-            if user_id and not calendar_is_public and calendar_owner_id != user_id:
+            if (
+                user_id
+                and not calendar_is_public
+                and calendar_owner_id != user_id
+            ):
                 raise AuthorizationError("Access denied to this calendar")
 
             return CalendarResponse.from_orm(calendar)
@@ -144,16 +143,22 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(
+                    f"Calendar with ID {calendar_id} not found"
+                )
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
             # Check if user is the owner
             if calendar_owner_id is None:
-                raise NotFoundError(f"Calendar with ID {calendar_id} has no owner")
+                raise NotFoundError(
+                    f"Calendar with ID {calendar_id} has no owner"
+                )
 
             # Check ownership
             if calendar_owner_id != user_id:
-                raise AuthorizationError("Only calendar owner can update calendar")
+                raise AuthorizationError(
+                    "Only calendar owner can update calendar"
+                )
 
             # Update fields
             update_data = calendar_data.dict(exclude_unset=True)
@@ -197,15 +202,21 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(
+                    f"Calendar with ID {calendar_id} not found"
+                )
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
             if calendar_owner_id is None:
-                raise NotFoundError(f"Calendar with ID {calendar_id} has no owner")
+                raise NotFoundError(
+                    f"Calendar with ID {calendar_id} has no owner"
+                )
 
             # Check ownership
             if calendar_owner_id != user_id:
-                raise AuthorizationError("Only calendar owner can delete calendar")
+                raise AuthorizationError(
+                    "Only calendar owner can delete calendar"
+                )
 
             # Delete calendar (will cascade to events)
             await self.db.delete(calendar)
@@ -231,11 +242,14 @@ class CalendarService:
             if user_id:
                 # User can see public calendars or their own calendars
                 query = query.where(
-                    or_(Calendar.is_public == True, Calendar.owner_id == user_id)
+                    or_(
+                        Calendar.is_public.is_(True),
+                        Calendar.owner_id == user_id,
+                    )
                 )
             else:
                 # Anonymous users can only see public calendars
-                query = query.where(Calendar.is_public == True)
+                query = query.where(Calendar.is_public.is_(True))
 
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
@@ -245,7 +259,9 @@ class CalendarService:
             # Apply pagination and ordering
             offset = (page - 1) * per_page
             query = (
-                query.offset(offset).limit(per_page).order_by(desc(Calendar.created_at))
+                query.offset(offset)
+                .limit(per_page)
+                .order_by(desc(Calendar.created_at))
             )
 
             # Execute query
@@ -253,11 +269,14 @@ class CalendarService:
             calendars = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + per_page - 1) // per_page
+            pages = (
+                (total if total is not None else 0) + per_page - 1
+            ) // per_page
 
             return CalendarListResponse(
                 calendars=[
-                    CalendarResponse.from_orm(calendar) for calendar in calendars
+                    CalendarResponse.from_orm(calendar)
+                    for calendar in calendars
                 ],
                 total=total if total is not None else 0,
                 page=page,
@@ -266,8 +285,14 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error(f"Failed to list calendars: {e}")
+            logger.error("Failed to list calendars: %s", e)
             raise
+
+    async def list_user_calendars(self, user_id: int) -> List[Calendar]:
+        result = await self.db.execute(
+            select(Calendar).where(Calendar.user_id == user_id)
+        )
+        return list(result.scalars().all())
 
     async def create_event(
         self, event_data: EventCreate, creator_id: int
@@ -284,7 +309,6 @@ class CalendarService:
                     f"Calendar with ID {event_data.calendar_id} not found"
                 )
 
-            calendar_is_public = getattr(calendar, "is_public", False)
             calendar_owner_id = getattr(calendar, "owner_id", None)
             if calendar_owner_id is None:
                 raise NotFoundError(
@@ -353,18 +377,20 @@ class CalendarService:
                 .options(
                     selectinload(Event.creator),
                     selectinload(Event.calendar),
-                    selectinload(Event.attendees).selectinload(EventAttendee.user),
+                    selectinload(Event.attendees).selectinload(
+                        EventAttendee.user
+                    ),
                 )
                 .where(Event.id == event.id)
             )
             created_event = result.scalar_one()
 
-            logger.info(f"Event created successfully: {event.title}")
+            logger.info("Event created successfully: %s", event.title)
             return EventResponse.from_orm(created_event)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to create event: {e}")
+            logger.error("Failed to create event: %s", e)
             raise
 
     async def get_event_by_id(
@@ -378,7 +404,9 @@ class CalendarService:
                 .options(
                     selectinload(Event.creator),
                     selectinload(Event.calendar),
-                    selectinload(Event.attendees).selectinload(EventAttendee.user),
+                    selectinload(Event.attendees).selectinload(
+                        EventAttendee.user
+                    ),
                 )
                 .where(Event.id == event_id)
             )
@@ -398,7 +426,7 @@ class CalendarService:
             return EventResponse.from_orm(event)
 
         except Exception as e:
-            logger.error(f"Failed to get event {event_id}: {e}")
+            logger.error("Failed to get event %d: %s", event_id, e)
             raise
 
     async def update_event(
@@ -411,7 +439,9 @@ class CalendarService:
             if not has_access:
                 raise AuthorizationError("No permission to update this event")
 
-            result = await self.db.execute(select(Event).where(Event.id == event_id))
+            result = await self.db.execute(
+                select(Event).where(Event.id == event_id)
+            )
             event = result.scalar_one_or_none()
 
             if not event:
@@ -433,17 +463,19 @@ class CalendarService:
             # Fetch updated event with relationships
             result = await self.db.execute(
                 select(Event)
-                .options(selectinload(Event.creator), selectinload(Event.calendar))
+                .options(
+                    selectinload(Event.creator), selectinload(Event.calendar)
+                )
                 .where(Event.id == event_id)
             )
             updated_event = result.scalar_one()
 
-            logger.info(f"Event updated successfully: {event.title}")
+            logger.info("Event updated successfully: %s", event.title)
             return EventResponse.from_orm(updated_event)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to update event {event_id}: {e}")
+            logger.error("Failed to update event %d: %s", event_id, e)
             raise
 
     async def delete_event(self, event_id: int, user_id: int) -> bool:
@@ -454,7 +486,9 @@ class CalendarService:
             if not has_access:
                 raise AuthorizationError("No permission to delete this event")
 
-            result = await self.db.execute(select(Event).where(Event.id == event_id))
+            result = await self.db.execute(
+                select(Event).where(Event.id == event_id)
+            )
             event = result.scalar_one_or_none()
 
             if not event:
@@ -464,12 +498,12 @@ class CalendarService:
             await self.db.delete(event)
             await self.db.commit()
 
-            logger.info(f"Event deleted: {event.title}")
+            logger.info("Event deleted: %s", event.title)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to delete event {event_id}: {e}")
+            logger.error("Failed to delete event %d: %s", event_id, e)
             raise
 
     async def list_events(
@@ -488,14 +522,20 @@ class CalendarService:
 
             # Apply access control
             if user_id:
-                accessible_calendars = await self._get_accessible_calendars(user_id)
-                query = query.where(Event.calendar_id.in_(accessible_calendars))
+                accessible_calendars = await self._get_accessible_calendars(
+                    user_id
+                )
+                query = query.where(
+                    Event.calendar_id.in_(accessible_calendars)
+                )
             else:
                 # Anonymous users can only see events in public calendars
                 public_calendars = await self.db.execute(
-                    select(Calendar.id).where(Calendar.is_public == True)
+                    select(Calendar.id).where(Calendar.is_public.is_(True))
                 )
-                public_calendar_ids = [row[0] for row in public_calendars.fetchall()]
+                public_calendar_ids = [
+                    row[0] for row in public_calendars.fetchall()
+                ]
                 query = query.where(Event.calendar_id.in_(public_calendar_ids))
 
             # Apply search filters
@@ -504,18 +544,26 @@ class CalendarService:
                     query = query.where(
                         or_(
                             Event.title.ilike(f"%{search_params.query}%"),
-                            Event.description.ilike(f"%{search_params.query}%"),
+                            Event.description.ilike(
+                                f"%{search_params.query}%"
+                            ),
                         )
                     )
 
                 if search_params.calendar_id:
-                    query = query.where(Event.calendar_id == search_params.calendar_id)
+                    query = query.where(
+                        Event.calendar_id == search_params.calendar_id
+                    )
 
                 if search_params.event_type:
-                    query = query.where(Event.event_type == search_params.event_type)
+                    query = query.where(
+                        Event.event_type == search_params.event_type
+                    )
 
-                if search_params.status:
-                    query = query.where(Event.status == search_params.status)
+                if search_params.event_status:
+                    query = query.where(
+                        Event.status == search_params.event_status
+                    )
 
                 if search_params.start_date_from:
                     query = query.where(
@@ -528,13 +576,17 @@ class CalendarService:
                     )
 
                 if search_params.project_id:
-                    query = query.where(Event.project_id == search_params.project_id)
+                    query = query.where(
+                        Event.project_id == search_params.project_id
+                    )
 
                 if search_params.task_id:
                     query = query.where(Event.task_id == search_params.task_id)
 
                 if search_params.is_all_day is not None:
-                    query = query.where(Event.is_all_day == search_params.is_all_day)
+                    query = query.where(
+                        Event.is_all_day == search_params.is_all_day
+                    )
 
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
@@ -543,14 +595,20 @@ class CalendarService:
 
             # Apply pagination and ordering
             offset = (page - 1) * per_page
-            query = query.offset(offset).limit(per_page).order_by(Event.start_datetime)
+            query = (
+                query.offset(offset)
+                .limit(per_page)
+                .order_by(Event.start_datetime)
+            )
 
             # Execute query
             result = await self.db.execute(query)
             events = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + per_page - 1) // per_page
+            pages = (
+                (total if total is not None else 0) + per_page - 1
+            ) // per_page
 
             return EventListResponse(
                 events=[EventResponse.from_orm(event) for event in events],
@@ -561,8 +619,29 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error(f"Failed to list events: {e}")
+            logger.error("Failed to list events: %s", e)
             raise
+
+    async def list_user_events(
+        self,
+        user_id: int,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        calendar_id: Optional[int] = None,
+    ):
+        """
+        List events for a user, optionally filtered by date range and calendar.
+        """
+
+        stmt = select(Event).where(Event.user_id == user_id)
+        if start_date:
+            stmt = stmt.where(Event.start_datetime >= start_date)
+        if end_date:
+            stmt = stmt.where(Event.end_datetime <= end_date)
+        if calendar_id:
+            stmt = stmt.where(Event.calendar_id == calendar_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
 
     async def get_calendar_view(
         self, view_request: CalendarViewRequest, user_id: Optional[int] = None
@@ -584,11 +663,17 @@ class CalendarService:
 
             # Filter by calendars if specified
             if view_request.calendar_ids:
-                query = query.where(Event.calendar_id.in_(view_request.calendar_ids))
+                query = query.where(
+                    Event.calendar_id.in_(view_request.calendar_ids)
+                )
             elif user_id:
                 # Default to accessible calendars
-                accessible_calendars = await self._get_accessible_calendars(user_id)
-                query = query.where(Event.calendar_id.in_(accessible_calendars))
+                accessible_calendars = await self._get_accessible_calendars(
+                    user_id
+                )
+                query = query.where(
+                    Event.calendar_id.in_(accessible_calendars)
+                )
 
             # Order by start time
             query = query.order_by(Event.start_datetime)
@@ -606,7 +691,7 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error(f"Failed to get calendar view: {e}")
+            logger.error("Failed to get calendar view: %s", e)
             raise
 
     async def get_calendar_stats(
@@ -617,12 +702,16 @@ class CalendarService:
             # Build base query with access control
             accessible_calendars = []
             if user_id:
-                accessible_calendars = await self._get_accessible_calendars(user_id)
+                accessible_calendars = await self._get_accessible_calendars(
+                    user_id
+                )
             else:
                 public_result = await self.db.execute(
-                    select(Calendar.id).where(Calendar.is_public == True)
+                    select(Calendar.id).where(Calendar.is_public.is_(True))
                 )
-                accessible_calendars = [row[0] for row in public_result.fetchall()]
+                accessible_calendars = [
+                    row[0] for row in public_result.fetchall()
+                ]
 
             base_query = select(Event).where(
                 Event.calendar_id.in_(accessible_calendars)
@@ -677,30 +766,42 @@ class CalendarService:
                 .group_by(Event.status)
             )
             # events_by_status = dict(status_result.fetchall())
-            events_by_status = {row[0]: row[1] for row in status_result.fetchall()}
+            events_by_status = {
+                row[0]: row[1] for row in status_result.fetchall()
+            }
 
             # Events this week and month
-            week_start = datetime.utcnow() - timedelta(days=datetime.utcnow().weekday())
+            week_start = datetime.utcnow() - timedelta(
+                days=datetime.utcnow().weekday()
+            )
             month_start = datetime.utcnow().replace(day=1)
 
             week_result = await self.db.execute(
                 select(func.count()).select_from(
-                    base_query.where(Event.start_datetime >= week_start).subquery()
+                    base_query.where(
+                        Event.start_datetime >= week_start
+                    ).subquery()
                 )
             )
             events_this_week = week_result.scalar()
 
             month_result = await self.db.execute(
                 select(func.count()).select_from(
-                    base_query.where(Event.start_datetime >= month_start).subquery()
+                    base_query.where(
+                        Event.start_datetime >= month_start
+                    ).subquery()
                 )
             )
             events_this_month = month_result.scalar()
 
             return CalendarStatsResponse(
                 total_events=total_events if total_events is not None else 0,
-                upcoming_events=upcoming_events if upcoming_events is not None else 0,
-                overdue_events=overdue_events if overdue_events is not None else 0,
+                upcoming_events=(
+                    upcoming_events if upcoming_events is not None else 0
+                ),
+                overdue_events=(
+                    overdue_events if overdue_events is not None else 0
+                ),
                 events_by_type=events_by_type,
                 events_by_status=events_by_status,
                 events_this_week=(
@@ -712,13 +813,17 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error(f"Failed to get calendar stats: {e}")
+            logger.error("Failed to get calendar stats: %s", e)
             raise
 
-    async def get_event_dashboard(self, user_id: int) -> EventDashboardResponse:
+    async def get_event_dashboard(
+        self, user_id: int
+    ) -> EventDashboardResponse:
         """Get event dashboard data for user"""
         try:
-            accessible_calendars = await self._get_accessible_calendars(user_id)
+            accessible_calendars = await self._get_accessible_calendars(
+                user_id
+            )
             base_query = select(Event).where(
                 Event.calendar_id.in_(accessible_calendars)
             )
@@ -790,14 +895,20 @@ class CalendarService:
 
             return EventDashboardResponse(
                 today_events=[EventResponse.from_orm(e) for e in today_events],
-                upcoming_events=[EventResponse.from_orm(e) for e in upcoming_events],
-                recent_events=[EventResponse.from_orm(e) for e in recent_events],
-                overdue_events=[EventResponse.from_orm(e) for e in overdue_events],
+                upcoming_events=[
+                    EventResponse.from_orm(e) for e in upcoming_events
+                ],
+                recent_events=[
+                    EventResponse.from_orm(e) for e in recent_events
+                ],
+                overdue_events=[
+                    EventResponse.from_orm(e) for e in overdue_events
+                ],
                 event_stats=event_stats,
             )
 
         except Exception as e:
-            logger.error(f"Failed to get event dashboard: {e}")
+            logger.error("Failed to get event dashboard: %s", e)
             raise
 
     async def add_event_attendees(
@@ -824,12 +935,14 @@ class CalendarService:
 
             await self.db.commit()
 
-            logger.info(f"Attendees added to event {event_id}: {user_ids}")
+            logger.info("Attendees added to event %d: %s", event_id, user_ids)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to add attendees to event {event_id}: {e}")
+            logger.error(
+                "Failed to add attendees to event %d: %s", event_id, e
+            )
             raise
 
     async def remove_event_attendee(
@@ -856,14 +969,18 @@ class CalendarService:
             if attendee:
                 await self.db.delete(attendee)
                 await self.db.commit()
-                logger.info(f"Attendee {user_id} removed from event {event_id}")
+                logger.info(
+                    "Attendee %d removed from event %d", user_id, event_id
+                )
                 return True
 
             return False
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to remove attendee from event {event_id}: {e}")
+            logger.error(
+                "Failed to remove attendee from event %d: %s", event_id, e
+            )
             raise
 
     async def _check_event_access(self, event_id: int, user_id: int) -> bool:
@@ -908,7 +1025,7 @@ class CalendarService:
             return attendee_result.scalar_one_or_none() is not None
 
         except Exception as e:
-            logger.error(f"Failed to check event access: {e}")
+            logger.error("Failed to check event access: %s", e)
             return False
 
     async def _get_accessible_calendars(self, user_id: int) -> List[int]:
@@ -916,7 +1033,7 @@ class CalendarService:
         try:
             # Get public calendars
             public_result = await self.db.execute(
-                select(Calendar.id).where(Calendar.is_public == True)
+                select(Calendar.id).where(Calendar.is_public.is_(True))
             )
             public_calendars = [row[0] for row in public_result.fetchall()]
 
@@ -930,14 +1047,16 @@ class CalendarService:
             return list(set(public_calendars + owned_calendars))
 
         except Exception as e:
-            logger.error(f"Failed to get accessible calendars: {e}")
+            logger.error("Failed to get accessible calendars: %s", e)
             return []
 
     async def _add_event_attendee(self, event_id: int, user_id: int):
         """Add an attendee to an event"""
         try:
             # Verify user exists
-            user_result = await self.db.execute(select(User).where(User.id == user_id))
+            user_result = await self.db.execute(
+                select(User).where(User.id == user_id)
+            )
             if not user_result.scalar_one_or_none():
                 raise NotFoundError(f"User with ID {user_id} not found")
 
@@ -962,11 +1081,18 @@ class CalendarService:
             await self.db.flush()
 
         except Exception as e:
-            logger.error(f"Failed to add attendee {user_id} to event {event_id}: {e}")
+            logger.error(
+                "Failed to add attendee %s to event %s: %s",
+                user_id,
+                event_id,
+                e,
+            )
             raise
 
 
-async def get_calendar_service(db: Optional[AsyncSession] = None) -> CalendarService:
+async def get_calendar_service(
+    db: Optional[AsyncSession] = None,
+) -> CalendarService:
     """Get calendar service instance"""
     if db is None:
         async for session in get_async_session():

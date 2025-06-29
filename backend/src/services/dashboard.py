@@ -7,15 +7,15 @@ Business logic for dashboard analytics and summary.
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, cast
 
-from sqlalchemy import and_, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.constants import TaskStatus
 from core.database import get_async_session
-from models.calendar import Event
+from models.calendar import Calendar, Event
 from models.project import Project, ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import UserActivityLog
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import func
 
 
 class DashboardService:
@@ -43,7 +43,10 @@ class DashboardService:
         """Get project statistics for user"""
         # Get projects user is member of
         member_query = select(ProjectMember.project_id).where(
-            and_(ProjectMember.user_id == user_id, ProjectMember.is_active == True)
+            and_(
+                ProjectMember.user_id == user_id,
+                ProjectMember.is_active.is_(True),
+            )
         )
         member_result = await self.db.execute(member_query)
         project_ids = [row[0] for row in member_result.fetchall()]
@@ -57,7 +60,9 @@ class DashboardService:
             }
 
         # Total projects
-        total_query = select(func.count(Project.id)).where(Project.id.in_(project_ids))
+        total_query = select(func.count(Project.id)).where(
+            Project.id.in_(project_ids)
+        )
         total_result = await self.db.execute(total_query)
         total_projects = total_result.scalar()
 
@@ -68,7 +73,9 @@ class DashboardService:
             .group_by(Project.status)
         )
         status_result = await self.db.execute(status_query)
-        by_status = {status: count for status, count in status_result.fetchall()}
+        by_status = {
+            status: count for status, count in status_result.fetchall()
+        }
 
         # Projects by priority
         priority_query = (
@@ -99,7 +106,10 @@ class DashboardService:
         """Get task statistics for user"""
         # Get projects user has access to
         member_query = select(ProjectMember.project_id).where(
-            and_(ProjectMember.user_id == user_id, ProjectMember.is_active == True)
+            and_(
+                ProjectMember.user_id == user_id,
+                ProjectMember.is_active.is_(True),
+            )
         )
         member_result = await self.db.execute(member_query)
         project_ids = [row[0] for row in member_result.fetchall()]
@@ -129,7 +139,7 @@ class DashboardService:
                 and_(
                     Task.project_id.in_(project_ids),
                     TaskAssignment.user_id == user_id,
-                    TaskAssignment.is_active == True,
+                    TaskAssignment.is_active.is_(True),
                 )
             )
         )
@@ -151,13 +161,15 @@ class DashboardService:
                 and_(
                     Task.project_id.in_(project_ids),
                     TaskAssignment.user_id == user_id,
-                    TaskAssignment.is_active == True,
+                    TaskAssignment.is_active.is_(True),
                 )
             )
             .group_by(Task.status)
         )
         status_result = await self.db.execute(status_query)
-        by_status = {status: count for status, count in status_result.fetchall()}
+        by_status = {
+            status: count for status, count in status_result.fetchall()
+        }
 
         # Tasks by priority (for assigned tasks)
         priority_query = (
@@ -167,7 +179,7 @@ class DashboardService:
                 and_(
                     Task.project_id.in_(project_ids),
                     TaskAssignment.user_id == user_id,
-                    TaskAssignment.is_active == True,
+                    TaskAssignment.is_active.is_(True),
                 )
             )
             .group_by(Task.priority)
@@ -185,7 +197,7 @@ class DashboardService:
                 and_(
                     Task.project_id.in_(project_ids),
                     TaskAssignment.user_id == user_id,
-                    TaskAssignment.is_active == True,
+                    TaskAssignment.is_active.is_(True),
                     Task.due_date < datetime.utcnow(),
                     Task.status.in_(TaskStatus.get_incomplete_statuses()),
                 )
@@ -233,7 +245,6 @@ class DashboardService:
         self, user_id: int, days: int = 7
     ) -> List[Dict[str, Any]]:
         """Get upcoming events for user"""
-        from models.calendar import Calendar
 
         end_date = datetime.utcnow() + timedelta(days=days)
 
@@ -267,9 +278,12 @@ class DashboardService:
         ]
 
 
-async def get_dashboard_service(db: Optional[AsyncSession] = None) -> DashboardService:
+async def get_dashboard_service(
+    db: Optional[AsyncSession] = None,
+) -> DashboardService:
     """Get dashboard service instance"""
     if db is None:
         async for session in get_async_session():
             return DashboardService(session)
+    return DashboardService(cast(AsyncSession, db))
     return DashboardService(cast(AsyncSession, db))

@@ -12,6 +12,8 @@ from core.database import get_async_session
 from core.security import TokenData, decode_access_token
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from models.project import ProjectMember
+from models.task import Task, TaskAssignment
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -260,10 +262,10 @@ async def verify_project_access(
     """
     Verify user has access to a specific project
     """
-    from models.project import ProjectMember
 
+    current_user_role = getattr(current_user, "role", UserRole.GUEST)
     # Admin users have access to all projects
-    if current_user.role == UserRole.ADMIN:
+    if current_user_role == UserRole.ADMIN:
         return True
 
     # Check if user is a member of the project
@@ -286,11 +288,11 @@ async def verify_task_access(
     """
     Verify user has access to a specific task
     """
-    from models.project import ProjectMember
-    from models.task import Task, TaskAssignment
+
+    current_user_role = getattr(current_user, "role", UserRole.GUEST)
 
     # Admin users have access to all tasks
-    if current_user.role == UserRole.ADMIN:
+    if current_user_role == UserRole.ADMIN:
         return True
 
     # Get task and check project membership
@@ -340,7 +342,8 @@ def create_access_checker(resource_type: str):
             return await verify_task_access(resource_id, current_user, db)
         else:
             # Default: only allow access if user is admin
-            return current_user.role == UserRole.ADMIN
+            current_user_role = getattr(current_user, "role", UserRole.GUEST)
+            return current_user_role == UserRole.ADMIN
 
     return access_checker
 

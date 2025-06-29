@@ -5,17 +5,16 @@ Calendar and event management endpoints.
 """
 
 import logging
-from datetime import date, datetime
+from datetime import date
 from typing import List, Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.calendar import CalendarResponse, EventCreate, EventResponse, EventUpdate
 from services.calendar import CalendarService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -44,11 +43,11 @@ async def list_events(
         return [EventResponse.from_orm(event) for event in events]
 
     except Exception as e:
-        logger.error(f"Error listing events: {e}")
+        logger.error("Error listing events: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve events",
-        )
+        ) from e
 
 
 @router.get("/events/{event_id}", response_model=EventResponse)
@@ -84,7 +83,9 @@ async def get_event(
 
 
 @router.post(
-    "/events", response_model=EventResponse, status_code=status.HTTP_201_CREATED
+    "/events",
+    response_model=EventResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_event(
     event_data: EventCreate,
@@ -96,7 +97,9 @@ async def create_event(
     """
     try:
         calendar_service = CalendarService(db)
-        event = await calendar_service.create_event(event_data, current_user.id)
+        event = await calendar_service.create_event(
+            event_data, int(str(current_user.id))
+        )
 
         logger.info(f"Event created by {current_user.name}: {event.title}")
 
@@ -124,7 +127,7 @@ async def update_event(
     try:
         calendar_service = CalendarService(db)
         event = await calendar_service.update_event(
-            event_id, event_data, current_user.id
+            event_id, event_data, int(str(current_user.id))
         )
 
         if not event:
@@ -158,7 +161,9 @@ async def delete_event(
     """
     try:
         calendar_service = CalendarService(db)
-        success = await calendar_service.delete_event(event_id, current_user.id)
+        success = await calendar_service.delete_event(
+            event_id, int(str(current_user.id))
+        )
 
         if not success:
             raise HTTPException(
@@ -190,7 +195,7 @@ async def list_calendars(
     """
     try:
         calendar_service = CalendarService(db)
-        calendars = await calendar_service.list_user_calendars(current_user.id)
+        calendars = await calendar_service.list_user_calendars(int(str(current_user.id)))
 
         return [CalendarResponse.from_orm(calendar) for calendar in calendars]
 
@@ -199,4 +204,5 @@ async def list_calendars(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve calendars",
+        )
         )
