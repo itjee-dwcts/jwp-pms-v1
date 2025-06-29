@@ -19,9 +19,11 @@ from models.project import Project
 from models.task import Task
 from models.user import User
 from schemas.calendar import (
+    CalendarCreateRequest,
     CalendarListResponse,
     CalendarResponse,
     CalendarStatsResponse,
+    CalendarUpdateRequest,
     CalendarViewRequest,
     EventCreateRequest,
     EventDashboardResponse,
@@ -42,7 +44,7 @@ class CalendarService:
         self.db = db
 
     async def create_calendar(
-        self, calendar_data: CalendarCreate, owner_id: int
+        self, calendar_data: CalendarCreateRequest, owner_id: int
     ) -> CalendarResponse:
         """Create a new calendar"""
         try:
@@ -114,6 +116,7 @@ class CalendarService:
                     return CalendarResponse.from_orm(calendar)
 
             # If calendar is public, no need for user_id check
+            calendar_is_public = getattr(calendar, "is_public", False)
             if calendar_is_public and user_id is None:
                 return CalendarResponse.from_orm(calendar)
 
@@ -132,7 +135,10 @@ class CalendarService:
             raise
 
     async def update_calendar(
-        self, calendar_id: int, calendar_data: CalendarUpdate, user_id: int
+        self,
+        calendar_id: int,
+        calendar_data: CalendarUpdateRequest,
+        user_id: int,
     ) -> CalendarResponse:
         """Update calendar information"""
         try:

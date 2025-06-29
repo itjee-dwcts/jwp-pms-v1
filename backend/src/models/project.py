@@ -21,7 +21,6 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 
 from core.base import Base
 from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
@@ -58,8 +57,7 @@ class Project(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=datetime.now(timezone.utc),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Project last update timestamp",
     )
@@ -188,7 +186,10 @@ class Project(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Project(id={self.id}, name='{self.name}', status='{self.status}')>"
+        return (
+            f"<Project(id={self.id}, name='{self.name}', "
+            f"status='{self.status}')>"
+        )
 
     def update_progress(self):
         """Update project progress based on completed tasks"""
@@ -231,8 +232,7 @@ class ProjectMember(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=datetime.now(timezone.utc),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Project member last update timestamp",
     )
@@ -281,7 +281,10 @@ class ProjectMember(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<ProjectMember(project_id={self.project_id}, user_id={self.user_id}, role='{self.role}')>"
+        return (
+            f"<ProjectMember(project_id={self.project_id}, "
+            f"user_id={self.user_id}, role='{self.role}')>"
+        )
 
     def can_manage_project(self) -> bool:
         """Check if member can manage the project"""

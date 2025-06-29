@@ -9,11 +9,12 @@ import math
 import re
 import secrets
 import string
+import time
 import uuid
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlencode, urljoin
 
 import aiofiles
 from fastapi import UploadFile
@@ -233,7 +234,7 @@ async def save_upload_file(
         }
 
     except Exception as e:
-        raise Exception("Failed to save file: %s", e)
+        raise OSError(f"Failed to save file: {e}") from e
 
 
 def calculate_pagination(total: int, page: int, size: int) -> Dict[str, int]:
@@ -458,6 +459,9 @@ def flatten_dict(
     """Flatten nested dictionary"""
     items = []
     for k, v in d.items():
+        # Ensure key is str
+        if isinstance(k, bytes):
+            k = k.decode("utf-8")
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
         if isinstance(v, dict):
             items.extend(flatten_dict(v, new_key, sep=sep).items())
@@ -533,7 +537,6 @@ def build_url(
     base_url: str, path: str, params: Optional[Dict[str, Any]] = None
 ) -> str:
     """Build URL with path and query parameters"""
-    from urllib.parse import urlencode, urljoin
 
     url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
 
@@ -636,7 +639,6 @@ class RateLimitTracker:
 
     def is_allowed(self, key: str, limit: int, window: int) -> bool:
         """Check if request is allowed within rate limit"""
-        import time
 
         now = time.time()
 
@@ -660,7 +662,6 @@ class RateLimitTracker:
 
     def get_remaining(self, key: str, limit: int, window: int) -> int:
         """Get remaining requests in current window"""
-        import time
 
         now = time.time()
 

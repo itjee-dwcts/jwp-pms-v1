@@ -18,7 +18,6 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 
 from core.base import Base
 from core.constants import (
@@ -50,7 +49,9 @@ class Calendar(Base):
         Integer, nullable=True, doc="User who created this calendar"
     )
     updated_at = Column(
-        DateTime(timezone=True), onupdate=func.now(), doc="Last update time"
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        doc="Last update time",
     )
     updated_by = Column(
         Integer, nullable=True, doc="User who last updated this calendar"

@@ -8,20 +8,21 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, cast
 
+from sqlalchemy import desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import func
+
 from core.constants import UserRole, UserStatus
 from core.database import get_async_session
 from models.user import User, UserActivityLog
 from schemas.user import (
     UserCreateRequest,
     UserListResponse,
-    UserPasswordChange,
+    UserPasswordChangeRequest,
     UserResponse,
     UserStatsResponse,
     UserUpdateRequest,
 )
-from sqlalchemy import desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import func
 from utils.auth import get_password_hash, verify_password
 from utils.exceptions import AuthenticationError, ConflictError, NotFoundError
 
@@ -53,7 +54,7 @@ class UserService:
         try:
             # Check if username or email already exists
             existing_user = await self.get_user_by_email_or_username(
-                user_data.email, user_data.name
+                user_data.email, user_data.username
             )
 
             if existing_user:
@@ -64,7 +65,7 @@ class UserService:
 
                 existing_user_name = getattr(existing_user, "name", None)
                 if existing_user_name is not None:
-                    if existing_user_name == user_data.name:
+                    if existing_user_name == user_data.username:
                         raise ConflictError("Username already exists")
 
             # Hash password
@@ -72,7 +73,7 @@ class UserService:
 
             # Create user
             user = User(
-                name=user_data.name,
+                username=user_data.username,
                 email=user_data.email,
                 full_name=user_data.full_name,
                 password_hash=hashed_password,
@@ -254,7 +255,7 @@ class UserService:
             raise
 
     async def change_password(
-        self, user_id: int, password_data: UserPasswordChange
+        self, user_id: int, password_data: UserPasswordChangeRequest
     ) -> bool:
         """Change user password"""
         try:

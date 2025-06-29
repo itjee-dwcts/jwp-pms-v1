@@ -7,9 +7,11 @@ Project management endpoints.
 import logging
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.project import (
     ProjectCreateRequest,
@@ -18,7 +20,6 @@ from schemas.project import (
     ProjectUpdateRequest,
 )
 from services.project import ProjectService
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -44,12 +45,14 @@ async def list_projects(
     """
     try:
         project_service = ProjectService(db)
-        projects = await project_service.list_user_projects(
-            user_id=current_user.id,
-            skip=skip,
-            limit=limit,
-            search=search,
-            status=project_status,
+        projects = await project_service.list_projects(
+            user_id=int(str(current_user.id)),
+            page=skip,
+            size=limit,
+            search_params= {
+                search = search,
+                status = project_status
+            }
         )
 
         return [ProjectResponse.from_orm(project) for project in projects]
@@ -109,7 +112,7 @@ async def create_project(
     try:
         project_service = ProjectService(db)
         project = await project_service.create_project(
-            project_data, current_user.id
+            project_data, int(str(current_user.id))
         )
 
         logger.info(f"Project created by {current_user.name}: {project.name}")
@@ -138,7 +141,7 @@ async def update_project(
     try:
         project_service = ProjectService(db)
         project = await project_service.update_project(
-            project_id, project_data, current_user.id
+            project_id, project_data, int(str(current_user.id))
         )
 
         if not project:
@@ -174,7 +177,7 @@ async def delete_project(
     try:
         project_service = ProjectService(db)
         success = await project_service.delete_project(
-            project_id, current_user.id
+            project_id, int(str(current_user.id))
         )
 
         if not success:

@@ -40,7 +40,7 @@ async def list_events(
     try:
         calendar_service = CalendarService(db)
         events = await calendar_service.list_user_events(
-            user_id=current_user.id,
+            user_id=int(str(current_user.id)),
             start_date=start_date,
             end_date=end_date,
             calendar_id=calendar_id,
@@ -68,7 +68,7 @@ async def get_event(
     try:
         calendar_service = CalendarService(db)
         event = await calendar_service.get_event_with_access_check(
-            event_id, current_user.id
+            event_id, int(str(current_user.id))
         )
 
         if not event:

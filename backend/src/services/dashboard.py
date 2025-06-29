@@ -7,15 +7,16 @@ Business logic for dashboard analytics and summary.
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, cast
 
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import func
+
 from core.constants import TaskStatus
 from core.database import get_async_session
 from models.calendar import Calendar, Event
 from models.project import Project, ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import UserActivityLog
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import func
 
 
 class DashboardService:
@@ -285,5 +286,4 @@ async def get_dashboard_service(
     if db is None:
         async for session in get_async_session():
             return DashboardService(session)
-    return DashboardService(cast(AsyncSession, db))
     return DashboardService(cast(AsyncSession, db))

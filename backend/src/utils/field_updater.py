@@ -1,7 +1,15 @@
+"""
+Field Updater Functions
+"""
+
 from typing import Optional
 
 
 class SafeFieldUpdater:
+    """
+    Safe Field Updater
+    """
+
     def __init__(self, target_object):
         self.target = target_object
         self.updated_fields = []
@@ -9,6 +17,9 @@ class SafeFieldUpdater:
     def update_string_field(
         self, field_name: str, new_value: Optional[str], max_length: int = 500
     ) -> bool:
+        """
+        update string field
+        """
         if new_value is None or not hasattr(self.target, field_name):
             return False
 
@@ -28,10 +39,15 @@ class SafeFieldUpdater:
         min_val: int = 0,
         max_val: int = 1000,
     ) -> bool:
+        """
+        update int field
+        """
         if new_value is None or not hasattr(self.target, field_name):
             return False
 
-        if not isinstance(new_value, int) or not (min_val <= new_value <= max_val):
+        if not isinstance(new_value, int) or not (
+            min_val <= new_value <= max_val
+        ):
             return False
 
         if getattr(self.target, field_name) != new_value:
@@ -43,6 +59,9 @@ class SafeFieldUpdater:
     def update_enum_field(
         self, field_name: str, new_value: Optional[str], valid_values: list
     ) -> bool:
+        """
+        update enum field
+        """
         if new_value is None or not hasattr(self.target, field_name):
             return False
 
