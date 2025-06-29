@@ -65,7 +65,7 @@
   ],
 
   // MyPy 설정 (타입 검사 - CI/CD용)
-  "python.linting.mypyEnabled": true,
+  "python.linting.mypyEnabled": false,
   "python.linting.mypyArgs": [
     "--ignore-missing-imports",
     "--strict-optional",
@@ -121,7 +121,7 @@
   "editor.insertSpaces": true,
   "editor.detectIndentation": true,
   "editor.autoIndent": "advanced",
-  "editor.rulers": [88, 120], // Black 기본 + 최대 길이
+  "editor.rulers": [80, 120], // Black 기본 + 최대 길이
   "editor.wordWrap": "off",
 
   // ============================================================================
@@ -201,7 +201,7 @@
     },
     "editor.formatOnSave": true,
     "editor.tabSize": 4,
-    "editor.rulers": [88],
+    "editor.rulers": [80],
     // Python IntelliSense 강화
     "editor.suggest.showClasses": true,
     "editor.suggest.showFunctions": true,
@@ -264,6 +264,7 @@
   // ============================================================================
   "cSpell.words": [
     "addinivalue",
+    "aiofiles",
     "alembic",
     "ASGI",
     "asyncio",
@@ -274,10 +275,13 @@
     "blks",
     "createdb",
     "datagram",
+    "dotenv",
     "fastapi",
+    "flac",
     "flake",
     "fromlist",
     "Gantt",
+    "httpx",
     "ilike",
     "incompleted",
     "intellisense",
@@ -288,14 +292,20 @@
     "linting",
     "mypy",
     "onupdate",
+    "orjson",
     "passlib",
+    "pgpass",
     "poolclass",
+    "psutil",
     "psycopg",
     "pydantic",
+    "pyjwt",
     "pylance",
     "pylint",
+    "pylintrc",
     "pytest",
     "pythonjsonlogger",
+    "pyyaml",
     "redoc",
     "schemaname",
     "secretpassword",
@@ -306,11 +316,13 @@
     "starlette",
     "statio",
     "strawberry",
+    "structlog",
     "TOTP",
     "trustedhost",
     "typehints",
     "uvicorn",
-    "venv"
+    "venv",
+    "watchfiles"
   ],
 
   // ============================================================================

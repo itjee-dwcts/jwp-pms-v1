@@ -19,11 +19,13 @@ from models.project import (
 )
 from models.user import User
 from schemas.project import (
+    ProjectCreateRequest,
     ProjectDashboardResponse,
     ProjectListResponse,
     ProjectResponse,
     ProjectSearchRequest,
     ProjectStatsResponse,
+    ProjectUpdateRequest,
 )
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,7 +47,7 @@ class ProjectService:
         self.db = db
 
     async def create_project(
-        self, project_data: ProjectCreate, creator_id: int
+        self, project_data: ProjectCreateRequest, creator_id: int
     ) -> ProjectResponse:
         """Create a new project"""
         try:
@@ -713,4 +715,5 @@ async def get_project_service(
     if db is None:
         async for session in get_async_session():
             return ProjectService(session)
+    return ProjectService(cast(AsyncSession, db))
     return ProjectService(cast(AsyncSession, db))

@@ -1,0 +1,12 @@
+[MASTER]
+load-plugins = pylint_sqlalchemy
+
+[TYPECHECK]
+generated-members = sqlalchemy.*,func.*,query.*
+ignore-mixin-members = yes
+
+[MESSAGES CONTROL]
+disable =
+    no-member,
+    too-few-public-methods,
+    import-error

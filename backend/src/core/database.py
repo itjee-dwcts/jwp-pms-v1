@@ -12,11 +12,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 from urllib.parse import urlparse
 
-from core.config import get_database_url, get_sync_database_url
-from core.constants import UserRole, UserStatus
-from core.security import get_password_hash
-from models.user import User
-from sqlalchemy import MetaData, create_engine, select, text
+from sqlalchemy import create_engine, select, text
 from sqlalchemy.exc import (
     DatabaseError,
     DataError,
@@ -29,8 +25,14 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.pool import NullPool
+
+from models.user import User
+
+from .base import Base
+from .config import get_database_url, get_sync_database_url
+from .constants import UserRole, UserStatus
+from .security import get_password_hash
 
 logger = logging.getLogger(__name__)
 
@@ -53,20 +55,6 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
-# Create declarative base
-Base = declarative_base()
-
-# Naming convention for constraints
-naming_convention = {
-    "ix": "ix_%(column_0_label)s",
-    "ux": "ux_%(table_name)s_%(column_0_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s",
-}
-
-Base.metadata = MetaData(naming_convention=naming_convention)
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

@@ -7,8 +7,9 @@ Request/Response schemas for task management.
 from datetime import datetime
 from typing import Any, List, Optional
 
-from core.constants import TaskPriority, TaskStatus, TaskType
 from pydantic import BaseModel, Field, field_validator
+
+from core.constants import TaskPriority, TaskStatus, TaskType
 from schemas.user import UserPublic
 
 
@@ -403,7 +404,7 @@ class TaskListResponse(BaseModel):
     tasks: List[TaskResponse]
     total: int
     page: int
-    per_page: int
+    size: int
     pages: int
 
 

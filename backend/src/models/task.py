@@ -4,11 +4,9 @@ Task Models
 SQLAlchemy models for task management.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from core.constants import TaskPriority, TaskStatus, TaskType
-from core.database import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -21,7 +19,9 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+
+from core.base import Base
+from core.constants import TaskPriority, TaskStatus, TaskType
 
 if TYPE_CHECKING:
     from models.user import User
@@ -38,13 +38,13 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, doc="Task ID")
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Task creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Task last update timestamp",
     )
@@ -150,7 +150,8 @@ class Task(Base):
         "User", back_populates="created_tasks", foreign_keys=[creator_id]
     )
 
-    # parent_task = relationship("Task", remote_side=[Base.id], back_populates="subtasks")
+    # parent_task = relationship
+    # ("Task", remote_side=[Base.id], back_populates="subtasks")
     parent_task = relationship(
         "Task",
         remote_side=lambda: Task.id,
@@ -257,13 +258,13 @@ class TaskAssignment(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Assignment creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Assignment last update timestamp",
     )
@@ -339,13 +340,13 @@ class TaskComment(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Comment creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Comment last update timestamp",
     )
@@ -400,7 +401,13 @@ class TaskComment(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<TaskComment(id={self.id}, task_id={self.task_id}, author_id={self.author_id})>"
+        return (
+            f"<TaskComment("
+            f"id={self.id}, "
+            f"task_id={self.task_id}, "
+            f"author_id={self.author_id}"
+            f")>"
+        )
 
 
 class TaskAttachment(Base):
@@ -416,13 +423,13 @@ class TaskAttachment(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Attachment creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Attachment last update timestamp",
     )
@@ -479,13 +486,13 @@ class TaskTimeLog(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Time log creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Time log last update timestamp",
     )
@@ -548,13 +555,13 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, doc="Tag ID")
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="Tag creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="Tag last update timestamp",
     )
@@ -602,13 +609,13 @@ class TaskTag(Base):
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="TaskTag creation timestamp",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        onupdate=func.now(),
+        onupdate=datetime.now(timezone.utc),
         nullable=False,
         doc="TaskTag last update timestamp",
     )

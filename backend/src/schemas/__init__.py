@@ -4,7 +4,6 @@ Pydantic Schemas Package
 Request/Response schemas for API validation.
 """
 
-# Auth schemas
 from .auth import (
     LoginRequest,
     LoginResponse,
@@ -16,28 +15,28 @@ from .auth import (
     TokenData,
     TokenRefresh,
 )
-
-# Calendar schemas
 from .calendar import (
     CalendarBase,
+    CalendarCreateRequest,
     CalendarListResponse,
     CalendarResponse,
     CalendarStatsResponse,
+    CalendarUpdateRequest,
     CalendarViewRequest,
     EventAttendeeRequest,
     EventAttendeeResponse,
     EventAttendeeResponseUpdate,
     EventBase,
+    EventCreateRequest,
     EventDashboardResponse,
     EventListResponse,
     EventResponse,
     EventSearchRequest,
     EventType,
+    EventUpdateRequest,
     RecurrenceType,
     RecurringEventResponse,
 )
-
-# Common schemas
 from .common import (
     ActivityLogEntry,
     ActivityLogResponse,
@@ -67,28 +66,31 @@ from .common import (
     TimeRange,
     ValidationErrorResponse,
 )
-
-# Project schemas
 from .project import (
     ProjectAttachmentResponse,
     ProjectBase,
     ProjectCommentBase,
+    ProjectCommentCreateRequest,
     ProjectCommentResponse,
+    ProjectCommentUpdateRequest,
+    ProjectCreateRequest,
     ProjectDashboardResponse,
     ProjectListResponse,
     ProjectMemberBase,
+    ProjectMemberCreateRequest,
     ProjectMemberResponse,
     ProjectMemberRole,
+    ProjectMemberUpdateRequest,
     ProjectPriority,
     ProjectResponse,
     ProjectSearchRequest,
     ProjectStatsResponse,
     ProjectStatus,
+    ProjectUpdateRequest,
 )
-
-# Task schemas
 from .task import (
     TagBase,
+    TagCreateRequest,
     TagResponse,
     TagUpdate,
     TaskAssignmentResponse,
@@ -96,9 +98,14 @@ from .task import (
     TaskAttachmentResponse,
     TaskBase,
     TaskCommentBase,
+    TaskCommentCreateRequest,
     TaskCommentResponse,
+    TaskCommentUpdateRequest,
+    TaskCreateRequest,
     TaskDashboardResponse,
+    TaskGanttChartResponse,
     TaskGanttResponse,
+    TaskKanbanBoardResponse,
     TaskListResponse,
     TaskPriority,
     TaskResponse,
@@ -106,11 +113,12 @@ from .task import (
     TaskStatsResponse,
     TaskStatus,
     TaskTimeLogBase,
+    TaskTimeLogCreateRequest,
     TaskTimeLogResponse,
+    TaskTimeLogUpdateRequest,
     TaskType,
+    TaskUpdateRequest,
 )
-
-# User schemas
 from .user import (
     UserActivityLogResponse,
     UserBase,

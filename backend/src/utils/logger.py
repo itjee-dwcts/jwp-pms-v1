@@ -4,15 +4,20 @@ Logging Configuration
 Structured logging setup for the application.
 """
 
+import asyncio
 import logging
 import logging.config
+import re
 import sys
+import time
+from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import structlog
-from core.config import settings
 from structlog.stdlib import LoggerFactory
+
+from core.config import settings
 
 
 def setup_logging():
@@ -52,7 +57,9 @@ def setup_logging():
         "disable_existing_loggers": False,
         "formatters": {
             "detailed": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "format": (
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                ),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "simple": {
@@ -172,8 +179,9 @@ def setup_logging():
     # Log startup message
     logger = logging.getLogger(__name__)
     logger.info(
-        f"Logging configured - Level: {settings.LOG_LEVEL}, "
-        f"Environment: {settings.ENVIRONMENT}"
+        "Logging configured - Level: %s, Environment: %s",
+        settings.LOG_LEVEL,
+        settings.ENVIRONMENT,
     )
 
 
@@ -191,31 +199,53 @@ class SecurityLogger:
         """Log login attempt"""
         if success:
             self.logger.info(
-                f"Successful login - Username: {username}, IP: {ip_address}"
+                "Successful login - Username: %s, IP: %s",
+                username,
+                ip_address,
             )
         else:
             self.logger.warning(
-                f"Failed login attempt - Username: {username}, IP: {ip_address}"
+                "Failed login attempt - Username: %s, IP: %s",
+                username,
+                ip_address,
             )
 
-    def log_logout(self, username: str, ip_address: str = None):
+    def log_logout(self, username: str, ip_address: Optional[str] = None):
         """Log logout event"""
-        self.logger.info(f"User logout - Username: {username}, IP: {ip_address}")
+        self.logger.info(
+            "User logout - Username: %s, IP: %s",
+            username,
+            ip_address,
+        )
 
-    def log_password_change(self, username: str, ip_address: str = None):
+    def log_password_change(
+        self, username: str, ip_address: Optional[str] = None
+    ):
         """Log password change"""
-        self.logger.info(f"Password changed - Username: {username}, IP: {ip_address}")
+        self.logger.info(
+            "Password changed - Username: %s, IP: %s",
+            username,
+            ip_address,
+        )
 
     def log_permission_denied(self, username: str, resource: str, action: str):
         """Log permission denied events"""
         self.logger.warning(
-            f"Permission denied - Username: {username}, "
-            f"Resource: {resource}, Action: {action}"
+            "Permission denied - Username: %s, Resource: %s, Action: %s",
+            username,
+            resource,
+            action,
         )
 
-    def log_suspicious_activity(self, description: str, username: str = None):
+    def log_suspicious_activity(
+        self, description: str, username: Optional[str] = None
+    ):
         """Log suspicious activity"""
-        self.logger.error(f"Suspicious activity - {description}, Username: {username}")
+        self.logger.error(
+            "Suspicious activity - %s, Username: %s",
+            description,
+            username,
+        )
 
 
 class AuditLogger:
@@ -232,7 +262,7 @@ class AuditLogger:
         resource_type: str,
         resource_id: str,
         user_id: str,
-        details: dict = None,
+        details: Optional[dict] = None,
     ):
         """Log user action"""
         log_data = {
@@ -242,18 +272,22 @@ class AuditLogger:
             "user_id": user_id,
             "details": details or {},
         }
-        self.logger.info(f"User action - {log_data}")
+        self.logger.info("User action - %s", log_data)
 
     def log_data_access(self, user_id: str, resource: str, access_type: str):
         """Log data access"""
         self.logger.info(
-            f"Data access - User: {user_id}, Resource: {resource}, "
-            f"Type: {access_type}"
+            "Data access - User: %s, Resource: %s, Type: %s",
+            user_id,
+            resource,
+            access_type,
         )
 
-    def log_system_event(self, event: str, details: dict = None):
+    def log_system_event(self, event: str, details: Optional[dict] = None):
         """Log system events"""
-        self.logger.info(f"System event - {event}, Details: {details or {}}")
+        self.logger.info(
+            "System event - %s, Details: %s", event, details or {}
+        )
 
 
 # Global logger instances
@@ -272,8 +306,6 @@ def log_performance(func):
     """
     Decorator to log function performance
     """
-    import time
-    from functools import wraps
 
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
@@ -284,13 +316,18 @@ def log_performance(func):
             result = await func(*args, **kwargs)
             execution_time = time.time() - start_time
             logger.debug(
-                f"Function {func.__name__} executed in {execution_time:.4f} seconds"
+                "Function %s executed in %.4f seconds",
+                func.__name__,
+                execution_time,
             )
             return result
         except Exception as e:
             execution_time = time.time() - start_time
             logger.error(
-                f"Function {func.__name__} failed after {execution_time:.4f} seconds: {e}"
+                "Function %s failed after %.4f seconds: %s",
+                func.__name__,
+                execution_time,
+                e,
             )
             raise
 
@@ -303,13 +340,18 @@ def log_performance(func):
             result = func(*args, **kwargs)
             execution_time = time.time() - start_time
             logger.debug(
-                f"Function {func.__name__} executed in {execution_time:.4f} seconds"
+                "Function %s executed in %.4f seconds",
+                func.__name__,
+                execution_time,
             )
             return result
         except Exception as e:
             execution_time = time.time() - start_time
             logger.error(
-                f"Function {func.__name__} failed after {execution_time:.4f} seconds: {e}"
+                "Function %s failed after %.4f seconds: %s",
+                func.__name__,
+                execution_time,
+                e,
             )
             raise
 
@@ -334,7 +376,9 @@ def configure_uvicorn_logging():
     # Add our handlers
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
     )
     uvicorn_logger.addHandler(console_handler)
 
@@ -361,10 +405,11 @@ class SensitiveDataFilter(logging.Filter):
             for field in self.SENSITIVE_FIELDS:
                 if field in message.lower():
                     # Replace sensitive data with asterisks
-                    import re
 
                     pattern = rf"({field}['\"]?\s*[:=]\s*['\"]?)([^'\",\s]+)"
-                    message = re.sub(pattern, r"\1***", message, flags=re.IGNORECASE)
+                    message = re.sub(
+                        pattern, r"\1***", message, flags=re.IGNORECASE
+                    )
                     record.msg = message
         return True
 
@@ -378,6 +423,3 @@ def add_sensitive_data_filter():
 
     for handler in root_logger.handlers:
         handler.addFilter(sensitive_filter)
-
-
-import asyncio

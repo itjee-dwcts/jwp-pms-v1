@@ -8,11 +8,13 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
 
-from core.config import settings
+import jwt
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import BaseModel
+
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -81,17 +83,13 @@ class AuthManager:
             }
         )
 
-        encoded_jwt = jwt.encode(
-            to_encode, self.secret_key, algorithm=self.algorithm
-        )
+        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
 
     def decode_token(self, token: str) -> TokenData:
         """Decode JWT token"""
         try:
-            payload = jwt.decode(
-                token, self.secret_key, algorithms=[self.algorithm]
-            )
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return TokenData(**payload)
         except JWTError as e:
             logger.warning("Token decode error: %s", e)
@@ -182,7 +180,7 @@ def verify_password_reset_token(token: str) -> Optional[str]:
             return None
 
         return decoded_token.get("sub")
-    except JWTError:
+    except InvalidTokenError:
         return None
 
 
@@ -212,7 +210,7 @@ def verify_email_verification_token(token: str) -> Optional[str]:
             return None
 
         return decoded_token.get("sub")
-    except JWTError:
+    except InvalidTokenError:
         return None
 
 

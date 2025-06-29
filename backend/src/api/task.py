@@ -13,13 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
 from models.user import User
-from schemas.tasks import (
+from schemas.task import (
     TaskCommentResponse,
     TaskCreateRequest,
     TaskResponse,
     TaskUpdateRequest,
 )
-from services.task_service import TaskService
+from services.task import TaskService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,13 +27,17 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Number of records to return"),
+    page: int = Query(0, ge=0, description="Number of records to skip"),
+    size: int = Query(
+        50, ge=1, le=100, description="Number of records to return"
+    ),
     project_id: Optional[int] = Query(None, description="Filter by project"),
     assignee_id: Optional[int] = Query(None, description="Filter by assignee"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    task_status: Optional[str] = Query(None, description="Filter by status"),
     priority: Optional[str] = Query(None, description="Filter by priority"),
-    search: Optional[str] = Query(None, description="Search by title or description"),
+    search: Optional[str] = Query(
+        None, description="Search by title or description"
+    ),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -48,7 +52,7 @@ async def list_tasks(
             limit=limit,
             project_id=project_id,
             assignee_id=assignee_id,
-            status=status,
+            task_status=task_status,
             priority=priority,
             search=search,
         )
@@ -74,7 +78,9 @@ async def get_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.get_task_with_access_check(task_id, current_user.id)
+        task = await task_service.get_task_with_access_check(
+            task_id, current_user.id
+        )
 
         if not task:
             raise HTTPException(
@@ -93,7 +99,9 @@ async def get_task(
         )
 
 
-@router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_task(
     task_data: TaskCreateRequest,
     current_user: User = Depends(get_current_active_user),
@@ -104,7 +112,9 @@ async def create_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.create_task(task_data, current_user.id)
+        task = await task_service.create_task(
+            task_data, int(str(current_user.id))
+        )
 
         logger.info(f"Task created by {current_user.name}: {task.title}")
 
@@ -131,7 +141,9 @@ async def update_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.update_task(task_id, task_data, current_user.id)
+        task = await task_service.update_task(
+            task_id, task_data, int(str(current_user.id))
+        )
 
         if not task:
             raise HTTPException(
@@ -164,7 +176,9 @@ async def delete_task(
     """
     try:
         task_service = TaskService(db)
-        success = await task_service.delete_task(task_id, current_user.id)
+        success = await task_service.delete_task(
+            task_id, int(str(current_user.id))
+        )
 
         if not success:
             raise HTTPException(
@@ -197,7 +211,9 @@ async def list_task_comments(
     """
     try:
         task_service = TaskService(db)
-        comments = await task_service.list_task_comments(task_id, current_user.id)
+        comments = await task_service.list_task_comments(
+            task_id, current_user.id
+        )
 
         return [TaskCommentResponse.from_orm(comment) for comment in comments]
 

@@ -9,6 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional, cast
 
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from core.database import get_async_session
 from models.project import Project, ProjectMember
 from models.task import (
@@ -21,17 +25,14 @@ from models.task import (
 )
 from models.user import User
 from schemas.task import (
-    TaskCreate,
-    TaskKanbanBoard,
+    TaskCreateRequest,
+    TaskKanbanBoardResponse,
     TaskListResponse,
     TaskResponse,
     TaskSearchRequest,
     TaskStatsResponse,
-    TaskUpdate,
+    TaskUpdateRequest,
 )
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -49,7 +50,7 @@ class TaskService:
         self.db = db
 
     async def create_task(
-        self, task_data: TaskCreate, creator_id: int
+        self, task_data: TaskCreateRequest, creator_id: int
     ) -> TaskResponse:
         """Create a new task"""
         try:
@@ -207,7 +208,7 @@ class TaskService:
             raise
 
     async def update_task(
-        self, task_id: int, task_data: TaskUpdate, user_id: int
+        self, task_id: int, task_data: TaskUpdateRequest, user_id: int
     ) -> TaskResponse:
         """Update task information"""
         try:
@@ -306,7 +307,7 @@ class TaskService:
     async def list_tasks(
         self,
         page: int = 1,
-        per_page: int = 20,
+        size: int = 20,
         user_id: Optional[int] = None,
         search_params: Optional[TaskSearchRequest] = None,
     ) -> TaskListResponse:
@@ -344,8 +345,10 @@ class TaskService:
                         Task.project_id == search_params.project_id
                     )
 
-                if search_params.status:
-                    query = query.where(Task.status == search_params.status)
+                if search_params.task_status is not None:
+                    query = query.where(
+                        Task.status == search_params.task_status
+                    )
 
                 if search_params.priority:
                     query = query.where(
@@ -398,10 +401,10 @@ class TaskService:
             total = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * per_page
+            offset = (page - 1) * size
             query = (
                 query.offset(offset)
-                .limit(per_page)
+                .limit(size)
                 .order_by(desc(Task.created_at))
             )
 
@@ -410,15 +413,13 @@ class TaskService:
             tasks = result.scalars().all()
 
             # Calculate pagination info
-            pages = (
-                (total if total is not None else 0) + per_page - 1
-            ) // per_page
+            pages = ((total if total is not None else 0) + size - 1) // size
 
             return TaskListResponse(
                 tasks=[TaskResponse.from_orm(task) for task in tasks],
                 total=total if total is not None else 0,
                 page=page,
-                per_page=per_page,
+                size=size,
                 pages=pages,
             )
 
@@ -495,12 +496,9 @@ class TaskService:
                 "blocked",
                 "cancelled",
             ]:
+                status_query = base_query.where(Task.status == status)
                 status_result = await self.db.execute(
-                    select(func.count()).select_from(
-                        base_query.where(
-                            Task.status.value == status
-                        ).subquery()
-                    )
+                    select(func.count()).select_from(status_query.subquery())
                 )
                 status_counts[status] = status_result.scalar()
 
@@ -556,7 +554,7 @@ class TaskService:
 
     async def get_kanban_board(
         self, project_id: Optional[int] = None, user_id: Optional[int] = None
-    ) -> TaskKanbanBoard:
+    ) -> TaskKanbanBoardResponse:
         """Get tasks organized in Kanban board format"""
         try:
             # Build base query
@@ -589,7 +587,7 @@ class TaskService:
             tasks = result.scalars().all()
 
             # Organize by status
-            kanban_board = TaskKanbanBoard(
+            kanban_board = TaskKanbanBoardResponse(
                 todo=[], in_progress=[], in_review=[], testing=[], done=[]
             )
 

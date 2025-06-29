@@ -5,9 +5,8 @@ Pydantic models for authentication-related requests and responses.
 """
 
 from datetime import datetime
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, List, Optional
 
-from core.constants import UserRole, UserStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -68,7 +67,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     confirm_password: str = Field(..., min_length=8, max_length=128)
 
-    @field_validator("name")
+    @field_validator("username")
     @classmethod
     def validate_name(cls, v: str) -> str:
         """Validate username format"""
@@ -230,12 +229,38 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    """Token data schema"""
+    """Token data schema with user information"""
 
-    sub: Optional[str] = None
-    exp: Optional[datetime] = None
-    iat: Optional[datetime] = None
-    type: Optional[str] = None
+    # Standard JWT claims
+    sub: Optional[str] = None  # Subject (typically user ID as string)
+    exp: Optional[datetime] = None  # Expiration time
+    iat: Optional[datetime] = None  # Issued at time
+    type: Optional[str] = None  # Token type (access, refresh, etc.)
+
+    # User information fields
+    user_id: Optional[int] = None  # User ID
+    username: Optional[str] = None  # Username
+    email: Optional[str] = None  # User email
+    role: Optional[str] = None  # User role
+    scopes: Optional[List[str]] = None  # User permissions/scopes
+
+    class Config:
+        """Configuration for the TokenData schema"""
+
+        from_attributes = True
+        schema_extra = {
+            "example": {
+                "sub": "123",
+                "exp": "2023-12-01T11:30:00Z",
+                "iat": "2023-12-01T10:30:00Z",
+                "type": "access",
+                "user_id": 123,
+                "username": "john_doe",
+                "email": "john@example.com",
+                "role": "developer",
+                "scopes": ["projects:read", "tasks:write"],
+            }
+        }
 
 
 class TokenRefresh(BaseModel):
@@ -251,8 +276,8 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: str
-    role: UserRole
-    status: UserStatus
+    role: str
+    status: str
     is_active: bool
     is_verified: bool
     created_at: datetime

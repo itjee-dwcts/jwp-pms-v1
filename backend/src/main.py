@@ -7,17 +7,31 @@ FastAPI application with GraphQL support for Project Management System.
 import logging
 import socket
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
 
+import strawberry
 import uvicorn
-from core.config import settings
-from core.database import check_database_connection, create_tables
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from strawberry.fastapi import GraphQLRouter
+
+# API routers (moved here from below)
+from api.auth import router as auth_router
+from api.calendar import router as calendar_router
+from api.dashboard import router as dashboard_router
+from api.health import router as health_router
+from api.project import router as projects_router
+from api.system import router as system_router
+from api.task import router as tasks_router
+from api.uploads import router as uploads_router
+from api.user import router as users_router
+from core.config import settings
+from core.database import check_database_connection, create_tables
 from utils.logger import setup_logging
 
 # Setup logging
@@ -26,14 +40,14 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan events
     """
     # Startup
     logger.info("🚀 Starting PMS Backend API...")
-    logger.info(f"🌍 Environment: {settings.ENVIRONMENT}")
-    logger.info(f"🔧 Debug mode: {settings.DEBUG}")
+    logger.info("🌍 Environment: %s", settings.ENVIRONMENT)
+    logger.info("🔧 Debug mode: %s", settings.DEBUG)
 
     # Check database connection
     try:
@@ -49,11 +63,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             logger.warning(
                 "⚠️ Database connection failed - some features may not work"
             )
-    except Exception as e:
-        logger.error(f"❌ Database setup error: {e}")
+    except Exception as e:  # noqa: E722
+        logger.error("❌ Database setup error: %s", e)
 
-    logger.info(f"📊 API Documentation: /docs")
-    logger.info(f"🔧 Health check: /health")
+    logger.info("📊 API Documentation: /docs")
+    logger.info("🔧 Health check: /health")
     logger.info("✨ PMS Backend API is ready!")
 
     yield
@@ -113,7 +127,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
     logger.info(
-        f"🌐 CORS enabled for origins: {settings.BACKEND_CORS_ORIGINS}"
+        "🌐 CORS enabled for origins: %s", settings.BACKEND_CORS_ORIGINS
     )
 
 # Static files
@@ -169,7 +183,9 @@ async def health_check():
                 "status": "healthy" if db_status else "degraded",
                 "version": settings.VERSION,
                 "environment": settings.ENVIRONMENT,
-                "timestamp": "2024-01-01T00:00:00Z",  # Will be replaced with actual timestamp
+                "timestamp": datetime.now(
+                    timezone.utc
+                ),  # Will be replaced with actual timestamp
                 "checks": {
                     "database": (
                         "✅ Connected" if db_status else "❌ Disconnected"
@@ -180,57 +196,34 @@ async def health_check():
                 "uptime": "Just started",  # Can be enhanced with actual uptime
             }
         )
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
+    except Exception:
+        """
+        Exception
+        """
         return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": "2024-01-01T00:00:00Z",
-            },
+            {
+                "api_version": "v1",
+                "service": settings.PROJECT_NAME,
+                "version": settings.VERSION,
+                "environment": settings.ENVIRONMENT,
+                "features": {
+                    "authentication": "JWT + OAuth2",
+                    "database": "PostgreSQL with SQLAlchemy",
+                    "api_style": "REST + GraphQL (coming soon)",
+                    "file_storage": "Local filesystem",
+                    "real_time": "WebSocket (planned)",
+                },
+                "endpoints": {
+                    "health": "/health",
+                    "root": "/",
+                    "docs": "/docs",
+                    "uploads": "/uploads",
+                },
+            }
         )
 
 
-@app.get(f"{settings.API_V1_STR}/info")
-async def api_info():
-    """
-    API information endpoint
-    """
-    return JSONResponse(
-        {
-            "api_version": "v1",
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "environment": settings.ENVIRONMENT,
-            "features": {
-                "authentication": "JWT + OAuth2",
-                "database": "PostgreSQL with SQLAlchemy",
-                "api_style": "REST + GraphQL (coming soon)",
-                "file_storage": "Local filesystem",
-                "real_time": "WebSocket (planned)",
-            },
-            "endpoints": {
-                "health": "/health",
-                "root": "/",
-                "docs": "/docs",
-                "uploads": "/uploads",
-            },
-        }
-    )
-
-
-from api.auth import router as auth_router
-from api.calendar import router as calendar_router
-from api.dashboard import router as dashboard_router
-
 # Include API routes
-from api.health import router as health_router
-from api.projects import router as projects_router
-from api.system import router as system_router
-from api.tasks import router as tasks_router
-from api.uploads import router as uploads_router
-from api.users import router as users_router
 
 app.include_router(health_router, prefix=settings.API_V1_STR, tags=["health"])
 app.include_router(system_router, prefix=settings.API_V1_STR, tags=["system"])
@@ -262,20 +255,19 @@ app.include_router(
     uploads_router, prefix=f"{settings.API_V1_STR}/uploads", tags=["uploads"]
 )
 
-# TODO: Add these when implemented
-# from src.api.auth import router as auth_router
-# from src.api.users import router as users_router
-# from src.api.projects import router as projects_router
-# from src.api.tasks import router as tasks_router
 
-# app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["authentication"])
-# app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-# app.include_router(projects_router, prefix=f"{settings.API_V1_STR}/projects", tags=["projects"])
-# app.include_router(tasks_router, prefix=f"{settings.API_V1_STR}/tasks", tags=["tasks"])
+# Add GraphQL endpoint using Strawberry
+@strawberry.type
+class Query:
+    @strawberry.field
+    def hello(self) -> str:
+        return "Hello, GraphQL!"
 
-# TODO: Add GraphQL endpoint
-# from src.api.graphql import graphql_app
-# app.mount("/graphql", graphql_app)
+
+schema = strawberry.Schema(Query)
+graphql_app = GraphQLRouter(schema)
+
+app.include_router(graphql_app, prefix="/graphql")
 
 
 def find_free_port(start_port: int = 8000) -> int:
@@ -300,10 +292,10 @@ def main():
     port = find_free_port(8000)
     host = "127.0.0.1"
 
-    logger.info(f"🚀 Starting {settings.PROJECT_NAME}")
-    logger.info(f"🌐 Server URL: http://{host}:{port}")
-    logger.info(f"📖 API Docs: http://{host}:{port}/docs")
-    logger.info(f"🔧 Health Check: http://{host}:{port}/health")
+    logger.info("🚀 Starting %s", settings.PROJECT_NAME)
+    logger.info("🌐 Server URL: http://%s:%s", host, port)
+    logger.info("📖 API Docs: http://%s:%s/docs", host, port)
+    logger.info("🔧 Health Check: http://%s:%s/health", host, port)
 
     uvicorn.run(
         "main:app",

@@ -7,8 +7,6 @@ SQLAlchemy models for user management and authentication.
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from core.constants import UserRole, UserStatus
-from core.database import Base
 from sqlalchemy import (
     Boolean,
     Column,
@@ -19,6 +17,9 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
+
+from core.base import Base
+from core.constants import UserRole, UserStatus
 
 if TYPE_CHECKING:
     pass

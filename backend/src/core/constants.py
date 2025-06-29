@@ -563,7 +563,9 @@ class RecurrenceType:
 
     @classmethod
     def get_frequency_description(
-        cls, recurrence_type: str, interval: int = 1
+        cls,
+        recurrence_type: str,
+        interval: int = 1,
     ):
         """Get human-readable frequency description"""
         descriptions = {
@@ -1000,6 +1002,40 @@ class AccessLevel:
     def values(cls):
         """Get all available values as list"""
         return [cls.PUBLIC, cls.PRIVATE, cls.TEAM, cls.ORGANIZATION]
+
+    @classmethod
+    def is_valid(cls, value: str) -> bool:
+        """Check if value is valid"""
+        return value in cls.values()
+
+
+class TokenType:
+    """Token Type constants"""
+
+    ACCESS = "access"
+    REFRESH = "refresh"
+    PASSWORD_RESET = "password_reset"
+    EMAIL_VERIFICATION = "email_verification"
+
+    @classmethod
+    def choices(cls):
+        """Get all available choices as list of tuples"""
+        return [
+            (cls.ACCESS, "Access"),
+            (cls.REFRESH, "Refresh"),
+            (cls.PASSWORD_RESET, "Password Reset"),
+            (cls.EMAIL_VERIFICATION, "Email Verification"),
+        ]
+
+    @classmethod
+    def values(cls):
+        """Get all available values as list"""
+        return [
+            cls.ACCESS,
+            cls.REFRESH,
+            cls.PASSWORD_RESET,
+            cls.EMAIL_VERIFICATION,
+        ]
 
     @classmethod
     def is_valid(cls, value: str) -> bool:

@@ -1,51 +1,106 @@
 [project]
-name = "backend"
+name = "pms-backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "PMS Backend API"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
+
 dependencies = [
-    "aiofiles>=24.1.0",
-    "alembic>=1.16.2",
-    "asyncpg>=0.30.0",
-    "celery>=5.5.3",
+    # Core Framework
     "fastapi[all]>=0.115.13",
-    "flake8>=7.3.0",
-    "mypy>=1.16.1",
+    "uvicorn[standard]>=0.34.3",
+
+    # Database
+    "sqlalchemy>=2.0.41",
+    "asyncpg>=0.30.0",
+    "alembic>=1.16.2",
+
+    # Authentication & Security
+    "pyjwt>=2.10.1",
     "passlib[bcrypt]>=1.7.4",
-    "pillow>=11.2.1",
-    "psutil>=7.0.0",
+    "cryptography>=45.0.4",
+
+    # Data Validation
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
-    "pyjwt>=2.10.1",
-    "pytest-asyncio>=1.0.0",
-    "python-jose[cryptography]>=3.5.0",
-    "requests>=2.32.4",
-    "sqlalchemy>=2.0.41",
-    "strawberry-graphql>=0.275.2",
+    "pydantic-extra-types>=2.10.5",
+    "email-validator>=2.2.0",
+
+    # File Handling
+    "aiofiles>=24.1.0",
+    "pillow>=11.2.1",
+
+    # HTTP & JSON
+    "httpx>=0.28.1",
+    "orjson>=3.10.18",
+
+    # Logging
     "structlog>=25.4.0",
-    "types-aiofiles>=24.1.0.20250606",
-    "types-passlib>=1.7.7.20250602",
-    "types-python-jose>=3.5.0.20250531",
-    "uvicorn>=0.34.3",
+
+    # GraphQL
+    "strawberry-graphql>=0.275.2",
+
+    # Environment
+    "python-dotenv>=1.1.1",
+    "pyyaml>=6.0.2",
+
+    # System
+    "psutil>=7.0.0",
+    "rich>=14.0.0",
 ]
 
 [dependency-groups]
 dev = [
+    # Development Tools
     "black>=25.1.0",
     "isort>=6.0.1",
+    "flake8>=7.3.0",
+    "mypy>=1.16.1",
+
+    # Testing
     "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.0.0",
+
+    # Type Hints
+    "types-aiofiles>=24.1.0.20250606",
+    "types-passlib>=1.7.7.20250602",
 ]
 
 [tool.black]
 line-length = 79
 
-[tool.ruff]
-ignore = ["BLE001"]  # broad exception catching
-
-[tool.pylint.messages_control]
-disable = ["broad-except"]
+[tool.isort]
+profile = "black"
+line_length = 79
 
 [tool.flake8]
 ignore = ["E722"]
 max-line-length = 79
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pylint]
+load-plugins = ["pylint_sqlalchemy"]
+disable = ["import-error"]
+
+[tool.pylint.master]
+extension-pkg-whitelist = ["pydantic"]
+
+[tool.pylint."messages control"]
+disable = [
+    "broad-except",
+    "no-member",
+    "missing-docstring",
+]
+
+[tool.pylint.typecheck]
+generated-members = [
+    "sqlalchemy.*",
+    "func.*",
+    "query.*",
+]

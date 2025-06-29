@@ -6,7 +6,7 @@ SQLAlchemy models for the PMS application.
 """
 
 # Import Base from database configuration
-from core.database import Base
+from core.base import Base
 
 # Calendar models
 from models.calendar import (

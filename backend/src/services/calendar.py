@@ -8,29 +8,26 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import List, Optional, cast
 
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import func
+
 from core.database import get_async_session
 from models.calendar import Calendar, Event, EventAttendee
 from models.project import Project
 from models.task import Task
 from models.user import User
 from schemas.calendar import (
-    CalendarCreate,
     CalendarListResponse,
     CalendarResponse,
     CalendarStatsResponse,
-    CalendarUpdate,
     CalendarViewRequest,
-    EventCreate,
     EventDashboardResponse,
     EventListResponse,
     EventResponse,
     EventSearchRequest,
-    EventUpdate,
 )
-from sqlalchemy import and_, desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import func
 from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -693,6 +690,17 @@ class CalendarService:
         except Exception as e:
             logger.error("Failed to get calendar view: %s", e)
             raise
+
+    async def get_event_with_access_check(self, event_id: int, user_id: int):
+        """
+        Retrieve an event by ID and check if the user has access.
+        """
+
+        result = await self.db.execute(
+            select(Event).where(Event.id == event_id, Event.user_id == user_id)
+        )
+        event = result.scalar_one_or_none()
+        return event
 
     async def get_calendar_stats(
         self, user_id: Optional[int] = None
