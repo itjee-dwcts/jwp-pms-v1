@@ -8,8 +8,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 from pydantic import BaseModel, Field, field_validator
+
+from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 from schemas.user import UserPublic
 
 
@@ -324,7 +325,7 @@ class ProjectListResponse(BaseModel):
     projects: List[ProjectResponse]
     total: int
     page: int
-    per_page: int
+    size: int
     pages: int
 
 

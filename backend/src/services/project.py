@@ -8,6 +8,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, cast
 
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from core.constants import ProjectStatus
 from core.database import get_async_session
 from models.project import (
@@ -22,14 +26,12 @@ from schemas.project import (
     ProjectCreateRequest,
     ProjectDashboardResponse,
     ProjectListResponse,
+    ProjectMemberCreateRequest,
     ProjectResponse,
     ProjectSearchRequest,
     ProjectStatsResponse,
     ProjectUpdateRequest,
 )
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -246,7 +248,7 @@ class ProjectService:
     async def list_projects(
         self,
         page: int = 1,
-        per_page: int = 20,
+        size: int = 20,
         user_id: Optional[int] = None,
         search_params: Optional[ProjectSearchRequest] = None,
     ) -> ProjectListResponse:
@@ -336,10 +338,10 @@ class ProjectService:
             total = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * per_page
+            offset = (page - 1) * size
             query = (
                 query.offset(offset)
-                .limit(per_page)
+                .limit(size)
                 .order_by(desc(Project.created_at))
             )
 
@@ -348,9 +350,7 @@ class ProjectService:
             projects = result.scalars().all()
 
             # Calculate pagination info
-            pages = (
-                (total if total is not None else 0) + per_page - 1
-            ) // per_page
+            pages = ((total if total is not None else 0) + size - 1) // size
 
             return ProjectListResponse(
                 projects=[
@@ -358,7 +358,7 @@ class ProjectService:
                 ],
                 total=total if total is not None else 0,
                 page=page,
-                per_page=per_page,
+                size=size,
                 pages=pages,
             )
 
@@ -367,7 +367,10 @@ class ProjectService:
             raise
 
     async def add_project_member(
-        self, project_id: int, member_data: ProjectMemberCreate, added_by: int
+        self,
+        project_id: int,
+        member_data: ProjectMemberCreateRequest,
+        added_by: int,
     ) -> bool:
         """Add member to project"""
         try:

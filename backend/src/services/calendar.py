@@ -23,10 +23,12 @@ from schemas.calendar import (
     CalendarResponse,
     CalendarStatsResponse,
     CalendarViewRequest,
+    EventCreateRequest,
     EventDashboardResponse,
     EventListResponse,
     EventResponse,
     EventSearchRequest,
+    EventUpdateRequest,
 )
 from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
@@ -228,7 +230,7 @@ class CalendarService:
             raise
 
     async def list_calendars(
-        self, page: int = 1, per_page: int = 20, user_id: Optional[int] = None
+        self, page: int = 1, size: int = 20, user_id: Optional[int] = None
     ) -> CalendarListResponse:
         """List calendars with pagination"""
         try:
@@ -254,10 +256,10 @@ class CalendarService:
             total = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * per_page
+            offset = (page - 1) * size
             query = (
                 query.offset(offset)
-                .limit(per_page)
+                .limit(size)
                 .order_by(desc(Calendar.created_at))
             )
 
@@ -266,9 +268,7 @@ class CalendarService:
             calendars = result.scalars().all()
 
             # Calculate pagination info
-            pages = (
-                (total if total is not None else 0) + per_page - 1
-            ) // per_page
+            pages = ((total if total is not None else 0) + size - 1) // size
 
             return CalendarListResponse(
                 calendars=[
@@ -277,7 +277,7 @@ class CalendarService:
                 ],
                 total=total if total is not None else 0,
                 page=page,
-                per_page=per_page,
+                size=size,
                 pages=pages,
             )
 
@@ -292,7 +292,7 @@ class CalendarService:
         return list(result.scalars().all())
 
     async def create_event(
-        self, event_data: EventCreate, creator_id: int
+        self, event_data: EventCreateRequest, creator_id: int
     ) -> EventResponse:
         """Create a new event"""
         try:
@@ -427,7 +427,7 @@ class CalendarService:
             raise
 
     async def update_event(
-        self, event_id: int, event_data: EventUpdate, user_id: int
+        self, event_id: int, event_data: EventUpdateRequest, user_id: int
     ) -> EventResponse:
         """Update event information"""
         try:
@@ -506,7 +506,7 @@ class CalendarService:
     async def list_events(
         self,
         page: int = 1,
-        per_page: int = 20,
+        size: int = 20,
         user_id: Optional[int] = None,
         search_params: Optional[EventSearchRequest] = None,
     ) -> EventListResponse:
@@ -591,11 +591,9 @@ class CalendarService:
             total = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * per_page
+            offset = (page - 1) * size
             query = (
-                query.offset(offset)
-                .limit(per_page)
-                .order_by(Event.start_datetime)
+                query.offset(offset).limit(size).order_by(Event.start_datetime)
             )
 
             # Execute query
@@ -603,15 +601,13 @@ class CalendarService:
             events = result.scalars().all()
 
             # Calculate pagination info
-            pages = (
-                (total if total is not None else 0) + per_page - 1
-            ) // per_page
+            pages = ((total if total is not None else 0) + size - 1) // size
 
             return EventListResponse(
                 events=[EventResponse.from_orm(event) for event in events],
                 total=total if total is not None else 0,
                 page=page,
-                per_page=per_page,
+                size=size,
                 pages=pages,
             )
 
@@ -683,7 +679,7 @@ class CalendarService:
                 events=[EventResponse.from_orm(event) for event in events],
                 total=len(events),
                 page=1,
-                per_page=len(events),
+                size=len(events),
                 pages=1,
             )
 

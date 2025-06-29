@@ -236,16 +236,14 @@ async def save_upload_file(
         raise Exception("Failed to save file: %s", e)
 
 
-def calculate_pagination(
-    total: int, page: int, per_page: int
-) -> Dict[str, int]:
+def calculate_pagination(total: int, page: int, size: int) -> Dict[str, int]:
     """Calculate pagination metadata"""
-    pages = (total + per_page - 1) // per_page if total > 0 else 0
+    pages = (total + size - 1) // size if total > 0 else 0
 
     return {
         "total": total,
         "page": page,
-        "per_page": per_page,
+        "size": size,
         "pages": pages,
         "has_next": page < pages,
         "has_prev": page > 1,

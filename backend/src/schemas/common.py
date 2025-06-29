@@ -16,9 +16,7 @@ class PaginationParams(BaseModel):
     """Pagination parameters schema"""
 
     page: int = Field(default=1, ge=1, description="Page number")
-    per_page: int = Field(
-        default=20, ge=1, le=100, description="Items per page"
-    )
+    size: int = Field(default=20, ge=1, le=100, description="Items per page")
     sort_by: Optional[str] = Field(None, description="Sort field")
     sort_order: str = Field(
         default="asc", description="Sort order: asc or desc"
@@ -384,7 +382,7 @@ class ActivityLogResponse(BaseModel):
     logs: List[ActivityLogEntry]
     total: int
     page: int
-    per_page: int
+    size: int
     pages: int
 
 

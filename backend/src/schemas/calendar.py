@@ -8,8 +8,9 @@ Request/Response schemas for calendar and event management.
 from datetime import datetime
 from typing import List, Optional
 
-from core.constants import EventStatus, EventType, RecurrenceType
 from pydantic import BaseModel, Field, field_validator
+
+from core.constants import EventStatus, EventType, RecurrenceType
 from schemas.user import UserPublic
 
 
@@ -298,7 +299,7 @@ class EventListResponse(BaseModel):
     events: List[EventResponse]
     total: int
     page: int
-    per_page: int
+    size: int
     pages: int
 
 
@@ -308,7 +309,7 @@ class CalendarListResponse(BaseModel):
     calendars: List[CalendarResponse]
     total: int
     page: int
-    per_page: int
+    size: int
     pages: int
 
 
