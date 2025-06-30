@@ -34,6 +34,9 @@
   "python.analysis.memory.keepLibraryAst": true, // IntelliSense 품질 향상
   "python.analysis.stubPath": "./backend/typings",
   "python.analysis.logLevel": "Information", // 문제 진단용
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportAttributeAccessIssue": "none"
+  },
 
   // 주요 패키지 인덱싱 깊이 (성능과 기능 최적화)
   "python.analysis.packageIndexDepths": [
@@ -291,6 +294,7 @@
     "levelname",
     "linting",
     "mypy",
+    "notin",
     "onupdate",
     "orjson",
     "passlib",

@@ -8,9 +8,8 @@ Request/Response schemas for calendar and event management.
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
-
 from core.constants import EventStatus, EventType, RecurrenceType
+from pydantic import BaseModel, Field, field_validator
 from schemas.user import UserPublic
 
 
@@ -39,6 +38,11 @@ class CalendarBase(BaseModel):
             raise ValueError("Color must be in hex format (e.g., #3b82f6)")
         return v
 
+    class Config:
+        """Configuration for CalendarBase"""
+
+        from_attributes = True
+
 
 class CalendarCreateRequest(CalendarBase):
     """Schema for creating a calendar"""
@@ -60,6 +64,11 @@ class CalendarUpdateRequest(BaseModel):
         if v is not None and (not v.startswith("#") or len(v) != 7):
             raise ValueError("Color must be in hex format (e.g., #3b82f6)")
         return v
+
+    class Config:
+        """Configuration for CalendarUpdateRequest"""
+
+        from_attributes = True
 
 
 class CalendarResponse(CalendarBase):
@@ -126,6 +135,11 @@ class EventBase(BaseModel):
             )
         return v
 
+    class Config:
+        """Configuration for EventBase"""
+
+        from_attributes = True
+
 
 class EventCreateRequest(EventBase):
     """Schema for creating an event"""
@@ -174,6 +188,11 @@ class EventCreateRequest(EventBase):
                 f'Recurrence type must be one of: {", ".join(valid_types)}'
             )
         return v
+
+    class Config:
+        """Configuration for EventCreateRequest"""
+
+        from_attributes = True
 
 
 class EventUpdateRequest(BaseModel):
@@ -249,6 +268,11 @@ class EventUpdateRequest(BaseModel):
                 )
         return v
 
+    class Config:
+        """Configuration for EventUpdateRequest"""
+
+        from_attributes = True
+
 
 class EventAttendeeResponse(BaseModel):
     """Schema for event attendee response"""
@@ -302,6 +326,11 @@ class EventListResponse(BaseModel):
     page_size: int
     total_pages: int
 
+    class Config:
+        """Configuration for EventListResponse"""
+
+        from_attributes = True
+
 
 class CalendarListResponse(BaseModel):
     """Schema for calendar list response"""
@@ -311,6 +340,11 @@ class CalendarListResponse(BaseModel):
     page_no: int
     page_size: int
     total_pages: int
+
+    class Config:
+        """Configuration for CalendarListResponse"""
+
+        from_attributes = True
 
 
 class EventSearchRequest(BaseModel):
@@ -365,6 +399,11 @@ class EventSearchRequest(BaseModel):
                 )
         return v
 
+    class Config:
+        """Configuration for EventSearchRequest"""
+
+        from_attributes = True
+
 
 class CalendarViewRequest(BaseModel):
     """Schema for calendar view request"""
@@ -404,6 +443,11 @@ class CalendarViewRequest(BaseModel):
             raise ValueError("End date must be after start date")
         return v
 
+    class Config:
+        """Configuration for CalendarViewRequest"""
+
+        from_attributes = True
+
 
 class CalendarStatsResponse(BaseModel):
     """Schema for calendar statistics"""
@@ -416,6 +460,11 @@ class CalendarStatsResponse(BaseModel):
     events_this_week: int
     events_this_month: int
 
+    class Config:
+        """Configuration for CalendarStatsResponse"""
+
+        from_attributes = True
+
 
 class EventDashboardResponse(BaseModel):
     """Schema for event dashboard response"""
@@ -426,6 +475,11 @@ class EventDashboardResponse(BaseModel):
     overdue_events: List[EventResponse]
     event_stats: CalendarStatsResponse
 
+    class Config:
+        """Configuration for EventDashboardResponse"""
+
+        from_attributes = True
+
 
 class EventAttendeeRequest(BaseModel):
     """Schema for event attendee request"""
@@ -433,6 +487,11 @@ class EventAttendeeRequest(BaseModel):
     user_ids: List[int] = Field(
         ..., description="List of user IDs to add as attendees"
     )
+
+    class Config:
+        """Configuration for EventAttendeeRequest"""
+
+        from_attributes = True
 
 
 class EventAttendeeResponseUpdate(BaseModel):
@@ -459,6 +518,11 @@ class EventAttendeeResponseUpdate(BaseModel):
             )
         return v
 
+    class Config:
+        """Configuration for EventAttendeeResponseUpdate"""
+
+        from_attributes = True
+
 
 class RecurringEventResponse(BaseModel):
     """Schema for recurring event response"""
@@ -469,3 +533,8 @@ class RecurringEventResponse(BaseModel):
     total_occurrences: int
     total_occurrences: int
     total_occurrences: int
+
+    class Config:
+        """Configuration for RecurringEventResponse"""
+
+        from_attributes = True

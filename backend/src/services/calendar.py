@@ -5,13 +5,8 @@ Business logic for calendar and event management operations.
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, cast
-
-from sqlalchemy import and_, desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import func
 
 from core.database import get_async_session
 from models.calendar import Calendar, Event, EventAttendee
@@ -32,6 +27,10 @@ from schemas.calendar import (
     EventSearchRequest,
     EventUpdateRequest,
 )
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import count
 from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -80,12 +79,12 @@ class CalendarService:
             )
             created_calendar = result.scalar_one()
 
-            logger.info(f"Calendar created successfully: {calendar.name}")
+            logger.info("Calendar created successfully: %s", calendar.name)
             return CalendarResponse.from_orm(created_calendar)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to create calendar: {e}")
+            logger.error("Failed to create calendar: %s", e)
             raise
 
     async def get_calendar_by_id(
@@ -131,7 +130,7 @@ class CalendarService:
             return CalendarResponse.from_orm(calendar)
 
         except Exception as e:
-            logger.error(f"Failed to get calendar {calendar_id}: {e}")
+            logger.error("Failed to get calendar %d: %s", calendar_id, e)
             raise
 
     async def update_calendar(
@@ -190,12 +189,12 @@ class CalendarService:
             )
             updated_calendar = result.scalar_one()
 
-            logger.info(f"Calendar updated successfully: {calendar.name}")
-            return CalendarResponse.from_orm(updated_calendar)
+            logger.info("Calendar updated successfully: %s", calendar.name)
+            return CalendarResponse.model_validate(updated_calendar)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to update calendar {calendar_id}: {e}")
+            logger.error("Failed to update calendar %d: %s", calendar_id, e)
             raise
 
     async def delete_calendar(self, calendar_id: int, user_id: int) -> bool:
@@ -227,12 +226,12 @@ class CalendarService:
             await self.db.delete(calendar)
             await self.db.commit()
 
-            logger.info(f"Calendar deleted: {calendar.name}")
+            logger.info("Calendar deleted: %s", calendar.name)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to delete calendar {calendar_id}: {e}")
+            logger.error("Failed to delete calendar %d: %s", calendar_id, e)
             raise
 
     async def list_calendars(
@@ -260,7 +259,7 @@ class CalendarService:
                 query = query.where(Calendar.is_public.is_(True))
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
@@ -600,7 +599,7 @@ class CalendarService:
                     )
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
@@ -741,14 +740,14 @@ class CalendarService:
 
             # Total events
             total_result = await self.db.execute(
-                select(func.count()).select_from(base_query.subquery())
+                select(count()).select_from(base_query.subquery())
             )
             total_events = total_result.scalar()
 
             # Upcoming events (next 30 days)
-            future_date = datetime.utcnow() + timedelta(days=30)
+            future_date = datetime.now(timezone.utc) + timedelta(days=30)
             upcoming_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(
                         and_(
                             Event.start_datetime >= datetime.utcnow(),
@@ -761,7 +760,7 @@ class CalendarService:
 
             # Overdue events
             overdue_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(
                         and_(
                             Event.end_datetime < datetime.utcnow(),
@@ -774,7 +773,7 @@ class CalendarService:
 
             # Events by type
             type_result = await self.db.execute(
-                select(Event.event_type, func.count(Event.id))
+                select(Event.event_type, count(Event.id))
                 .select_from(base_query.subquery())
                 .group_by(Event.event_type)
             )
@@ -783,7 +782,7 @@ class CalendarService:
 
             # Events by status
             status_result = await self.db.execute(
-                select(Event.status, func.count(Event.id))
+                select(Event.status, count(Event.id))
                 .select_from(base_query.subquery())
                 .group_by(Event.status)
             )
@@ -799,7 +798,7 @@ class CalendarService:
             month_start = datetime.utcnow().replace(day=1)
 
             week_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(
                         Event.start_datetime >= week_start
                     ).subquery()
@@ -808,7 +807,7 @@ class CalendarService:
             events_this_week = week_result.scalar()
 
             month_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(
                         Event.start_datetime >= month_start
                     ).subquery()

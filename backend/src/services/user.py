@@ -8,10 +8,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, cast
 
-from sqlalchemy import desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import func
-
 from core.constants import UserRole, UserStatus
 from core.database import get_async_session
 from models.user import User, UserActivityLog
@@ -23,6 +19,9 @@ from schemas.user import (
     UserStatsResponse,
     UserUpdateRequest,
 )
+from sqlalchemy import desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count
 from utils.auth import get_password_hash, verify_password
 from utils.exceptions import AuthenticationError, ConflictError, NotFoundError
 
@@ -291,12 +290,14 @@ class UserService:
 
             await self.db.commit()
 
-            logger.info(f"Password changed for user: {user.username}")
+            logger.info("Password changed for user: %s", user.username)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to change password for user {user_id}: {e}")
+            logger.error(
+                "Failed to change password for user %d: %s", user_id, e
+            )
             raise
 
     async def update_user_password(
@@ -448,12 +449,12 @@ class UserService:
 
             await self.db.commit()
 
-            logger.info(f"User soft deleted: {user.username}")
+            logger.info("User soft deleted: %s", user.username)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to delete user {user_id}: {e}")
+            logger.error("Failed to delete user %d: %s", user_id, e)
             raise
 
     async def list_users(
@@ -499,7 +500,7 @@ class UserService:
                 query = query.where(User.status == user_status)
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
@@ -552,7 +553,7 @@ class UserService:
             Total count of users matching criteria
         """
 
-        query = select(func.count(User.id))
+        query = select(count(User.id))
 
         # Apply same filters as list_users
         if search_text:
@@ -585,25 +586,25 @@ class UserService:
         """Get user statistics"""
         try:
             # Total users
-            total_result = await self.db.execute(select(func.count(User.id)))
+            total_result = await self.db.execute(select(count(User.id)))
             total_users = total_result.scalar()
 
             # Active users
             active_result = await self.db.execute(
-                select(func.count(User.id)).where(User.status == "active")
+                select(count(User.id)).where(User.status == "active")
             )
             active_users = active_result.scalar()
 
             # New users this month
             month_ago = datetime.utcnow() - timedelta(days=30)
             new_users_result = await self.db.execute(
-                select(func.count(User.id)).where(User.created_at >= month_ago)
+                select(count(User.id)).where(User.created_at >= month_ago)
             )
             new_users_this_month = new_users_result.scalar()
 
             # Users by role
             role_result = await self.db.execute(
-                select(User.role, func.count(User.id)).group_by(User.role)
+                select(User.role, count(User.id)).group_by(User.role)
             )
             users_by_role: dict[str, int] = {
                 role: count for role, count in role_result.fetchall()
@@ -611,7 +612,7 @@ class UserService:
 
             # Users by status
             status_result = await self.db.execute(
-                select(User.status, func.count(User.id)).group_by(User.status)
+                select(User.status, count(User.id)).group_by(User.status)
             )
             users_by_status: dict[str, int] = {
                 status: count for status, count in status_result.fetchall()

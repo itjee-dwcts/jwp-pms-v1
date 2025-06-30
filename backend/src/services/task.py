@@ -9,10 +9,6 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional, cast
 
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from core.database import get_async_session
 from models.project import Project
 from models.task import (
@@ -32,6 +28,12 @@ from schemas.task import (
     TaskSearchRequest,
     TaskStatsResponse,
     TaskUpdateRequest,
+)
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import (
+    count,  # func.count 오류 인식 이슈로 인해 별도 처리함
 )
 from utils.exceptions import (
     AuthorizationError,
@@ -351,10 +353,10 @@ class TaskService:
                         Task.project_id == search_params.project_id
                     )
 
-                if search_params.task_status:
-                    query = query.where(
-                        Task.status == search_params.task_status
-                    )
+                # if search_params.task_status:
+                #     query = query.where(
+                #         Task.status == search_params.task_status
+                #     )
 
                 if search_params.priority:
                     query = query.where(
@@ -402,7 +404,7 @@ class TaskService:
                     )
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
@@ -491,9 +493,8 @@ class TaskService:
                 )
 
             # Total tasks
-            total_result = await self.db.execute(
-                select(func.count()).select_from(base_query.subquery())
-            )
+            total_query = select(count()).select_from(base_query.subquery())
+            total_result = await self.db.execute(total_query)
             total_tasks = total_result.scalar()
 
             # Tasks by status
@@ -505,18 +506,20 @@ class TaskService:
                 "blocked",
                 "cancelled",
             ]:
-                status_query = base_query.where(Task.status == status)
+                status_query = base_query.where(
+                    Task.status == status  # type: ignore
+                )
                 status_result = await self.db.execute(
-                    select(func.count()).select_from(status_query.subquery())
+                    select(count()).select_from(status_query.subquery())
                 )
                 status_counts[status] = status_result.scalar()
 
             # Overdue tasks
             overdue_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(
                         and_(
-                            Task.due_date < datetime.utcnow(),
+                            Task.due_date < datetime.now(timezone.utc),
                             Task.status.notin_(["done", "cancelled"]),
                         )
                     ).subquery()
@@ -526,7 +529,7 @@ class TaskService:
 
             # Tasks by priority
             priority_result = await self.db.execute(
-                select(Task.priority, func.count(Task.id))
+                select(Task.priority, count(Task.id))
                 .select_from(base_query.subquery())
                 .group_by(Task.priority)
             )
@@ -537,7 +540,7 @@ class TaskService:
 
             # Tasks by type
             type_result = await self.db.execute(
-                select(Task.task_type, func.count(Task.id))
+                select(Task.task_type, count(Task.id))
                 .select_from(base_query.subquery())
                 .group_by(Task.task_type)
             )
@@ -677,7 +680,12 @@ class TaskService:
                 task_project_id, user_id
             )
 
-        except Exception as e:
+        except (
+            NotFoundError,
+            ValidationError,
+            ConflictError,
+            AuthorizationError,
+        ) as e:
             logger.error("Failed to check task access: %s", e)
             return False
 
@@ -725,14 +733,6 @@ class TaskService:
         ) as e:
             logger.error(
                 "Failed to assign user %d to task %d: %s", user_id, task_id, e
-            )
-            raise
-        except Exception as e:
-            logger.error(
-                "An unexpected error occurred while assigning user %d to task %d: %s",
-                user_id,
-                task_id,
-                e,
             )
             raise
 

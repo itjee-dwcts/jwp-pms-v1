@@ -7,16 +7,15 @@ Business logic for dashboard analytics and summary.
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, cast
 
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import func
-
 from core.constants import TaskStatus
 from core.database import get_async_session
 from models.calendar import Calendar, Event
 from models.project import Project, ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import UserActivityLog
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count
 
 
 class DashboardService:
@@ -61,7 +60,7 @@ class DashboardService:
             }
 
         # Total projects
-        total_query = select(func.count(Project.id)).where(
+        total_query = select(count(Project.id)).where(
             Project.id.in_(project_ids)
         )
         total_result = await self.db.execute(total_query)
@@ -69,7 +68,7 @@ class DashboardService:
 
         # Projects by status
         status_query = (
-            select(Project.status, func.count(Project.id))
+            select(Project.status, count(Project.id))
             .where(Project.id.in_(project_ids))
             .group_by(Project.status)
         )
@@ -80,7 +79,7 @@ class DashboardService:
 
         # Projects by priority
         priority_query = (
-            select(Project.priority, func.count(Project.id))
+            select(Project.priority, count(Project.id))
             .where(Project.id.in_(project_ids))
             .group_by(Project.priority)
         )
@@ -90,7 +89,7 @@ class DashboardService:
         }
 
         # Owned projects
-        owned_query = select(func.count(Project.id)).where(
+        owned_query = select(count(Project.id)).where(
             Project.creator_id == user_id
         )
         owned_result = await self.db.execute(owned_query)
@@ -126,7 +125,7 @@ class DashboardService:
             }
 
         # Total tasks in accessible projects
-        total_query = select(func.count(Task.id)).where(
+        total_query = select(count(Task.id)).where(
             Task.project_id.in_(project_ids)
         )
         total_result = await self.db.execute(total_query)
@@ -134,7 +133,8 @@ class DashboardService:
 
         # Tasks assigned to user
         assigned_query = (
-            select(func.count(Task.id))
+            select(count(Task.id))
+            .select_from(Task)
             .join(TaskAssignment)
             .where(
                 and_(
@@ -148,7 +148,7 @@ class DashboardService:
         assigned_to_me = assigned_result.scalar()
 
         # Tasks created by user
-        created_query = select(func.count(Task.id)).where(
+        created_query = select(count(Task.id)).where(
             and_(Task.project_id.in_(project_ids), Task.creator_id == user_id)
         )
         created_result = await self.db.execute(created_query)
@@ -156,7 +156,8 @@ class DashboardService:
 
         # Tasks by status (for assigned tasks)
         status_query = (
-            select(Task.status, func.count(Task.id))
+            select(Task.status, count(Task.id))  # type: ignore
+            .select_from(Task)
             .join(TaskAssignment)
             .where(
                 and_(
@@ -174,7 +175,7 @@ class DashboardService:
 
         # Tasks by priority (for assigned tasks)
         priority_query = (
-            select(Task.priority, func.count(Task.id))
+            select(Task.priority, count(Task.id))
             .join(TaskAssignment)
             .where(
                 and_(
@@ -192,7 +193,7 @@ class DashboardService:
 
         # Overdue tasks
         overdue_query = (
-            select(func.count(Task.id))
+            select(count(Task.id))
             .join(TaskAssignment)
             .where(
                 and_(

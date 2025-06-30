@@ -84,6 +84,10 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "sqlalchemy.sql.functions"
+ignore_errors = true
+
 [tool.pylint]
 load-plugins = ["pylint_sqlalchemy"]
 disable = ["import-error"]

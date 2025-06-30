@@ -13,12 +13,6 @@ from typing import AsyncGenerator
 
 import strawberry
 import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from strawberry.fastapi import GraphQLRouter
 
 # API routers (moved here from below)
 from api.auth import router as auth_router
@@ -32,6 +26,12 @@ from api.uploads import router as uploads_router
 from api.user import router as users_router
 from core.config import settings
 from core.database import check_database_connection, create_tables
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from strawberry.fastapi import GraphQLRouter
 from utils.logger import setup_logging
 
 # Setup logging
@@ -197,9 +197,6 @@ async def health_check():
             }
         )
     except Exception:
-        """
-        Exception
-        """
         return JSONResponse(
             {
                 "api_version": "v1",

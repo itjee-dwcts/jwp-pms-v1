@@ -8,10 +8,6 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, cast
 
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from core.constants import ProjectStatus
 from core.database import get_async_session
 from models.project import (
@@ -32,6 +28,10 @@ from schemas.project import (
     ProjectStatsResponse,
     ProjectUpdateRequest,
 )
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import count
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -335,7 +335,7 @@ class ProjectService:
                     )
 
             # Get total count
-            count_query = select(func.count()).select_from(query.subquery())
+            count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
@@ -439,7 +439,7 @@ class ProjectService:
         """Remove member from project"""
         try:
             # Check user has permission to remove members
-            can_remove = await self._check_project_permission(
+            can_remove = await self.check_project_permission(
                 project_id, removed_by, ["owner", "manager"]
             )
             if not can_remove:
@@ -501,13 +501,13 @@ class ProjectService:
 
             # Total projects
             total_result = await self.db.execute(
-                select(func.count()).select_from(base_query.subquery())
+                select(count()).select_from(base_query.subquery())
             )
             total_projects = total_result.scalar()
 
             # Active projects
             active_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(Project.status == "active").subquery()
                 )
             )
@@ -515,7 +515,7 @@ class ProjectService:
 
             # Completed projects
             completed_result = await self.db.execute(
-                select(func.count()).select_from(
+                select(count()).select_from(
                     base_query.where(Project.status == "completed").subquery()
                 )
             )
@@ -523,19 +523,23 @@ class ProjectService:
 
             # Projects by status
             status_result = await self.db.execute(
-                select(Project.status, func.count(Project.id))
+                select(Project.status, count(Project.id))
                 .select_from(base_query.subquery())
                 .group_by(Project.status)
             )
-            projects_by_status = dict(status_result.fetchall())
+            projects_by_status = {
+                row[0]: row[1] for row in status_result.fetchall()
+            }  # dict(status_result.fetchall())
 
             # Projects by priority
             priority_result = await self.db.execute(
-                select(Project.priority, func.count(Project.id))
+                select(Project.priority, count(Project.id))
                 .select_from(base_query.subquery())
                 .group_by(Project.priority)
             )
-            projects_by_priority = dict(priority_result.fetchall())
+            projects_by_priority = {
+                row[0]: row[1] for row in priority_result.fetchall()
+            }  # dict(priority_result.fetchall())
 
             # Average progress
             progress_result = await self.db.execute(
@@ -625,7 +629,7 @@ class ProjectService:
 
             # Overdue projects
             overdue_result = await self.db.execute(
-                select(func.count(Project.id)).where(
+                select(count(Project.id)).where(
                     and_(
                         Project.end_date < datetime.utcnow(),
                         Project.status.in_(["planning", "active"]),
