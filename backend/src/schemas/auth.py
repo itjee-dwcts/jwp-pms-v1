@@ -20,8 +20,8 @@ class LoginRequest(BaseModel):
     class Config:
         """Configuration for the LoginRequest schema"""
 
-        orm_mode = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "username": "john_doe",
                 "password": "secretpassword123",
@@ -42,7 +42,8 @@ class LoginResponse(BaseModel):
     class Config:
         """Configuration for the LoginResponse schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
@@ -88,7 +89,8 @@ class RegisterRequest(BaseModel):
     class Config:
         """Configuration for the RegisterRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "username": "john_doe",
                 "email": "john@example.com",
@@ -107,7 +109,8 @@ class RefreshTokenRequest(BaseModel):
     class Config:
         """Configuration for the RefreshTokenRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
             }
@@ -125,7 +128,8 @@ class RefreshTokenResponse(BaseModel):
     class Config:
         """Configuration for the RefreshTokenResponse schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
@@ -144,7 +148,8 @@ class LogoutRequest(BaseModel):
     class Config:
         """Configuration for the LogoutRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "logout_all_devices": False,
@@ -170,7 +175,8 @@ class PasswordChangeRequest(BaseModel):
     class Config:
         """Configuration for the PasswordChangeRequest schema"""
 
-        schema_extra = {
+        from_attributes = True
+        json_schema_extra = {
             "example": {
                 "current_password": "oldPassword123!",
                 "new_password": "newSecurePassword456!",
@@ -187,7 +193,8 @@ class PasswordResetRequest(BaseModel):
     class Config:
         """Configuration for the PasswordResetRequest schema"""
 
-        schema_extra = {"example": {"email": "john@example.com"}}
+        from_attributes = True
+        json_schema_extra = {"example": {"email": "john@example.com"}}
 
 
 class PasswordResetConfirm(BaseModel):
@@ -212,7 +219,7 @@ class PasswordResetConfirm(BaseModel):
         """Configuration for the PasswordResetConfirm schema"""
 
         from_attributes = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "token": "reset-token-here",
                 "new_password": "newSecurePassword789!",
@@ -248,7 +255,7 @@ class TokenData(BaseModel):
         """Configuration for the TokenData schema"""
 
         from_attributes = True
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "sub": "123",
                 "exp": "2023-12-01T11:30:00Z",
@@ -287,7 +294,7 @@ class UserResponse(BaseModel):
         """Configuration for the UserResponse schema"""
 
         from_attributes = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "id": 1,
                 "username": "john_doe",
@@ -311,7 +318,8 @@ class EmailVerificationRequest(BaseModel):
     class Config:
         """Configuration for the EmailVerificationRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {"email": "john@example.com"}
         }
 
@@ -325,7 +333,7 @@ class EmailVerificationConfirm(BaseModel):
         """Configuration for the EmailVerificationConfirm schema"""
 
         from_attributes = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {"token": "verification-token-here"}
         }
 
@@ -341,7 +349,7 @@ class AuthenticationError(BaseModel):
         """Configuration for the AuthenticationError schema"""
 
         from_attributes = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "detail": "Invalid credentials",
                 "error_code": "AUTHENTICATION_ERROR",
@@ -360,7 +368,8 @@ class OAuthLoginRequest(BaseModel):
     class Config:
         """Configuration for the OAuthLoginRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "provider": "google",
                 "code": "oauth-authorization-code",
@@ -385,7 +394,8 @@ class TwoFactorAuthRequest(BaseModel):
     class Config:
         """Configuration for the TwoFactorAuthRequest schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {"token": "123456"}
         }
 
@@ -403,7 +413,8 @@ class SessionInfo(BaseModel):
     class Config:
         """Configuration for the SessionInfo schema"""
 
-        schema_extra: dict[str, dict[str, Any]] = {
+        from_attributes = True
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "session_id": "sess_abc123",
                 "user_agent": "Mozilla/5.0...",
@@ -428,7 +439,7 @@ class UserLoginHistory(BaseModel):
         """Configuration for the UserLoginHistory schema"""
 
         from_attributes = True
-        schema_extra: dict[str, dict[str, Any]] = {
+        json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "id": 1,
                 "ip_address": "192.168.1.1",

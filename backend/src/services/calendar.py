@@ -80,7 +80,7 @@ class CalendarService:
             created_calendar = result.scalar_one()
 
             logger.info("Calendar created successfully: %s", calendar.name)
-            return CalendarResponse.from_orm(created_calendar)
+            return CalendarResponse.model_validate(created_calendar)
 
         except Exception as e:
             await self.db.rollback()
@@ -112,12 +112,12 @@ class CalendarService:
             # If user_id is provided, check if they are the owner
             if user_id:
                 if calendar_owner_id == user_id:
-                    return CalendarResponse.from_orm(calendar)
+                    return CalendarResponse.model_validate(calendar)
 
             # If calendar is public, no need for user_id check
             calendar_is_public = getattr(calendar, "is_public", False)
             if calendar_is_public and user_id is None:
-                return CalendarResponse.from_orm(calendar)
+                return CalendarResponse.model_validate(calendar)
 
             # Check access permissions
             if (
@@ -127,7 +127,7 @@ class CalendarService:
             ):
                 raise AuthorizationError("Access denied to this calendar")
 
-            return CalendarResponse.from_orm(calendar)
+            return CalendarResponse.model_validate(calendar)
 
         except Exception as e:
             logger.error("Failed to get calendar %d: %s", calendar_id, e)
@@ -282,7 +282,7 @@ class CalendarService:
 
             return CalendarListResponse(
                 calendars=[
-                    CalendarResponse.from_orm(calendar)
+                    CalendarResponse.model_validate(calendar)
                     for calendar in calendars
                 ],
                 total_items=total_items if total_items is not None else 0,
@@ -396,7 +396,7 @@ class CalendarService:
             created_event = result.scalar_one()
 
             logger.info("Event created successfully: %s", event.title)
-            return EventResponse.from_orm(created_event)
+            return EventResponse.model_validate(created_event)
 
         except Exception as e:
             await self.db.rollback()
@@ -433,7 +433,7 @@ class CalendarService:
                 if not has_access:
                     raise AuthorizationError("Access denied to this event")
 
-            return EventResponse.from_orm(event)
+            return EventResponse.model_validate(event)
 
         except Exception as e:
             logger.error("Failed to get event %d: %s", event_id, e)
@@ -481,7 +481,7 @@ class CalendarService:
             updated_event = result.scalar_one()
 
             logger.info("Event updated successfully: %s", event.title)
-            return EventResponse.from_orm(updated_event)
+            return EventResponse.model_validate(updated_event)
 
         except Exception as e:
             await self.db.rollback()
@@ -621,7 +621,9 @@ class CalendarService:
             ) // page_size
 
             return EventListResponse(
-                events=[EventResponse.from_orm(event) for event in events],
+                events=[
+                    EventResponse.model_validate(event) for event in events
+                ],
                 total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
                 page_size=page_size,
@@ -693,7 +695,9 @@ class CalendarService:
             events = result.scalars().all()
 
             return EventListResponse(
-                events=[EventResponse.from_orm(event) for event in events],
+                events=[
+                    EventResponse.model_validate(event) for event in events
+                ],
                 total_items=len(events),
                 page_no=1,
                 page_size=len(events),
@@ -915,15 +919,17 @@ class CalendarService:
             event_stats = await self.get_calendar_stats(user_id)
 
             return EventDashboardResponse(
-                today_events=[EventResponse.from_orm(e) for e in today_events],
+                today_events=[
+                    EventResponse.model_validate(e) for e in today_events
+                ],
                 upcoming_events=[
-                    EventResponse.from_orm(e) for e in upcoming_events
+                    EventResponse.model_validate(e) for e in upcoming_events
                 ],
                 recent_events=[
-                    EventResponse.from_orm(e) for e in recent_events
+                    EventResponse.model_validate(e) for e in recent_events
                 ],
                 overdue_events=[
-                    EventResponse.from_orm(e) for e in overdue_events
+                    EventResponse.model_validate(e) for e in overdue_events
                 ],
                 event_stats=event_stats,
             )

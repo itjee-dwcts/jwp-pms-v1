@@ -45,7 +45,7 @@ async def list_events(
             calendar_id=calendar_id,
         )
 
-        return [EventResponse.from_orm(event) for event in events]
+        return [EventResponse.model_validate(event) for event in events]
 
     except Exception as e:
         logger.error("Error listing events: %s", e)
@@ -75,7 +75,7 @@ async def get_event(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
 
-        return EventResponse.from_orm(event)
+        return EventResponse.model_validate(event)
 
     except HTTPException:
         raise
@@ -108,7 +108,7 @@ async def create_event(
 
         logger.info("Event created by %s: %s", current_user.name, event.title)
 
-        return EventResponse.from_orm(event)
+        return EventResponse.model_validate(event)
 
     except Exception as e:
         logger.error("Error creating event: %s", e)
@@ -142,7 +142,7 @@ async def update_event(
 
         logger.info("Event updated by %s: %s", current_user.name, event.title)
 
-        return EventResponse.from_orm(event)
+        return EventResponse.model_validate(event)
 
     except HTTPException:
         raise
@@ -204,7 +204,9 @@ async def list_calendars(
             int(str(current_user.id))
         )
 
-        return [CalendarResponse.from_orm(calendar) for calendar in calendars]
+        return [
+            CalendarResponse.model_validate(calendar) for calendar in calendars
+        ]
 
     except Exception as e:
         logger.error("Error listing calendars: %s", e)

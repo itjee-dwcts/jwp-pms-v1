@@ -7,12 +7,10 @@ User authentication, registration, and token management endpoints.
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from models.user import User, UserRole, UserStatus
 from schemas.auth import (
     LoginRequest,
@@ -23,6 +21,7 @@ from schemas.auth import (
     UserResponse,
 )
 from services.user import UserService
+from sqlalchemy.ext.asyncio import AsyncSession
 from utils.auth import AuthManager, get_password_hash
 
 logger = logging.getLogger(__name__)
@@ -83,7 +82,7 @@ async def register(
 
         logger.info("New user registered: %s", new_user.name)
 
-        return UserResponse.from_orm(new_user)
+        return UserResponse.model_validate(new_user)
 
     except RegistrationError as e:
         logger.warning("Registration failed: %s", e)
@@ -131,7 +130,7 @@ async def login(
         await user_service.update_last_login(user_id, client_ip)
 
         # Prepare response
-        user_response = UserResponse.from_orm(user)
+        user_response = UserResponse.model_validate(user)
 
         logger.info("User logged in: %s", user.name)
 
@@ -212,7 +211,7 @@ async def get_current_user_profile(
     """
     Get current user profile
     """
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.put("/me", response_model=UserResponse)
@@ -246,7 +245,7 @@ async def update_current_user_profile(
 
         logger.info("User profile updated: %s", current_user.name)
 
-        return UserResponse.from_orm(current_user)
+        return UserResponse.model_validate(current_user)
 
     except Exception as e:
         logger.error("Profile update error: %s", e)

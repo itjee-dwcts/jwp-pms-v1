@@ -47,7 +47,7 @@ async def list_users(
             user_status=user_status,
         )
 
-        return [UserResponse.from_orm(user) for user in users]
+        return [UserResponse.model_validate(user) for user in users]
 
     except Exception as e:
         logger.error("Error listing users: %s", e)
@@ -75,7 +75,7 @@ async def get_user(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        return UserResponse.from_orm(user)
+        return UserResponse.model_validate(user)
 
     except HTTPException:
         raise
@@ -118,7 +118,7 @@ async def create_user(
 
         logger.info(f"User created by admin {current_user.name}: {user.name}")
 
-        return UserResponse.from_orm(user)
+        return UserResponse.model_validate(user)
 
     except HTTPException:
         raise
@@ -156,7 +156,7 @@ async def update_user(
             "User updated by admin %s: %s", current_user.name, user.name
         )
 
-        return UserResponse.from_orm(user)
+        return UserResponse.model_validate(user)
 
     except HTTPException:
         raise
@@ -209,4 +209,4 @@ async def get_my_profile(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get current user profile"""
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)

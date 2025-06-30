@@ -158,7 +158,7 @@ class TaskService:
             created_task = result.scalar_one()
 
             logger.info("Task created successfully: %s", task.title)
-            return TaskResponse.from_orm(created_task)
+            return TaskResponse.model_validate(created_task)
 
         except Exception as e:
             await self.db.rollback()
@@ -206,7 +206,7 @@ class TaskService:
                 if not has_access:
                     raise AuthorizationError("Access denied to this task")
 
-            return TaskResponse.from_orm(task)
+            return TaskResponse.model_validate(task)
 
         except Exception as e:
             logger.error("Failed to get task %d: %s", task_id, e)
@@ -271,7 +271,7 @@ class TaskService:
             updated_task = result.scalar_one()
 
             logger.info("Task updated successfully: %s", task.title)
-            return TaskResponse.from_orm(updated_task)
+            return TaskResponse.model_validate(updated_task)
 
         except Exception as e:
             await self.db.rollback()
@@ -426,7 +426,7 @@ class TaskService:
             ) // page_size
 
             return TaskListResponse(
-                tasks=[TaskResponse.from_orm(task) for task in tasks],
+                tasks=[TaskResponse.model_validate(task) for task in tasks],
                 total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
                 page_size=page_size,
@@ -608,7 +608,7 @@ class TaskService:
             )
 
             for task in tasks:
-                task_response = TaskResponse.from_orm(task)
+                task_response = TaskResponse.model_validate(task)
                 task_status = getattr(task, "status", None)
                 if task_status is None:
                     logger.warning("Task %d has no status, skipping", task.id)
@@ -735,6 +735,21 @@ class TaskService:
                 "Failed to assign user %d to task %d: %s", user_id, task_id, e
             )
             raise
+
+    async def list_task_comments(
+        self,
+        task_id: int,
+        user_id: int,
+    ):
+        """
+        List comments for a user
+        """
+
+        stmt = select(TaskComment).where(TaskComment.task_id == task_id)
+        if user_id:
+            stmt = stmt.where(TaskComment.author_id == user_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
 
 
 async def get_task_service(db: AsyncSession | None = None) -> TaskService:

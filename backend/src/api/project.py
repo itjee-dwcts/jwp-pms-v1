@@ -7,11 +7,9 @@ Project management endpoints.
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.project import (
     ProjectCreateRequest,
@@ -21,6 +19,7 @@ from schemas.project import (
     ProjectUpdateRequest,
 )
 from services.project import ProjectService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,7 +55,9 @@ async def list_projects(
             ),
         )
 
-        return [ProjectResponse.from_orm(project) for project in projects]
+        return [
+            ProjectResponse.model_validate(project) for project in projects
+        ]
 
     except Exception as e:
         logger.error("Error listing projects: %s", e)
@@ -77,7 +78,7 @@ async def get_project(
     """
     try:
         project_service = ProjectService(db)
-        project = await project_service._check_project_access(
+        project = await project_service.check_project_access(
             project_id, int(str(current_user.id))
         )
 
@@ -87,12 +88,12 @@ async def get_project(
                 detail="Project not found",
             )
 
-        return ProjectResponse.from_orm(project)
+        return ProjectResponse.model_validate(project)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting project {project_id}: {e}")
+        logger.error("Error getting project %s: %s", project_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve project",
@@ -116,17 +117,19 @@ async def create_project(
             project_data, int(str(current_user.id))
         )
 
-        logger.info(f"Project created by {current_user.name}: {project.name}")
+        logger.info(
+            "Project created by %s: %s", current_user.name, project.name
+        )
 
-        return ProjectResponse.from_orm(project)
+        return ProjectResponse.model_validate(project)
 
     except Exception as e:
-        logger.error(f"Error creating project: {e}")
+        logger.error("Error creating project: %s", e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create project",
-        )
+        ) from e
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
@@ -151,19 +154,21 @@ async def update_project(
                 detail="Project not found",
             )
 
-        logger.info(f"Project updated by {current_user.name}: {project.name}")
+        logger.info(
+            "Project updated by %s: %s", current_user.name, project.name
+        )
 
-        return ProjectResponse.from_orm(project)
+        return ProjectResponse.model_validate(project)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating project {project_id}: {e}")
+        logger.error("Error updating project %s: %s", project_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update project",
-        )
+        ) from e
 
 
 @router.delete("/{project_id}")
@@ -187,19 +192,19 @@ async def delete_project(
                 detail="Project not found",
             )
 
-        logger.info(f"Project deleted by {current_user.name}: {project_id}")
+        logger.info("Project deleted by %s: %s", current_user.name, project_id)
 
         return {"message": "Project deleted successfully"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting project {project_id}: {e}")
+        logger.error("Error deleting project %s: %s", project_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete project",
-        )
+        ) from e
 
 
 @router.get(
@@ -216,14 +221,16 @@ async def list_project_members(
     try:
         project_service = ProjectService(db)
         members = await project_service.list_project_members(
-            project_id, current_user.id
+            project_id, int(str(current_user.id))
         )
 
-        return [ProjectMemberResponse.from_orm(member) for member in members]
+        return [
+            ProjectMemberResponse.model_validate(member) for member in members
+        ]
 
     except Exception as e:
-        logger.error(f"Error listing project members: {e}")
+        logger.error("Error listing project members: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve project members",
-        )
+        ) from e

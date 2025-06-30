@@ -107,7 +107,7 @@ class ProjectService:
             created_project = result.scalar_one()
 
             logger.info("Project created successfully: %s", project.name)
-            return ProjectResponse.from_orm(created_project)
+            return ProjectResponse.model_validate(created_project)
 
         except Exception as e:
             await self.db.rollback()
@@ -151,7 +151,7 @@ class ProjectService:
                 if not has_access:
                     raise AuthorizationError("Access denied to this project")
 
-            return ProjectResponse.from_orm(project)
+            return ProjectResponse.model_validate(project)
 
         except Exception as e:
             logger.error("Failed to get project %d: %s", project_id, e)
@@ -203,7 +203,7 @@ class ProjectService:
             updated_project = result.scalar_one()
 
             logger.info("Project updated successfully: %s", project.name)
-            return ProjectResponse.from_orm(updated_project)
+            return ProjectResponse.model_validate(updated_project)
 
         except Exception as e:
             await self.db.rollback()
@@ -358,7 +358,8 @@ class ProjectService:
 
             return ProjectListResponse(
                 projects=[
-                    ProjectResponse.from_orm(project) for project in projects
+                    ProjectResponse.model_validate(project)
+                    for project in projects
                 ],
                 total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
@@ -650,12 +651,15 @@ class ProjectService:
                     overdue_projects if overdue_projects is not None else 0
                 ),
                 recent_projects=[
-                    ProjectResponse.from_orm(p) for p in recent_projects
+                    ProjectResponse.model_validate(p) for p in recent_projects
                 ],
-                my_projects=[ProjectResponse.from_orm(p) for p in my_projects],
+                my_projects=[
+                    ProjectResponse.model_validate(p) for p in my_projects
+                ],
                 project_progress_stats=stats.projects_by_status,
                 upcoming_deadlines=[
-                    ProjectResponse.from_orm(p) for p in upcoming_deadlines
+                    ProjectResponse.model_validate(p)
+                    for p in upcoming_deadlines
                 ],
             )
 
@@ -743,6 +747,23 @@ class ProjectService:
         except Exception as e:
             logger.error("Failed to check project permission: %s", e)
             return False
+
+    async def list_project_members(
+        self,
+        project_id: int,
+        user_id: int,
+    ):
+        """
+        List project members for a user
+        """
+
+        stmt = select(ProjectMember).where(
+            ProjectMember.project_id == project_id
+        )
+        if user_id:
+            stmt = stmt.where(ProjectMember.user_id == user_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
 
 
 async def get_project_service(

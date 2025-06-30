@@ -548,6 +548,3 @@ class TaskGanttResponse(BaseModel):
 # Update forward references
 TaskCommentResponse.model_rebuild()
 TaskResponse.model_rebuild()
-TaskResponse.model_rebuild()
-TaskResponse.model_rebuild()
-TaskResponse.model_rebuild()

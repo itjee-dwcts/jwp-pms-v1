@@ -522,7 +522,7 @@ class UserService:
             ) // page_size
 
             return UserListResponse(
-                users=[UserResponse.from_orm(user) for user in users],
+                users=[UserResponse.model_validate(user) for user in users],
                 total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
                 page_size=page_size,

@@ -7,6 +7,8 @@ SQLAlchemy models for task management.
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from core.base import Base
+from core.constants import TaskPriority, TaskStatus, TaskType
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -19,9 +21,6 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-
-from core.base import Base
-from core.constants import TaskPriority, TaskStatus, TaskType
 
 if TYPE_CHECKING:
     from models.user import User

@@ -8,9 +8,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
-
 from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
+from pydantic import BaseModel, Field, field_validator
 from schemas.user import UserPublic
 
 
@@ -224,8 +223,6 @@ class ProjectMemberResponse(BaseModel):
     class Config:
         """Configuration for ProjectMemberResponse"""
 
-        # Use from_attributes to allow ORM models to be converted directly
-        # to Pydantic models without needing to define a custom from_orm method
         from_attributes = True
 
 
