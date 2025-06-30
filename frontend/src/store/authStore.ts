@@ -1,264 +1,358 @@
-// src/store/authStore.ts
-
-import toast from 'react-hot-toast';
+import { apiClient, authApi } from '@/lib/api';
+import { APP_CONSTANTS } from '@/lib/config';
+import { AuthState, LoginRequest, RegisterRequest, User } from '@/types';
+import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiClient } from '../lib/api';
-import { LoginRequest, User, UserCreateRequest } from '../types';
 
-interface AuthState {
-  // 상태
-  user: User | null;
-  token: string | null;
-  refreshToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-
-  // 액션
-  login: (credentials: LoginRequest) => Promise<boolean>;
-  register: (userData: UserCreateRequest) => Promise<boolean>;
-  logout: () => void;
-  refreshTokens: () => Promise<boolean>;
-  getCurrentUser: () => Promise<void>;
+interface AuthStore extends AuthState {
+  // Actions
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
+  logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
-      // 초기 상태
+      // Initial state
       user: null,
-      token: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      // 로그인
-      login: async (credentials: LoginRequest): Promise<boolean> => {
-        set({ isLoading: true, error: null });
-
+      // Actions
+      login: async (credentials: LoginRequest) => {
         try {
-          const response = await apiClient.login(credentials);
+          set({ isLoading: true, error: null });
 
-          const { access_token, refresh_token, user } = response;
+          const response = await authApi.login(credentials);
 
-          // 토큰을 localStorage에 저장
-          localStorage.setItem('access_token', access_token);
-          localStorage.setItem('refresh_token', refresh_token);
+          if (response.success) {
+            const { user, accessToken, refreshToken } = response.data;
 
-          set({
-            user,
-            token: access_token,
-            refreshToken: refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
+            // Store tokens
+            apiClient.setTokens(accessToken, refreshToken);
 
-          toast.success(`환영합니다, ${user.first_name}님!`);
-          return true;
+            // Update state
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null
+            });
+
+            toast.success(`Welcome back, ${user.firstName}!`);
+          } else {
+            throw new Error(response.message || 'Login failed');
+          }
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || '로그인에 실패했습니다.';
+          const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+          set({
+            error: errorMessage,
+            isLoading: false,
+            isAuthenticated: false,
+            user: null
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      register: async (userData: RegisterRequest) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          // Validate passwords match
+          if (userData.password !== userData.confirmPassword) {
+            throw new Error('Passwords do not match');
+          }
+
+          const response = await authApi.register(userData);
+
+          if (response.success) {
+            set({ isLoading: false, error: null });
+            toast.success('Registration successful! Please log in.');
+          } else {
+            throw new Error(response.message || 'Registration failed');
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      logout: async () => {
+        try {
+          set({ isLoading: true });
+
+          // Call logout endpoint (optional, for session cleanup)
+          try {
+            await authApi.logout();
+          } catch {
+            // Ignore logout API errors, proceed with local cleanup
+          }
+
+          // Clear tokens and state
+          apiClient.clearAuth();
+          apiClient.clearCache(); // Clear any cached data
+
           set({
             user: null,
-            token: null,
-            refreshToken: null,
             isAuthenticated: false,
             isLoading: false,
-            error: errorMessage,
-          });
-          toast.error(errorMessage);
-          return false;
-        }
-      },
-
-      // 회원가입
-      register: async (userData: UserCreateRequest): Promise<boolean> => {
-        set({ isLoading: true, error: null });
-
-        try {
-          await apiClient.register(userData);
-
-          set({
-            isLoading: false,
-            error: null,
+            error: null
           });
 
-          toast.success('회원가입이 완료되었습니다. 로그인해주세요.');
-          return true;
+          toast.success('Logged out successfully');
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || '회원가입에 실패했습니다.';
-          set({
-            isLoading: false,
-            error: errorMessage,
-          });
-          toast.error(errorMessage);
-          return false;
+          set({ isLoading: false });
+          console.error('Logout error:', error);
         }
       },
 
-      // 로그아웃
-      logout: () => {
-        // API 호출 (선택적)
-        apiClient.logout().catch(() => {
-          // 로그아웃 API 실패해도 로컬 상태는 정리
-        });
-
-        // 로컬 스토리지 정리
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-
-        set({
-          user: null,
-          token: null,
-          refreshToken: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-
-        toast.success('로그아웃되었습니다.');
-      },
-
-      // 토큰 갱신
-      refreshTokens: async (): Promise<boolean> => {
-        const { refreshToken } = get();
-
-        if (!refreshToken) {
-          get().logout();
-          return false;
-        }
-
+      forgotPassword: async (email: string) => {
         try {
-          const response = await apiClient.refreshToken(refreshToken);
-          const { access_token, refresh_token, user } = response;
+          set({ isLoading: true, error: null });
 
-          localStorage.setItem('access_token', access_token);
-          localStorage.setItem('refresh_token', refresh_token);
+          const response = await authApi.forgotPassword(email);
 
-          set({
-            user,
-            token: access_token,
-            refreshToken: refresh_token,
-            isAuthenticated: true,
-            error: null,
-          });
-
-          return true;
-        } catch (error) {
-          get().logout();
-          return false;
-        }
-      },
-
-      // 현재 사용자 정보 가져오기
-      getCurrentUser: async (): Promise<void> => {
-        const { token } = get();
-
-        if (!token) {
-          return;
-        }
-
-        set({ isLoading: true });
-
-        try {
-          const response = await apiClient.getCurrentUser();
-
-          set({
-            user: response.data,
-            isLoading: false,
-            error: null,
-          });
-        } catch (error: any) {
-          if (error.response?.status === 401) {
-            // 토큰이 유효하지 않은 경우 로그아웃
-            get().logout();
+          if (response.success) {
+            set({ isLoading: false, error: null });
+            toast.success('Password reset instructions sent to your email');
           } else {
-            set({
-              isLoading: false,
-              error: '사용자 정보를 가져오는데 실패했습니다.',
-            });
+            throw new Error(response.message || 'Failed to send reset email');
           }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to send reset email';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
         }
       },
 
-      // 에러 초기화
+      resetPassword: async (token: string, password: string) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const response = await authApi.resetPassword(token, password);
+
+          if (response.success) {
+            set({ isLoading: false, error: null });
+            toast.success('Password reset successful! Please log in with your new password.');
+          } else {
+            throw new Error(response.message || 'Password reset failed');
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.message || 'Password reset failed';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const response = await authApi.changePassword(currentPassword, newPassword);
+
+          if (response.success) {
+            set({ isLoading: false, error: null });
+            toast.success('Password changed successfully');
+          } else {
+            throw new Error(response.message || 'Password change failed');
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.message || 'Password change failed';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      updateProfile: async (data: Partial<User>) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const response = await authApi.updateProfile(data);
+
+          if (response.success) {
+            const updatedUser = response.data;
+
+            set({
+              user: updatedUser,
+              isLoading: false,
+              error: null
+            });
+
+            toast.success('Profile updated successfully');
+          } else {
+            throw new Error(response.message || 'Profile update failed');
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.message || 'Profile update failed';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      checkAuthStatus: async () => {
+        try {
+          const token = localStorage.getItem(APP_CONSTANTS.TOKEN_STORAGE_KEY);
+
+          if (!token) {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false
+            });
+            return;
+          }
+
+          set({ isLoading: true });
+
+          // Verify token and get current user
+          const response = await authApi.getProfile();
+
+          if (response.success) {
+            set({
+              user: response.data,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null
+            });
+          } else {
+            throw new Error('Invalid token');
+          }
+        } catch (error: any) {
+          // Token is invalid, clear auth data
+          apiClient.clearAuth();
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
+        }
+      },
+
       clearError: () => {
         set({ error: null });
       },
 
-      // 로딩 상태 설정
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
       },
     }),
     {
-      name: 'auth-storage',
+      name: 'auth-store',
       partialize: (state) => ({
+        // Only persist essential auth state
         user: state.user,
-        token: state.token,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
 
-// 인증 초기화 함수 (앱 시작 시 호출)
-export const initializeAuth = async (): Promise<void> => {
-  const token = localStorage.getItem('access_token');
-  const refreshToken = localStorage.getItem('refresh_token');
+// Selectors for easier state access
+export const useUser = () => useAuthStore(state => state.user);
+export const useIsAuthenticated = () => useAuthStore(state => state.isAuthenticated);
+export const useAuthLoading = () => useAuthStore(state => state.isLoading);
+export const useAuthError = () => useAuthStore(state => state.error);
 
-  if (token && refreshToken) {
-    useAuthStore.setState({
-      token,
-      refreshToken,
-      isAuthenticated: true,
-    });
+// Helper functions
+export const hasRole = (user: User | null, role: string): boolean => {
+  if (!user) return false;
+  return user.roles.some(r => r.name === role);
+};
 
-    // 현재 사용자 정보 가져오기
-    await useAuthStore.getState().getCurrentUser();
+export const hasPermission = (user: User | null, resource: string, action: string): boolean => {
+  if (!user) return false;
+
+  return user.roles.some(role =>
+    role.permissions.some(permission =>
+      permission.resource === resource && permission.action === action
+    )
+  );
+};
+
+export const isAdmin = (user: User | null): boolean => {
+  return hasRole(user, 'admin') || hasRole(user, 'Admin');
+};
+
+export const isProjectManager = (user: User | null): boolean => {
+  return hasRole(user, 'project_manager') || hasRole(user, 'Project Manager');
+};
+
+export const isDeveloper = (user: User | null): boolean => {
+  return hasRole(user, 'developer') || hasRole(user, 'Developer');
+};
+
+export const canCreateProject = (user: User | null): boolean => {
+  return hasPermission(user, 'project', 'create') || isAdmin(user) || isProjectManager(user);
+};
+
+export const canEditProject = (user: User | null, projectOwnerId?: string): boolean => {
+  if (isAdmin(user)) return true;
+  if (hasPermission(user, 'project', 'update')) return true;
+  if (user && projectOwnerId && user.id === projectOwnerId) return true;
+  return false;
+};
+
+export const canDeleteProject = (user: User | null, projectOwnerId?: string): boolean => {
+  if (isAdmin(user)) return true;
+  if (hasPermission(user, 'project', 'delete')) return true;
+  if (user && projectOwnerId && user.id === projectOwnerId) return true;
+  return false;
+};
+
+export const canManageUsers = (user: User | null): boolean => {
+  return hasPermission(user, 'user', 'manage') || isAdmin(user);
+};
+
+// Auth guards for components
+export const useAuthGuard = (requiredRole?: string, requiredPermission?: { resource: string; action: string }) => {
+  const user = useUser();
+  const isAuthenticated = useIsAuthenticated();
+
+  if (!isAuthenticated) {
+    return { hasAccess: false, reason: 'not_authenticated' };
   }
-};
 
-// 인증이 필요한 라우트에서 사용할 훅
-export const useRequireAuth = () => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  if (requiredRole && !hasRole(user, requiredRole)) {
+    return { hasAccess: false, reason: 'insufficient_role' };
+  }
 
-  return {
-    isAuthenticated,
-    isLoading,
-    requireAuth: isAuthenticated,
-  };
-};
+  if (requiredPermission && !hasPermission(user, requiredPermission.resource, requiredPermission.action)) {
+    return { hasAccess: false, reason: 'insufficient_permission' };
+  }
 
-// 권한 체크 훅
-export const usePermissions = () => {
-  const { user } = useAuthStore();
-
-  const isAdmin = user?.role === 'admin';
-  const isManager = user?.role === 'manager' || isAdmin;
-  const isDeveloper = user?.role === 'developer' || isManager;
-
-  const canManageUsers = isAdmin;
-  const canManageProjects = isManager;
-  const canCreateTasks = isDeveloper;
-  const canDeleteTasks = isManager;
-  const canViewReports = isManager;
-
-  return {
-    isAdmin,
-    isManager,
-    isDeveloper,
-    canManageUsers,
-    canManageProjects,
-    canCreateTasks,
-    canDeleteTasks,
-    canViewReports,
-    hasRole: (role: string) => user?.role === role,
-    hasAnyRole: (roles: string[]) => roles.includes(user?.role || ''),
-  };
+  return { hasAccess: true };
 };

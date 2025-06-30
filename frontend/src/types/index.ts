@@ -1,253 +1,92 @@
-// src/types/index.ts
+// ============================================================================
+// Base Types
+// ============================================================================
 
-export interface User {
-  id: number;
+export interface BaseEntity {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// User Types
+// ============================================================================
+
+export interface User extends BaseEntity {
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: UserRole;
-  is_active: boolean;
-  is_verified: boolean;
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
-  last_login?: string;
+  firstName: string;
+  lastName: string;
+  avatar?: string;
+  isActive: boolean;
+  lastLogin?: string;
+  roles: Role[];
 }
 
-export interface UserCreateRequest {
-  username: string;
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  role?: UserRole;
+export interface Role extends BaseEntity {
+  name: string;
+  description: string;
+  permissions: Permission[];
 }
 
-export interface UserUpdateRequest {
-  username?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  role?: UserRole;
-  is_active?: boolean;
+export interface Permission extends BaseEntity {
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
 }
+
+// ============================================================================
+// Authentication Types
+// ============================================================================
 
 export interface LoginRequest {
-  username: string;
+  usernameOrEmail: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
   user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }
 
-export interface Project {
-  id: number;
-  name: string;
-  description?: string;
-  status: ProjectStatus;
-  priority: Priority;
-  start_date?: string;
-  end_date?: string;
-  deadline?: string;
-  progress: number;
-  owner_id: number;
-  owner: User;
-  members: User[];
-  tasks_count: number;
-  completed_tasks_count: number;
-  created_at: string;
-  updated_at: string;
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  confirmPassword: string;
 }
 
-export interface ProjectCreateRequest {
-  name: string;
-  description?: string;
-  status?: ProjectStatus;
-  priority?: Priority;
-  start_date?: string;
-  end_date?: string;
-  deadline?: string;
-  member_ids?: number[];
+export interface ForgotPasswordRequest {
+  email: string;
 }
 
-export interface ProjectUpdateRequest {
-  name?: string;
-  description?: string;
-  status?: ProjectStatus;
-  priority?: Priority;
-  start_date?: string;
-  end_date?: string;
-  deadline?: string;
-  progress?: number;
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+  confirmPassword: string;
 }
 
-export interface Task {
-  id: number;
-  title: string;
-  description?: string;
-  status: TaskStatus;
-  priority: Priority;
-  project_id: number;
-  project: Project;
-  assignee_id?: number;
-  assignee?: User;
-  reporter_id: number;
-  reporter: User;
-  start_date?: string;
-  due_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
-  progress: number;
-  tags: string[];
-  attachments: Attachment[];
-  comments: Comment[];
-  created_at: string;
-  updated_at: string;
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
-export interface TaskCreateRequest {
-  title: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: Priority;
-  project_id: number;
-  assignee_id?: number;
-  start_date?: string;
-  due_date?: string;
-  estimated_hours?: number;
-  tags?: string[];
-}
-
-export interface TaskUpdateRequest {
-  title?: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: Priority;
-  assignee_id?: number;
-  start_date?: string;
-  due_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
-  progress?: number;
-  tags?: string[];
-}
-
-export interface Comment {
-  id: number;
-  content: string;
-  task_id?: number;
-  project_id?: number;
-  user_id: number;
-  user: User;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CommentCreateRequest {
-  content: string;
-  task_id?: number;
-  project_id?: number;
-}
-
-export interface Attachment {
-  id: number;
-  filename: string;
-  file_size: number;
-  mime_type: string;
-  url: string;
-  task_id?: number;
-  project_id?: number;
-  uploaded_by: number;
-  uploader: User;
-  created_at: string;
-}
-
-export interface CalendarEvent {
-  id: number;
-  title: string;
-  description?: string;
-  start_time: string;
-  end_time: string;
-  all_day: boolean;
-  type: EventType;
-  location?: string;
-  attendees: User[];
-  task_id?: number;
-  task?: Task;
-  created_by: number;
-  creator: User;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CalendarEventCreateRequest {
-  title: string;
-  description?: string;
-  start_time: string;
-  end_time: string;
-  all_day?: boolean;
-  type?: EventType;
-  location?: string;
-  attendee_ids?: number[];
-  task_id?: number;
-}
-
-export interface DashboardStats {
-  total_projects: number;
-  active_projects: number;
-  completed_projects: number;
-  total_tasks: number;
-  assigned_tasks: number;
-  completed_tasks: number;
-  overdue_tasks: number;
-  upcoming_deadlines: Task[];
-  recent_activities: ActivityLog[];
-  project_progress: Array<{
-    project: Project;
-    completion_rate: number;
-  }>;
-}
-
-export interface ActivityLog {
-  id: number;
-  action: string;
-  entity_type: string;
-  entity_id: number;
-  entity_name: string;
-  user_id: number;
-  user: User;
-  details?: Record<string, any>;
-  created_at: string;
-}
-
-// 열거형 타입들
-export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  DEVELOPER = 'developer',
-  VIEWER = 'viewer',
-}
+// ============================================================================
+// Project Types
+// ============================================================================
 
 export enum ProjectStatus {
   PLANNING = 'planning',
   ACTIVE = 'active',
   ON_HOLD = 'on_hold',
   COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-}
-
-export enum TaskStatus {
-  TODO = 'todo',
-  IN_PROGRESS = 'in_progress',
-  REVIEW = 'review',
-  TESTING = 'testing',
-  DONE = 'done',
   CANCELLED = 'cancelled',
 }
 
@@ -258,6 +97,150 @@ export enum Priority {
   CRITICAL = 'critical',
 }
 
+export interface Project extends BaseEntity {
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  priority: Priority;
+  startDate?: string;
+  endDate?: string;
+  dueDate?: string;
+  progress: number;
+  budget?: number;
+  owner: User;
+  members: ProjectMember[];
+  tasks: Task[];
+  comments: Comment[];
+  attachments: Attachment[];
+  tags: string[];
+}
+
+export interface ProjectMember extends BaseEntity {
+  user: User;
+  project: Project;
+  role: string;
+  joinedAt: string;
+  permissions: string[];
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  priority: Priority;
+  startDate?: string;
+  endDate?: string;
+  dueDate?: string;
+  budget?: number;
+  memberIds?: string[];
+  tags?: string[];
+}
+
+export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
+  id: string;
+}
+
+// ============================================================================
+// Task Types
+// ============================================================================
+
+export enum TaskStatus {
+  TODO = 'todo',
+  IN_PROGRESS = 'in_progress',
+  IN_REVIEW = 'in_review',
+  DONE = 'done',
+  CANCELLED = 'cancelled',
+}
+
+export interface Task extends BaseEntity {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: Priority;
+  project: Project;
+  assignees: User[];
+  reporter: User;
+  startDate?: string;
+  dueDate?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  progress: number;
+  comments: Comment[];
+  attachments: Attachment[];
+  tags: string[];
+  dependencies: Task[];
+  subtasks: Task[];
+  parent?: Task;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: Priority;
+  projectId: string;
+  assigneeIds?: string[];
+  startDate?: string;
+  dueDate?: string;
+  estimatedHours?: number;
+  tags?: string[];
+  parentId?: string;
+}
+
+export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
+  id: string;
+}
+
+// ============================================================================
+// Comment Types
+// ============================================================================
+
+export interface Comment extends BaseEntity {
+  content: string;
+  author: User;
+  projectId?: string;
+  taskId?: string;
+  parentId?: string;
+  replies?: Comment[];
+  attachments: Attachment[];
+  mentions: User[];
+}
+
+export interface CreateCommentRequest {
+  content: string;
+  projectId?: string;
+  taskId?: string;
+  parentId?: string;
+  mentionIds?: string[];
+}
+
+// ============================================================================
+// Attachment Types
+// ============================================================================
+
+export interface Attachment extends BaseEntity {
+  fileName: string;
+  originalName: string;
+  fileSize: number;
+  mimeType: string;
+  url: string;
+  uploadedBy: User;
+  projectId?: string;
+  taskId?: string;
+  commentId?: string;
+}
+
+export interface UploadAttachmentRequest {
+  file: File;
+  projectId?: string;
+  taskId?: string;
+  commentId?: string;
+}
+
+// ============================================================================
+// Calendar/Event Types
+// ============================================================================
+
 export enum EventType {
   MEETING = 'meeting',
   DEADLINE = 'deadline',
@@ -266,178 +249,486 @@ export enum EventType {
   OTHER = 'other',
 }
 
-// API 응답 타입들
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  status: string;
+export interface CalendarEvent extends BaseEntity {
+  title: string;
+  description?: string;
+  type: EventType;
+  startDate: string;
+  endDate: string;
+  isAllDay: boolean;
+  location?: string;
+  attendees: User[];
+  organizer: User;
+  projectId?: string;
+  taskId?: string;
+  color?: string;
+  isRecurring: boolean;
+  recurrenceRule?: string;
+}
+
+export interface CreateEventRequest {
+  title: string;
+  description?: string;
+  type: EventType;
+  startDate: string;
+  endDate: string;
+  isAllDay?: boolean;
+  location?: string;
+  attendeeIds?: string[];
+  projectId?: string;
+  taskId?: string;
+  color?: string;
+}
+
+// ============================================================================
+// Activity Log Types
+// ============================================================================
+
+export enum ActivityType {
+  PROJECT_CREATED = 'project_created',
+  PROJECT_UPDATED = 'project_updated',
+  PROJECT_DELETED = 'project_deleted',
+  TASK_CREATED = 'task_created',
+  TASK_UPDATED = 'task_updated',
+  TASK_DELETED = 'task_deleted',
+  TASK_ASSIGNED = 'task_assigned',
+  TASK_UNASSIGNED = 'task_unassigned',
+  COMMENT_ADDED = 'comment_added',
+  COMMENT_UPDATED = 'comment_updated',
+  COMMENT_DELETED = 'comment_deleted',
+  FILE_UPLOADED = 'file_uploaded',
+  FILE_DELETED = 'file_deleted',
+  USER_JOINED = 'user_joined',
+  USER_LEFT = 'user_left',
+}
+
+export interface ActivityLog extends BaseEntity {
+  type: ActivityType;
+  description: string;
+  user: User;
+  projectId?: string;
+  taskId?: string;
+  metadata?: Record<string, any>;
+}
+
+// ============================================================================
+// Dashboard Types
+// ============================================================================
+
+export interface DashboardStats {
+  totalProjects: number;
+  activeProjects: number;
+  completedProjects: number;
+  totalTasks: number;
+  todoTasks: number;
+  inProgressTasks: number;
+  completedTasks: number;
+  overdueTasks: number;
+  myTasks: number;
+  upcomingDeadlines: Task[];
+  recentActivity: ActivityLog[];
+}
+
+export interface ProjectProgress {
+  projectId: string;
+  projectName: string;
+  progress: number;
+  tasksCompleted: number;
+  totalTasks: number;
+  dueDate?: string;
+}
+
+export interface TaskDistribution {
+  status: TaskStatus;
+  count: number;
+  percentage: number;
+}
+
+// ============================================================================
+// Filter and Search Types
+// ============================================================================
+
+export interface ProjectFilters {
+  status?: ProjectStatus[];
+  priority?: Priority[];
+  ownerId?: string;
+  memberIds?: string[];
+  tags?: string[];
+  startDateFrom?: string;
+  startDateTo?: string;
+  endDateFrom?: string;
+  endDateTo?: string;
+  search?: string;
+}
+
+export interface TaskFilters {
+  status?: TaskStatus[];
+  priority?: Priority[];
+  projectIds?: string[];
+  assigneeIds?: string[];
+  reporterId?: string;
+  tags?: string[];
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  search?: string;
+}
+
+export interface SortOption {
+  field: string;
+  direction: 'asc' | 'desc';
 }
 
 export interface PaginationParams {
-  page?: number;
-  size?: number;
-  sort?: string;
-  order?: 'asc' | 'desc';
+  page: number;
+  limit: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
+  data: T[];
   total: number;
   page: number;
-  size: number;
-  pages: number;
-  has_next: boolean;
-  has_prev: boolean;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
-export interface FilterParams {
-  search?: string;
-  status?: string;
-  priority?: string;
-  assignee_id?: number;
-  project_id?: number;
-  start_date?: string;
-  end_date?: string;
+// ============================================================================
+// Form Types
+// ============================================================================
+
+export interface FormFieldError {
+  field: string;
+  message: string;
 }
 
-// 폼 타입들
-export interface SearchFilters {
-  search: string;
-  status: string;
-  priority: string;
-  assignee: string;
-  project: string;
-  dateRange: {
-    start: string;
-    end: string;
-  };
+export interface FormState<T> {
+  data: T;
+  errors: FormFieldError[];
+  isSubmitting: boolean;
+  isValid: boolean;
+  isDirty: boolean;
 }
+
+// ============================================================================
+// API Response Types
+// ============================================================================
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errors?: FormFieldError[];
+}
+
+export interface ApiError {
+  message: string;
+  code?: string;
+  field?: string;
+  details?: any;
+}
+
+// ============================================================================
+// Notification Types
+// ============================================================================
+
+export enum NotificationType {
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
+}
+
+export interface Notification extends BaseEntity {
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  userId: string;
+  actionUrl?: string;
+  actionText?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CreateNotificationRequest {
+  type: NotificationType;
+  title: string;
+  message: string;
+  userIds: string[];
+  actionUrl?: string;
+  actionText?: string;
+  metadata?: Record<string, any>;
+}
+
+// ============================================================================
+// Theme Types
+// ============================================================================
 
 export interface ThemeConfig {
-  mode: 'light' | 'dark';
+  mode: 'light' | 'dark' | 'system';
   primaryColor: string;
-  accentColor: string;
+  fontSize: 'sm' | 'md' | 'lg';
+  density: 'compact' | 'comfortable' | 'spacious';
 }
 
-export interface AppConfig {
-  apiBaseUrl: string;
-  graphqlEndpoint: string;
+// ============================================================================
+// Settings Types
+// ============================================================================
+
+export interface UserSettings {
   theme: ThemeConfig;
-  features: {
-    darkMode: boolean;
-    notifications: boolean;
-    calendar: boolean;
-    ganttChart: boolean;
-    timeTracking: boolean;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    desktop: boolean;
+    taskAssigned: boolean;
+    taskCompleted: boolean;
+    projectUpdated: boolean;
+    commentMentioned: boolean;
+    deadlineReminder: boolean;
+  };
+  preferences: {
+    language: string;
+    timezone: string;
+    dateFormat: string;
+    timeFormat: string;
+    weekStartsOn: number;
+  };
+  dashboard: {
+    widgets: string[];
+    layout: 'grid' | 'list';
+    refreshInterval: number;
   };
 }
 
-// 컴포넌트 Props 타입들
-export interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export interface UpdateUserSettingsRequest extends Partial<UserSettings> {}
+
+// ============================================================================
+// File Upload Types
+// ============================================================================
+
+export interface FileUploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
 }
 
+export interface FileUploadConfig {
+  maxFileSize: number;
+  allowedFileTypes: string[];
+  maxFiles: number;
+}
+
+// ============================================================================
+// Chart/Analytics Types
+// ============================================================================
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface TimeSeriesDataPoint {
+  date: string;
+  value: number;
+  category?: string;
+}
+
+export interface ProjectAnalytics {
+  projectId: string;
+  projectName: string;
+  completionRate: number;
+  taskDistribution: ChartDataPoint[];
+  progressOverTime: TimeSeriesDataPoint[];
+  teamProductivity: {
+    userId: string;
+    userName: string;
+    tasksCompleted: number;
+    hoursLogged: number;
+  }[];
+  burndownChart: {
+    date: string;
+    remainingTasks: number;
+    idealTasks: number;
+  }[];
+}
+
+// ============================================================================
+// Gantt Chart Types
+// ============================================================================
+
+export interface GanttTask {
+  id: string;
+  name: string;
+  start: Date;
+  end: Date;
+  progress: number;
+  dependencies?: string[];
+  assignee?: User;
+  project: Project;
+  color?: string;
+  type: 'task' | 'milestone' | 'project';
+}
+
+export interface GanttChartConfig {
+  viewMode: 'day' | 'week' | 'month' | 'quarter' | 'year';
+  showCriticalPath: boolean;
+  showDependencies: boolean;
+  showMilestones: boolean;
+  zoom: number;
+}
+
+// ============================================================================
+// Drag and Drop Types
+// ============================================================================
+
+export interface DragItem {
+  id: string;
+  type: string;
+  data: any;
+}
+
+export interface DropResult {
+  destination?: {
+    droppableId: string;
+    index: number;
+  };
+  source: {
+    droppableId: string;
+    index: number;
+  };
+  draggableId: string;
+}
+
+// ============================================================================
+// Component Props Types
+// ============================================================================
+
 export interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'ghost';
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'ghost' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
-  fullWidth?: boolean;
+  loading?: boolean;
+  icon?: React.ReactNode;
   children: React.ReactNode;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
 }
 
-export interface TableColumn<T> {
-  key: keyof T;
-  title: string;
-  width?: string;
-  sortable?: boolean;
-  render?: (value: any, record: T) => React.ReactNode;
+export interface InputProps {
+  label?: string;
+  placeholder?: string;
+  type?: string;
+  value?: string;
+  defaultValue?: string;
+  error?: string;
+  disabled?: boolean;
+  required?: boolean;
+  icon?: React.ReactNode;
+  onChange?: (value: string) => void;
+  onBlur?: () => void;
+  onFocus?: () => void;
+  className?: string;
 }
 
-export interface TableProps<T> {
-  data: T[];
-  columns: TableColumn<T>[];
-  loading?: boolean;
-  pagination?: {
-    current: number;
-    total: number;
-    pageSize: number;
-    onChange: (page: number, pageSize: number) => void;
-  };
-  rowKey: keyof T;
-  onRowClick?: (record: T) => void;
+export interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  closable?: boolean;
+  children: React.ReactNode;
 }
 
-// 상태 관리 타입들
+export interface CardProps {
+  title?: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  bordered?: boolean;
+  hoverable?: boolean;
+}
+
+// ============================================================================
+// Store Types (for State Management)
+// ============================================================================
+
 export interface AuthState {
   user: User | null;
-  token: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 }
 
-export interface ProjectState {
-  projects: Project[];
-  currentProject: Project | null;
-  loading: boolean;
-  error: string | null;
-  filters: FilterParams;
-  pagination: {
-    page: number;
-    size: number;
-    total: number;
-  };
-}
-
-export interface TaskState {
-  tasks: Task[];
-  currentTask: Task | null;
-  loading: boolean;
-  error: string | null;
-  filters: FilterParams;
-  pagination: {
-    page: number;
-    size: number;
-    total: number;
-  };
+export interface ThemeState {
+  isDarkMode: boolean;
+  primaryColor: string;
+  fontSize: 'sm' | 'md' | 'lg';
+  density: 'compact' | 'comfortable' | 'spacious';
 }
 
 export interface UIState {
-  theme: 'light' | 'dark';
-  sidebarCollapsed: boolean;
-  loading: boolean;
-  notifications: Array<{
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    title: string;
-    message: string;
-    timestamp: string;
-  }>;
+  sidebarOpen: boolean;
+  notifications: Notification[];
+  modals: {
+    [key: string]: boolean;
+  };
+  loading: {
+    [key: string]: boolean;
+  };
 }
 
-// 에러 타입들
-export interface ApiError {
-  message: string;
-  code: string;
-  status: number;
-  details?: Record<string, any>;
+// ============================================================================
+// Route Types
+// ============================================================================
+
+export interface RouteConfig {
+  path: string;
+  component: React.ComponentType;
+  exact?: boolean;
+  protected?: boolean;
+  roles?: string[];
+  title?: string;
+  breadcrumb?: string;
 }
 
-export interface ValidationError {
-  field: string;
-  message: string;
-}
+// ============================================================================
+// Utility Types
+// ============================================================================
 
-// 유틸리티 타입들
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type DeepPartial<T> = {
+  [P in keyof T]?: DeepPartial<T[P]>;
+};
+
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
-export type ID = string | number;
+
+export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};
+
+// ============================================================================
+// Environment Types
+// ============================================================================
+
+export interface EnvironmentConfig {
+  API_BASE_URL: string;
+  GRAPHQL_URL: string;
+  APP_NAME: string;
+  APP_VERSION: string;
+  ENABLE_DARK_MODE: boolean;
+  ENABLE_NOTIFICATIONS: boolean;
+  ENABLE_CALENDAR: boolean;
+  ENABLE_GANTT_CHART: boolean;
+  GOOGLE_CLIENT_ID?: string;
+  GITHUB_CLIENT_ID?: string;
+  SENTRY_DSN?: string;
+  DEBUG_MODE: boolean;
+}

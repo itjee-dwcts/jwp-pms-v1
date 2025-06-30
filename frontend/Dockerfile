@@ -1,34 +1,42 @@
-# frontend/Dockerfile
-
-# 빌드 스테이지
+# Build stage
 FROM node:18-alpine as build
 
-# 작업 디렉토리 설정
 WORKDIR /app
 
-# package.json과 package-lock.json 복사
+# Copy package files
 COPY package*.json ./
-
-# 의존성 설치
 RUN npm ci --only=production
 
-# 소스 코드 복사
+# Copy source code
 COPY . .
 
-# 애플리케이션 빌드
+# Build the application
 RUN npm run build
 
-# 프로덕션 스테이지
-FROM nginx:alpine
+# Production stage
+FROM nginx:1.25-alpine
 
-# Nginx 설정 파일 복사
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 빌드된 파일을 Nginx 서빙 디렉토리로 복사
+# Copy built application
 COPY --from=build /app/build /usr/share/nginx/html
 
-# 포트 3000 노출
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Set ownership
+RUN chown -R nextjs:nodejs /usr/share/nginx/html
+RUN chown -R nextjs:nodejs /var/cache/nginx
+RUN chown -R nextjs:nodejs /var/log/nginx
+RUN chown -R nextjs:nodejs /etc/nginx/conf.d
+RUN touch /var/run/nginx.pid
+RUN chown -R nextjs:nodejs /var/run/nginx.pid
+
+# Switch to non-root user
+USER nextjs
+
 EXPOSE 3000
 
-# Nginx 시작
 CMD ["nginx", "-g", "daemon off;"]
