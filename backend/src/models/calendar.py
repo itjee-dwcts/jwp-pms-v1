@@ -7,6 +7,14 @@ SQLAlchemy models for calendar and event management.
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from core.base import Base
+from core.constants import (
+    EventAttendeeStatus,
+    EventReminder,
+    EventStatus,
+    EventType,
+    RecurrenceType,
+)
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -18,15 +26,6 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import relationship
-
-from core.base import Base
-from core.constants import (
-    EventAttendeeStatus,
-    EventReminder,
-    EventStatus,
-    EventType,
-    RecurrenceType,
-)
 
 if TYPE_CHECKING:
     pass
@@ -51,6 +50,7 @@ class Calendar(Base):
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
+        nullable=True,
         doc="Last update time",
     )
     updated_by = Column(
@@ -121,6 +121,7 @@ class Event(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
+        nullable=True,
         onupdate=datetime.now(timezone.utc),
         doc="Last update time",
     )
@@ -292,6 +293,7 @@ class EventAttendee(Base):
     )
     updated_at = Column(
         DateTime(timezone=True),
+        nullable=True,
         onupdate=datetime.now(timezone.utc),
         doc="Last update time",
     )

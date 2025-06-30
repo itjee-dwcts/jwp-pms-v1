@@ -7,6 +7,8 @@ SQLAlchemy models for user management and authentication.
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from core.base import Base
+from core.constants import UserRole, UserStatus
 from sqlalchemy import (
     Boolean,
     Column,
@@ -17,9 +19,6 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-
-from core.base import Base
-from core.constants import UserRole, UserStatus
 
 if TYPE_CHECKING:
     pass
@@ -34,7 +33,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, doc="User ID")
     created_at = Column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
+        DateTime(timezone=False), default=datetime.now(timezone.utc)
     )
     created_by = Column(
         Integer, nullable=True, doc="User who created this record"
@@ -181,6 +180,7 @@ class UserActivityLog(Base):
 
     created_at = Column(
         DateTime(timezone=True),
+        nullable=False,
         default=datetime.now(timezone.utc),
         doc="Timestamp of the log entry",
     )
@@ -246,7 +246,9 @@ class UserSession(Base):
 
     id = Column(Integer, primary_key=True, index=True, doc="Session ID")
     created_at = Column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.now(timezone.utc),
     )
     created_by = Column(
         Integer, nullable=True, doc="User who created this session"

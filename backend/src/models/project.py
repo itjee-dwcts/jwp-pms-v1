@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from core.base import Base
+from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -21,9 +23,6 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-
-from core.base import Base
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 
 if TYPE_CHECKING:
     pass
@@ -51,19 +50,17 @@ class Project(Base):
     )
     created_by = Column(
         Integer,
-        ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="User who created the project",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Project last update timestamp",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the project",
     )
@@ -226,19 +223,17 @@ class ProjectMember(Base):
     )
     created_by = Column(
         Integer,
-        ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="User who created the project member association",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Project member last update timestamp",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the project member association",
     )
@@ -323,20 +318,17 @@ class ProjectComment(Base):
     )
     created_by = Column(
         Integer,
-        ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="User who created the comment",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=datetime.now(timezone.utc),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Comment last update timestamp",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the comment",
     )
@@ -407,20 +399,17 @@ class ProjectAttachment(Base):
     )
     created_by = Column(
         Integer,
-        ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="User who created the attachment",
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=datetime.now(timezone.utc),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Attachment last update timestamp",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the attachment",
     )

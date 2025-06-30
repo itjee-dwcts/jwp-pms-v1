@@ -41,21 +41,19 @@ class Task(Base):
         nullable=False,
         doc="Task creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the task",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Task last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the task",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the task",
     )
@@ -235,7 +233,7 @@ class Task(Base):
     def mark_completed(self):
         """Mark task as completed"""
         self.status = TaskStatus.DONE
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
 
     def calculate_actual_hours(self) -> int:
         """Calculate actual hours from time logs"""
@@ -261,21 +259,19 @@ class TaskAssignment(Base):
         nullable=False,
         doc="Assignment creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the assignment",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Assignment last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the assignment",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the assignment",
     )
@@ -343,21 +339,19 @@ class TaskComment(Base):
         nullable=False,
         doc="Comment creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the comment",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Comment last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the comment",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the comment",
     )
@@ -426,21 +420,19 @@ class TaskAttachment(Base):
         nullable=False,
         doc="Attachment creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the attachment",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Attachment last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the attachment",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the attachment",
     )
@@ -489,21 +481,19 @@ class TaskTimeLog(Base):
         nullable=False,
         doc="Time log creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the time log",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Time log last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the time log",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the time log",
     )
@@ -558,21 +548,19 @@ class Tag(Base):
         nullable=False,
         doc="Tag creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the tag",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="Tag last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the tag",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the tag",
     )
@@ -612,21 +600,19 @@ class TaskTag(Base):
         nullable=False,
         doc="TaskTag creation timestamp",
     )
+    created_by = Column(
+        Integer,
+        nullable=True,
+        doc="User who created the tag",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         doc="TaskTag last update timestamp",
-    )
-    created_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who created the tag",
     )
     updated_by = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True,
         doc="User who last updated the tag",
     )
