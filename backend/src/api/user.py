@@ -22,11 +22,13 @@ router = APIRouter()
 
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
-    page: int = Query(0, ge=0, description="Number of records to skip"),
-    size: int = Query(
+    page_no: int = Query(0, ge=0, description="Number of records to skip"),
+    page_size: int = Query(
         50, ge=1, le=100, description="Number of records to return"
     ),
-    search: Optional[str] = Query(None, description="Search by name or email"),
+    search_text: Optional[str] = Query(
+        None, description="Search by name or email"
+    ),
     user_role: Optional[str] = Query(None, description="Filter by role"),
     user_status: Optional[str] = Query(None, description="Filter by status"),
     current_user: User = Depends(get_current_active_user),
@@ -38,9 +40,9 @@ async def list_users(
     try:
         user_service = UserService(db)
         users = await user_service.list_users(
-            page=page,
-            size=size,
-            search=search,
+            page_no=page_no,
+            page_size=page_size,
+            search_text=search_text,
             user_role=user_role,
             user_status=user_status,
         )

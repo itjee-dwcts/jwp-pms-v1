@@ -450,7 +450,7 @@ class TaskAttachment(Base):
     task_id = Column(
         Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
-    filename = Column(String(255), nullable=False, doc="Original filename")
+    file_name = Column(String(255), nullable=False, doc="Original filename")
     file_path = Column(String(500), nullable=False, doc="File storage path")
     file_size = Column(Integer, nullable=False, doc="File size in bytes")
     mime_type = Column(String(100), nullable=True, doc="MIME type of the file")
@@ -468,7 +468,7 @@ class TaskAttachment(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TaskAttachment(id={self.id}, filename='{self.filename}', "
+            f"<TaskAttachment(id={self.id}, filename='{self.file_name}', "
             f"task_id={self.task_id})>"
         )
 

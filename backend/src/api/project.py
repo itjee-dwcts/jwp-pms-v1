@@ -17,6 +17,7 @@ from schemas.project import (
     ProjectCreateRequest,
     ProjectMemberResponse,
     ProjectResponse,
+    ProjectSearchRequest,
     ProjectUpdateRequest,
 )
 from services.project import ProjectService
@@ -27,11 +28,11 @@ router = APIRouter()
 
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(
+    page_no: int = Query(0, ge=0, description="Number of records to skip"),
+    page_size: int = Query(
         50, ge=1, le=100, description="Number of records to return"
     ),
-    search: Optional[str] = Query(
+    search_text: Optional[str] = Query(
         None, description="Search by name or description"
     ),
     project_status: Optional[str] = Query(
@@ -44,25 +45,25 @@ async def list_projects(
     List projects accessible to current user
     """
     try:
+
         project_service = ProjectService(db)
         projects = await project_service.list_projects(
             user_id=int(str(current_user.id)),
-            page=skip,
-            size=limit,
-            search_params= {
-                search = search,
-                status = project_status
-            }
+            page_no=page_no,
+            page_size=page_size,
+            search_params=ProjectSearchRequest(
+                search_text=search_text, project_status=project_status
+            ),
         )
 
         return [ProjectResponse.from_orm(project) for project in projects]
 
     except Exception as e:
-        logger.error(f"Error listing projects: {e}")
+        logger.error("Error listing projects: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve projects",
-        )
+        ) from e
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
@@ -76,8 +77,8 @@ async def get_project(
     """
     try:
         project_service = ProjectService(db)
-        project = await project_service.get_project_with_access_check(
-            project_id, current_user.id
+        project = await project_service._check_project_access(
+            project_id, int(str(current_user.id))
         )
 
         if not project:
@@ -95,7 +96,7 @@ async def get_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve project",
-        )
+        ) from e
 
 
 @router.post(

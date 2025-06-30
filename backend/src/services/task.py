@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from core.database import get_async_session
-from models.project import Project, ProjectMember
+from models.project import Project
 from models.task import (
     Task,
     TaskAssignment,
@@ -39,6 +39,8 @@ from utils.exceptions import (
     NotFoundError,
     ValidationError,
 )
+
+from .project import ProjectService
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +67,11 @@ class TaskService:
                 )
 
             # Check if user has permission to create tasks in this project
-            has_access = await self._check_project_access(
+            project_service = ProjectService(self.db)
+            project_access = await project_service.check_project_access(
                 task_data.project_id, creator_id
             )
-            if not has_access:
+            if not project_access:
                 raise AuthorizationError(
                     "No permission to create tasks in this project"
                 )
@@ -124,7 +127,7 @@ class TaskService:
 
             if task_data.assignee_ids:
                 for user_id in task_data.assignee_ids:
-                    await self._assign_user_to_task(
+                    await self.assign_user_to_task(
                         task_id, user_id, creator_id
                     )
 
@@ -152,12 +155,12 @@ class TaskService:
             )
             created_task = result.scalar_one()
 
-            logger.info(f"Task created successfully: {task.title}")
+            logger.info("Task created successfully: %s", task.title)
             return TaskResponse.from_orm(created_task)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to create task: {e}")
+            logger.error("Failed to create task: %s", e)
             raise
 
     async def get_task_by_id(
@@ -197,14 +200,14 @@ class TaskService:
 
             # Check access permissions
             if user_id:
-                has_access = await self._check_task_access(task_id, user_id)
+                has_access = await self.check_task_access(task_id, user_id)
                 if not has_access:
                     raise AuthorizationError("Access denied to this task")
 
             return TaskResponse.from_orm(task)
 
         except Exception as e:
-            logger.error(f"Failed to get task {task_id}: {e}")
+            logger.error("Failed to get task %d: %s", task_id, e)
             raise
 
     async def update_task(
@@ -213,7 +216,7 @@ class TaskService:
         """Update task information"""
         try:
             # Check user has permission to update task
-            has_access = await self._check_task_access(task_id, user_id)
+            has_access = await self.check_task_access(task_id, user_id)
             if not has_access:
                 raise AuthorizationError("No permission to update this task")
 
@@ -265,19 +268,19 @@ class TaskService:
             )
             updated_task = result.scalar_one()
 
-            logger.info(f"Task updated successfully: {task.title}")
+            logger.info("Task updated successfully: %s", task.title)
             return TaskResponse.from_orm(updated_task)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to update task {task_id}: {e}")
+            logger.error("Failed to update task %d: %s", task_id, e)
             raise
 
     async def delete_task(self, task_id: int, user_id: int) -> bool:
         """Delete task (soft delete)"""
         try:
             # Check user has permission to delete task
-            has_access = await self._check_task_access(task_id, user_id)
+            has_access = await self.check_task_access(task_id, user_id)
             if not has_access:
                 raise AuthorizationError("No permission to delete this task")
 
@@ -306,8 +309,8 @@ class TaskService:
 
     async def list_tasks(
         self,
-        page: int = 1,
-        size: int = 20,
+        page_no: int = 1,
+        page_size: int = 20,
         user_id: Optional[int] = None,
         search_params: Optional[TaskSearchRequest] = None,
     ) -> TaskListResponse:
@@ -325,18 +328,21 @@ class TaskService:
             # Apply access control - user can see tasks in projects they
             # have access to
             if user_id:
-                accessible_projects = await self._get_accessible_projects(
-                    user_id
+                project_service = ProjectService(self.db)
+                accessible_projects = (
+                    await project_service.get_accessible_projects(user_id)
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
             # Apply search filters
             if search_params:
-                if search_params.query:
+                if search_params.search_text:
                     query = query.where(
                         or_(
-                            Task.title.ilike(f"%{search_params.query}%"),
-                            Task.description.ilike(f"%{search_params.query}%"),
+                            Task.title.ilike(f"%{search_params.search_text}%"),
+                            Task.description.ilike(
+                                f"%{search_params.search_text}%"
+                            ),
                         )
                     )
 
@@ -345,7 +351,7 @@ class TaskService:
                         Task.project_id == search_params.project_id
                     )
 
-                if search_params.task_status is not None:
+                if search_params.task_status:
                     query = query.where(
                         Task.status == search_params.task_status
                     )
@@ -398,13 +404,13 @@ class TaskService:
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
-            total = total_result.scalar()
+            total_items = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * size
+            offset = (page_no - 1) * page_size
             query = (
                 query.offset(offset)
-                .limit(size)
+                .limit(page_size)
                 .order_by(desc(Task.created_at))
             )
 
@@ -413,14 +419,16 @@ class TaskService:
             tasks = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + size - 1) // size
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
 
             return TaskListResponse(
                 tasks=[TaskResponse.from_orm(task) for task in tasks],
-                total=total if total is not None else 0,
-                page=page,
-                size=size,
-                pages=pages,
+                total_items=total_items if total_items is not None else 0,
+                page_no=page_no,
+                page_size=page_size,
+                total_pages=total_pages,
             )
 
         except Exception as e:
@@ -433,7 +441,7 @@ class TaskService:
         """Assign task to users"""
         try:
             # Check permission
-            has_access = await self._check_task_access(task_id, assigned_by)
+            has_access = await self.check_task_access(task_id, assigned_by)
             if not has_access:
                 raise AuthorizationError("No permission to assign this task")
 
@@ -454,7 +462,7 @@ class TaskService:
 
             # Add new assignments
             for user_id in user_ids:
-                await self._assign_user_to_task(task_id, user_id, assigned_by)
+                await self.assign_user_to_task(task_id, user_id, assigned_by)
 
             await self.db.commit()
 
@@ -474,8 +482,9 @@ class TaskService:
             # Build base query with access control
             base_query = select(Task)
             if user_id:
-                accessible_projects = await self._get_accessible_projects(
-                    user_id
+                project_service = ProjectService(self.db)
+                accessible_projects = (
+                    await project_service.get_accessible_projects(user_id)
                 )
                 base_query = base_query.where(
                     Task.project_id.in_(accessible_projects)
@@ -569,16 +578,20 @@ class TaskService:
             if project_id:
                 # Check access to project
                 if user_id:
-                    has_access = await self._check_project_access(
-                        project_id, user_id
+                    project_service = ProjectService(self.db)
+                    project_access = (
+                        await project_service.check_project_access(
+                            project_id, user_id
+                        )
                     )
-                    if not has_access:
+                    if not project_access:
                         raise AuthorizationError("No access to this project")
                 query = query.where(Task.project_id == project_id)
             elif user_id:
                 # Show tasks from accessible projects
-                accessible_projects = await self._get_accessible_projects(
-                    user_id
+                project_service = ProjectService(self.db)
+                accessible_projects = (
+                    await project_service.get_accessible_projects(user_id)
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
@@ -615,42 +628,7 @@ class TaskService:
             logger.error("Failed to get kanban board: %s", e)
             raise
 
-    async def _check_project_access(
-        self, project_id: int, user_id: int
-    ) -> bool:
-        """Check if user has access to project"""
-        try:
-            # Check if project is public
-            project_result = await self.db.execute(
-                select(Project).where(Project.id == project_id)
-            )
-            project = project_result.scalar_one_or_none()
-
-            if not project:
-                return False
-
-            project_is_public = getattr(project, "is_public", False)
-
-            if project_is_public:
-                return True
-
-            # Check if user is a member
-            member_result = await self.db.execute(
-                select(ProjectMember).where(
-                    and_(
-                        ProjectMember.project_id == project_id,
-                        ProjectMember.user_id == user_id,
-                    )
-                )
-            )
-
-            return member_result.scalar_one_or_none() is not None
-
-        except Exception as e:
-            logger.error("Failed to check project access: %s", e)
-            return False
-
-    async def _check_task_access(self, task_id: int, user_id: int) -> bool:
+    async def check_task_access(self, task_id: int, user_id: int) -> bool:
         """Check if user has access to task"""
         try:
             task_result = await self.db.execute(
@@ -693,37 +671,17 @@ class TaskService:
                 )
                 return False
 
-            return await self._check_project_access(task_project_id, user_id)
+            project_service = ProjectService(self.db)
+
+            return await project_service.check_project_access(
+                task_project_id, user_id
+            )
 
         except Exception as e:
             logger.error("Failed to check task access: %s", e)
             return False
 
-    async def _get_accessible_projects(self, user_id: int) -> List[int]:
-        """Get list of project IDs user has access to"""
-        try:
-            # Get public projects
-            public_result = await self.db.execute(
-                select(Project.id).where(Project.is_public.is_(True))
-            )
-            public_projects = [row[0] for row in public_result.fetchall()]
-
-            # Get projects where user is a member
-            member_result = await self.db.execute(
-                select(ProjectMember.project_id).where(
-                    ProjectMember.user_id == user_id
-                )
-            )
-            member_projects = [row[0] for row in member_result.fetchall()]
-
-            # Combine and deduplicate
-            return list(set(public_projects + member_projects))
-
-        except Exception as e:
-            logger.error("Failed to get accessible projects: %s", e)
-            return []
-
-    async def _assign_user_to_task(
+    async def assign_user_to_task(
         self, task_id: int, user_id: int, assigned_by: int
     ):
         """Assign a user to a task"""
@@ -759,9 +717,22 @@ class TaskService:
             self.db.add(assignment)
             await self.db.flush()
 
-        except Exception as e:
+        except (
+            NotFoundError,
+            ValidationError,
+            ConflictError,
+            AuthorizationError,
+        ) as e:
             logger.error(
                 "Failed to assign user %d to task %d: %s", user_id, task_id, e
+            )
+            raise
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred while assigning user %d to task %d: %s",
+                user_id,
+                task_id,
+                e,
             )
             raise
 

@@ -236,7 +236,10 @@ class CalendarService:
             raise
 
     async def list_calendars(
-        self, page: int = 1, size: int = 20, user_id: Optional[int] = None
+        self,
+        page_no: int = 1,
+        page_size: int = 20,
+        user_id: Optional[int] = None,
     ) -> CalendarListResponse:
         """List calendars with pagination"""
         try:
@@ -259,13 +262,13 @@ class CalendarService:
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
-            total = total_result.scalar()
+            total_items = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * size
+            offset = (page_no - 1) * page_size
             query = (
                 query.offset(offset)
-                .limit(size)
+                .limit(page_size)
                 .order_by(desc(Calendar.created_at))
             )
 
@@ -274,17 +277,19 @@ class CalendarService:
             calendars = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + size - 1) // size
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
 
             return CalendarListResponse(
                 calendars=[
                     CalendarResponse.from_orm(calendar)
                     for calendar in calendars
                 ],
-                total=total if total is not None else 0,
-                page=page,
-                size=size,
-                pages=pages,
+                total_items=total_items if total_items is not None else 0,
+                page_no=page_no,
+                page_size=page_size,
+                total_pages=total_pages,
             )
 
         except Exception as e:
@@ -292,6 +297,9 @@ class CalendarService:
             raise
 
     async def list_user_calendars(self, user_id: int) -> List[Calendar]:
+        """
+        list user calendars
+        """
         result = await self.db.execute(
             select(Calendar).where(Calendar.user_id == user_id)
         )
@@ -511,8 +519,8 @@ class CalendarService:
 
     async def list_events(
         self,
-        page: int = 1,
-        size: int = 20,
+        page_no: int = 1,
+        page_size: int = 20,
         user_id: Optional[int] = None,
         search_params: Optional[EventSearchRequest] = None,
     ) -> EventListResponse:
@@ -594,12 +602,14 @@ class CalendarService:
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
-            total = total_result.scalar()
+            total_items = total_result.scalar()
 
             # Apply pagination and ordering
-            offset = (page - 1) * size
+            offset = (page_no - 1) * page_size
             query = (
-                query.offset(offset).limit(size).order_by(Event.start_datetime)
+                query.offset(offset)
+                .limit(page_size)
+                .order_by(Event.start_datetime)
             )
 
             # Execute query
@@ -607,14 +617,16 @@ class CalendarService:
             events = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + size - 1) // size
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
 
             return EventListResponse(
                 events=[EventResponse.from_orm(event) for event in events],
-                total=total if total is not None else 0,
-                page=page,
-                size=size,
-                pages=pages,
+                total_items=total_items if total_items is not None else 0,
+                page_no=page_no,
+                page_size=page_size,
+                total_pages=total_pages,
             )
 
         except Exception as e:
@@ -683,10 +695,10 @@ class CalendarService:
 
             return EventListResponse(
                 events=[EventResponse.from_orm(event) for event in events],
-                total=len(events),
-                page=1,
-                size=len(events),
-                pages=1,
+                total_items=len(events),
+                page_no=1,
+                page_size=len(events),
+                total_pages=1,
             )
 
         except Exception as e:

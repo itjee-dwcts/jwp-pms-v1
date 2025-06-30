@@ -237,17 +237,21 @@ async def save_upload_file(
         raise OSError(f"Failed to save file: {e}") from e
 
 
-def calculate_pagination(total: int, page: int, size: int) -> Dict[str, int]:
+def calculate_pagination(
+    total_items: int, page_no: int, page_size: int
+) -> Dict[str, int]:
     """Calculate pagination metadata"""
-    pages = (total + size - 1) // size if total > 0 else 0
+    total_pages = (
+        (total_items + page_size - 1) // page_size if total_items > 0 else 0
+    )
 
     return {
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": pages,
-        "has_next": page < pages,
-        "has_prev": page > 1,
+        "total_items": total_items,
+        "page_no": page_no,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_next": page_no < total_pages,
+        "has_prev": page_no > 1,
     }
 
 
@@ -516,20 +520,22 @@ def is_valid_url(url: str) -> bool:
 
 
 def generate_pagination_info(
-    total: int, page: int, size: int
+    total_items: int, page_no: int, page_size: int
 ) -> Dict[str, Any]:
     """Generate pagination information"""
-    total_pages = (total + size - 1) // size  # Ceiling division
+    total_pages = (
+        total_items + page_size - 1
+    ) // page_size  # Ceiling division
 
     return {
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": total_pages,
-        "has_next": page < total_pages,
-        "has_prev": page > 1,
-        "next_page": page + 1 if page < total_pages else None,
-        "prev_page": page - 1 if page > 1 else None,
+        "total_items": total_items,
+        "page_no": page_no,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_next": page_no < total_pages,
+        "has_prev": page_no > 1,
+        "next_page": page_no + 1 if page_no < total_pages else None,
+        "prev_page": page_no - 1 if page_no > 1 else None,
     }
 
 

@@ -297,20 +297,20 @@ class EventListResponse(BaseModel):
     """Schema for event list response"""
 
     events: List[EventResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class CalendarListResponse(BaseModel):
     """Schema for calendar list response"""
 
     calendars: List[CalendarResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class EventSearchRequest(BaseModel):

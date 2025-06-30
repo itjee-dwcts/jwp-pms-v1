@@ -4,14 +4,16 @@ File Service
 Business logic for file upload and management operations.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional, Union, cast
+
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_async_session
 from models.project import ProjectAttachment, ProjectMember
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from models.task import TaskAttachment
 
 
 class FileService:
@@ -22,14 +24,14 @@ class FileService:
 
     async def create_file_record(
         self,
-        filename: str,
+        file_name: str,
         file_path: str,
         file_size: int,
         mime_type: Optional[str],
         uploaded_by: int,
         project_id: Optional[int] = None,
         task_id: Optional[int] = None,
-    ) -> Optional[ProjectAttachment]:
+    ) -> Union[ProjectAttachment, TaskAttachment]:
         """Create file record in database"""
         if project_id:
             # Verify user has access to project
@@ -48,20 +50,26 @@ class FileService:
 
             file_record = ProjectAttachment(
                 project_id=project_id,
-                filename=filename,
+                file_name=file_name,
                 file_path=file_path,
                 file_size=file_size,
                 mime_type=mime_type,
                 uploaded_by=uploaded_by,
                 created_by=uploaded_by,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
         elif task_id:
-            # TODO: Implement task file attachment
             # Similar logic for task attachments
-            raise NotImplementedError(
-                "Task file attachments not yet implemented"
+            file_record = TaskAttachment(
+                task_id=task_id,
+                file_name=file_name,
+                file_path=file_path,
+                file_size=file_size,
+                mime_type=mime_type,
+                uploaded_by=uploaded_by,
+                created_by=uploaded_by,
+                created_at=datetime.now(timezone.utc),
             )
 
         else:

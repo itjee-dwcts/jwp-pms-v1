@@ -7,16 +7,17 @@ Common dependencies for authentication, database, and permissions.
 import logging
 from typing import Optional
 
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.constants import UserRole
 from core.database import get_async_session
 from core.security import TokenData, decode_access_token
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from models.project import ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import User
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -354,25 +355,20 @@ require_task_access = create_access_checker("task")
 
 
 async def get_pagination_params(
-    page: int = 1,
-    size: int = 20,
+    page_no: int = 1,
+    page_size: int = 20,
 ) -> dict:
     """
     Get pagination parameters with validation
     """
-    if page < 1:
-        page = 1
-    if size < 1:
-        size = 1
-    if size > 100:
-        size = 100
+    if page_no < 1:
+        page_no = 1
+    if page_size < 1:
+        page_size = 1
+    if page_size > 100:
+        page_size = 100
 
-    return {
-        "skip": (page - 1) * size,
-        "limit": size,
-        "page": page,
-        "size": size,
-    }
+    return {"page_no": (page_no - 1) * page_size, "page_size": page_size}
 
 
 async def get_sort_params(

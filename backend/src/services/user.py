@@ -458,9 +458,9 @@ class UserService:
 
     async def list_users(
         self,
-        page: int = 1,
-        size: int = 20,
-        search: Optional[str] = None,
+        page_no: int = 1,
+        page_size: int = 20,
+        search_text: Optional[str] = None,
         user_role: Optional[str] = None,
         user_status: Optional[str] = None,
     ) -> UserListResponse:
@@ -483,12 +483,12 @@ class UserService:
             query = select(User)
 
             # Apply filters
-            if search:
+            if search_text:
                 query = query.where(
                     or_(
-                        User.name.ilike(f"%{search}%"),
-                        User.email.ilike(f"%{search}%"),
-                        User.full_name.ilike(f"%{search}%"),
+                        User.name.ilike(f"%{search_text}%"),
+                        User.email.ilike(f"%{search_text}%"),
+                        User.full_name.ilike(f"%{search_text}%"),
                     )
                 )
 
@@ -501,13 +501,13 @@ class UserService:
             # Get total count
             count_query = select(func.count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
-            total = total_result.scalar()
+            total_items = total_result.scalar()
 
             # Apply pagination
-            offset = (page - 1) * size
+            offset = (page_no - 1) * page_size
             query = (
                 query.offset(offset)
-                .limit(size)
+                .limit(page_size)
                 .order_by(desc(User.created_at))
             )
 
@@ -516,14 +516,16 @@ class UserService:
             users = result.scalars().all()
 
             # Calculate pagination info
-            pages = ((total if total is not None else 0) + size - 1) // size
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
 
             return UserListResponse(
                 users=[UserResponse.from_orm(user) for user in users],
-                total=total if total is not None else 0,
-                page=page,
-                size=size,
-                pages=pages,
+                total_items=total_items if total_items is not None else 0,
+                page_no=page_no,
+                page_size=page_size,
+                total_pages=total_pages,
             )
 
         except Exception as e:
@@ -532,9 +534,9 @@ class UserService:
 
     async def count_users(
         self,
-        search: Optional[str] = None,
-        role: Optional[str] = None,
-        status: Optional[str] = None,
+        search_text: Optional[str] = None,
+        user_role: Optional[str] = None,
+        user_status: Optional[str] = None,
         is_active: Optional[bool] = None,
     ) -> int:
         """
@@ -553,8 +555,8 @@ class UserService:
         query = select(func.count(User.id))
 
         # Apply same filters as list_users
-        if search:
-            search_term = f"%{search}%"
+        if search_text:
+            search_term = f"%{search_text}%"
             query = query.where(
                 or_(
                     User.name.ilike(search_term),
@@ -563,11 +565,11 @@ class UserService:
                 )
             )
 
-        if role and UserRole.is_valid(role):
-            query = query.where(User.role == role)
+        if user_role and UserRole.is_valid(user_role):
+            query = query.where(User.role == user_role)
 
-        if status and UserStatus.is_valid(status):
-            query = query.where(User.status == status)
+        if user_status and UserStatus.is_valid(user_status):
+            query = query.where(User.status == user_status)
 
         if is_active is not None:
             query = query.where(User.is_active == is_active)

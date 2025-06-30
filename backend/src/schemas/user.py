@@ -8,8 +8,9 @@ Request/Response schemas for user management.
 from datetime import datetime
 from typing import List, Optional
 
-from core.constants import UserRole, UserStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from core.constants import UserRole, UserStatus
 
 
 class UserBase(BaseModel):
@@ -202,10 +203,10 @@ class UserListResponse(BaseModel):
     """Schema for user list response"""
 
     users: List[UserResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class UserStatsResponse(BaseModel):

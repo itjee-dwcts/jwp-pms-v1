@@ -402,10 +402,10 @@ class TaskListResponse(BaseModel):
     """Schema for task list response"""
 
     tasks: List[TaskResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class TaskStatsResponse(BaseModel):
@@ -425,7 +425,7 @@ class TaskStatsResponse(BaseModel):
 class TaskSearchRequest(BaseModel):
     """Schema for task search request"""
 
-    query: Optional[str] = Field(None, description="Search query")
+    search_text: Optional[str] = Field(None, description="Search query")
     project_id: Optional[int] = None
     task_status: Optional[str] = None
     priority: Optional[str] = None

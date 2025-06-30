@@ -27,8 +27,8 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
-    page: int = Query(0, ge=0, description="Number of records to skip"),
-    size: int = Query(
+    page_no: int = Query(0, ge=0, description="Number of records to skip"),
+    page_size: int = Query(
         50, ge=1, le=100, description="Number of records to return"
     ),
     project_id: Optional[int] = Query(None, description="Filter by project"),
@@ -48,13 +48,13 @@ async def list_tasks(
         task_service = TaskService(db)
         tasks = await task_service.list_user_tasks(
             user_id=current_user.id,
-            skip=skip,
-            limit=limit,
+            page_no=page_no,
+            page_size=page_size,
             project_id=project_id,
             assignee_id=assignee_id,
             task_status=task_status,
             priority=priority,
-            search=search,
+            search_text=search_text,
         )
 
         return [TaskResponse.from_orm(task) for task in tasks]

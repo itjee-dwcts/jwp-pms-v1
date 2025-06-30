@@ -15,8 +15,10 @@ T = TypeVar("T")
 class PaginationParams(BaseModel):
     """Pagination parameters schema"""
 
-    page: int = Field(default=1, ge=1, description="Page number")
-    size: int = Field(default=20, ge=1, le=100, description="Items per page")
+    page_no: int = Field(default=1, ge=1, description="Page number")
+    page_size: int = Field(
+        default=20, ge=1, le=100, description="Items per page"
+    )
     sort_by: Optional[str] = Field(None, description="Sort field")
     sort_order: str = Field(
         default="asc", description="Sort order: asc or desc"
@@ -92,10 +94,10 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response schema"""
 
     items: List[T]
-    total: int = Field(..., description="Total number of items")
-    page: int = Field(..., description="Current page number")
-    size: int = Field(..., description="Items per page")
-    pages: int = Field(..., description="Total number of pages")
+    total_items: int = Field(..., description="Total number of items")
+    page_no: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Items per page")
+    total_pages: int = Field(..., description="Total number of pages")
     has_next: bool = Field(..., description="Whether there is a next page")
     has_prev: bool = Field(..., description="Whether there is a previous page")
 
@@ -158,7 +160,7 @@ class ValidationErrorResponse(BaseModel):
 class FileUploadResponse(BaseModel):
     """File upload response schema"""
 
-    filename: str = Field(..., description="Original filename")
+    file_name: str = Field(..., description="Original filename")
     file_path: str = Field(..., description="File storage path")
     file_size: int = Field(..., description="File size in bytes")
     mime_type: Optional[str] = Field(None, description="MIME type")
@@ -380,10 +382,10 @@ class ActivityLogResponse(BaseModel):
     """Activity log response schema"""
 
     logs: List[ActivityLogEntry]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class TimeRange(BaseModel):
@@ -445,8 +447,10 @@ class Metadata(BaseModel):
     """Generic metadata schema"""
 
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
     created_by: Optional[int] = Field(None, description="Creator user ID")
+    updated_at: Optional[datetime] = Field(
+        ..., description="Last update timestamp"
+    )
     updated_by: Optional[int] = Field(None, description="Last updater user ID")
     version: int = Field(default=1, description="Version number")
     tags: List[str] = Field(default=[], description="Associated tags")

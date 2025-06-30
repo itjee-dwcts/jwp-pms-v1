@@ -429,7 +429,7 @@ class ProjectAttachment(Base):
     project_id = Column(
         Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
     )
-    filename = Column(String(255), nullable=False, doc="Original filename")
+    file_name = Column(String(255), nullable=False, doc="Original file name")
     file_path = Column(String(500), nullable=False, doc="File storage path")
     file_size = Column(Integer, nullable=False, doc="File size in bytes")
     mime_type = Column(String(100), nullable=True, doc="MIME type of the file")
@@ -447,6 +447,6 @@ class ProjectAttachment(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<ProjectAttachment(id={self.id}, filename='{self.filename}', "
+            f"<ProjectAttachment(id={self.id}, filename='{self.file_name}', "
             f"project_id={self.project_id})>"
         )

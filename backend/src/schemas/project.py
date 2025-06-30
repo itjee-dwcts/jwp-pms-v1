@@ -323,10 +323,10 @@ class ProjectListResponse(BaseModel):
     """Schema for project list response"""
 
     projects: List[ProjectResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    total_items: int
+    page_no: int
+    page_size: int
+    total_pages: int
 
 
 class ProjectStatsResponse(BaseModel):
@@ -343,7 +343,7 @@ class ProjectStatsResponse(BaseModel):
 class ProjectSearchRequest(BaseModel):
     """Schema for project search request"""
 
-    query: Optional[str] = Field(None, description="Search query")
+    search_text: Optional[str] = Field(None, description="Search query")
     project_status: Optional[str] = None
     priority: Optional[str] = None
     creator_id: Optional[int] = None
