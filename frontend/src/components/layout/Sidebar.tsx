@@ -1,19 +1,18 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import classNames from 'classnames';
 import {
-  HomeIcon,
-  FolderIcon,
-  CheckSquareIcon,
   CalendarIcon,
-  UsersIcon,
   ChartBarIcon,
-  CogIcon,
+  CheckSquareIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CogIcon,
+  FolderIcon,
+  HomeIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
-import { useAuthStore } from '../../store/authStore';
-import { usePermissions } from '../../store/authStore';
+import classNames from 'classnames';
+import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useAuthStore, usePermissions } from '../../store/authStore';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -143,15 +142,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-gray-700">
-                  {user.first_name.charAt(0)}
-                  {user.last_name.charAt(0)}
+                  {user.fullName.charAt(0)}
                 </span>
               </div>
             </div>
             {!collapsed && (
               <div className="ml-3 overflow-hidden">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user.first_name} {user.last_name}
+                  {user.fullName}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {user.email}

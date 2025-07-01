@@ -5,6 +5,16 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#3b82f6" />
+    <script>
+      // Dynamically set theme-color for dark/light mode
+      (function() {
+        var light = "#3b82f6";
+        var dark = "#1f2937";
+        var themeColor = window.matchMedia('(prefers-color-scheme: dark)').matches ? dark : light;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', themeColor);
+      })();
+    </script>
     <meta name="description" content="Project Management System - Efficient project and task management solution" />
 
     <!-- Open Graph / Facebook -->

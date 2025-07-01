@@ -101,12 +101,11 @@ const Header: React.FC = () => {
             >
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-gray-700">
-                  {user?.first_name.charAt(0)}
-                  {user?.last_name.charAt(0)}
+                  {user?.fullName.charAt(0)}
                 </span>
               </div>
               <span className="text-sm font-medium text-gray-900 dark:text-white hidden md:block">
-                {user?.first_name} {user?.last_name}
+                {user?.fullName}
               </span>
             </button>
 

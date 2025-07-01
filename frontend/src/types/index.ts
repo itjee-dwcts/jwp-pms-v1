@@ -15,12 +15,11 @@ export interface BaseEntity {
 export interface User extends BaseEntity {
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   avatar?: string;
   isActive: boolean;
   lastLogin?: string;
-  roles: Role[];
+  role: string;
 }
 
 export interface Role extends BaseEntity {
@@ -41,7 +40,7 @@ export interface Permission extends BaseEntity {
 // ============================================================================
 
 export interface LoginRequest {
-  usernameOrEmail: string;
+  username: string;
   password: string;
   rememberMe?: boolean;
 }
@@ -56,8 +55,7 @@ export interface LoginResponse {
 export interface RegisterRequest {
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   password: string;
   confirmPassword: string;
 }

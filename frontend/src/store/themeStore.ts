@@ -1,3 +1,5 @@
+// Export React import for the hooks
+import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ThemeState, ThemeConfig } from '@/types';
@@ -415,6 +417,3 @@ export const applyThemePreset = (presetName: keyof typeof themePresets) => {
   const preset = themePresets[presetName];
   setTheme(preset);
 };
-
-// Export React import for the hooks
-import React from 'react';

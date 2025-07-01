@@ -5,23 +5,23 @@ import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 
 // Lazy load pages for better performance
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
-const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
-const TasksPage = React.lazy(() => import('./pages/TasksPage'));
-const TaskDetailPage = React.lazy(() => import('./pages/TaskDetailPage'));
-const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
-const UsersPage = React.lazy(() => import('./pages/UsersPage'));
-const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
+const ProjectsPage = React.lazy(() => import('./pages/project/Projects'));
+const ProjectDetailPage = React.lazy(() => import('./pages/project/ProjectDetail'));
+const TasksPage = React.lazy(() => import('./pages/task/Tasks'));
+const TaskDetailPage = React.lazy(() => import('./pages/task/TaskDetailPage'));
+const CalendarPage = React.lazy(() => import('./pages/calendar/Calendar'));
+const UsersPage = React.lazy(() => import('./pages/user/UsersPage'));
+const ProfilePage = React.lazy(() => import('./pages/common/Profile'));
+const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
 
 // Auth pages
-const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
-const RegisterPage = React.lazy(() => import('./pages/auth/RegisterPage'));
-const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const LoginPage = React.lazy(() => import('./pages/auth/Login'));
+const RegisterPage = React.lazy(() => import('./pages/auth/Register'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPassword'));
 
 // Error pages
-const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
+const NotFoundPage = React.lazy(() => import('./pages/error/NotFound'));
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
