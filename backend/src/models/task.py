@@ -4,11 +4,10 @@ Task Models
 SQLAlchemy models for task management.
 """
 
+import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from core.base import Base
-from core.constants import TaskPriority, TaskStatus, TaskType
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -20,7 +19,11 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from core.base import Base
+from core.constants import TaskPriority, TaskStatus, TaskType
 
 if TYPE_CHECKING:
     from models.user import User
@@ -34,7 +37,9 @@ class Task(Base):
     __tablename__ = "tasks"
 
     # Unique identifier and timestamps
-    id = Column(Integer, primary_key=True, autoincrement=True, doc="Task ID")
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Task ID"
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -42,7 +47,7 @@ class Task(Base):
         doc="Task creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the task",
     )
@@ -53,7 +58,7 @@ class Task(Base):
         doc="Task last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the task",
     )
@@ -84,7 +89,7 @@ class Task(Base):
 
     # Project Association
     project_id = Column(
-        Integer,
+        UUID,
         ForeignKey("projects.id"),
         nullable=False,
         index=True,
@@ -92,8 +97,8 @@ class Task(Base):
     )
 
     # Task Hierarchy
-    parent_task_id = Column(
-        Integer,
+    parent_id = Column(
+        UUID,
         ForeignKey("tasks.id"),
         nullable=True,
         doc="Parent task ID for subtasks",
@@ -119,8 +124,8 @@ class Task(Base):
     )
 
     # Ownership
-    creator_id = Column(
-        Integer,
+    owner_id = Column(
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="User who created the task",
@@ -143,9 +148,11 @@ class Task(Base):
     # Relationships
     project = relationship("Project", back_populates="tasks")
 
-    creator = relationship(
-        "User", back_populates="created_tasks", foreign_keys=[creator_id]
+    owner = relationship(
+        "User", back_populates="created_tasks", foreign_keys=[owner_id]
     )
+    creator = relationship("User")
+    updater = relationship("User")
 
     # parent_task = relationship
     # ("Task", remote_side=[Base.id], back_populates="subtasks")
@@ -251,7 +258,10 @@ class TaskAssignment(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer, primary_key=True, autoincrement=True, doc="Assignment ID"
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Assignment ID",
     )
     created_at = Column(
         DateTime(timezone=True),
@@ -260,7 +270,7 @@ class TaskAssignment(Base):
         doc="Assignment creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the assignment",
     )
@@ -271,29 +281,17 @@ class TaskAssignment(Base):
         doc="Assignment last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the assignment",
     )
 
     # Task and User Association
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
+        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
     user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="Assigned user ID"
-    )
-    assigned_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who made the assignment",
-    )
-    assigned_at = Column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        nullable=False,
-        doc="Assignment timestamp",
+        UUID, ForeignKey("users.id"), nullable=False, doc="Assigned user ID"
     )
     is_active = Column(
         Boolean,
@@ -307,7 +305,8 @@ class TaskAssignment(Base):
     assignee = relationship(
         "User", back_populates="task_assignments", foreign_keys=[user_id]
     )
-    assigner = relationship("User", foreign_keys=[assigned_by])
+    creator = relationship("User")
+    updater = relationship("User")
 
     # Constraints
     __table_args__ = (
@@ -331,7 +330,10 @@ class TaskComment(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer, primary_key=True, autoincrement=True, doc="Comment ID"
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Comment ID",
     )
     created_at = Column(
         DateTime(timezone=True),
@@ -340,7 +342,7 @@ class TaskComment(Base):
         doc="Comment creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the comment",
     )
@@ -351,24 +353,24 @@ class TaskComment(Base):
         doc="Comment last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the comment",
     )
 
     # Task and User Association
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
+        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
     author_id = Column(
-        Integer,
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="Comment author ID",
     )
     content = Column(Text, nullable=False, doc="Comment content")
     parent_id = Column(
-        Integer,
+        UUID,
         ForeignKey("task_comments.id"),
         nullable=True,
         doc="Parent comment ID for replies",
@@ -383,6 +385,8 @@ class TaskComment(Base):
     # Relationships
     task = relationship("Task", back_populates="comments")
     author = relationship("User")
+    creator = relationship("User")
+    updater = relationship("User")
     # parent = relationship("TaskComment", remote_side=[Base.id])
     parent = relationship(
         "TaskComment",
@@ -412,7 +416,10 @@ class TaskAttachment(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer, primary_key=True, autoincrement=True, doc="Attachment ID"
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Attachment ID",
     )
     created_at = Column(
         DateTime(timezone=True),
@@ -421,7 +428,7 @@ class TaskAttachment(Base):
         doc="Attachment creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the attachment",
     )
@@ -432,30 +439,25 @@ class TaskAttachment(Base):
         doc="Attachment last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the attachment",
     )
 
     # Task and User Association
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
+        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
     file_name = Column(String(255), nullable=False, doc="Original filename")
     file_path = Column(String(500), nullable=False, doc="File storage path")
     file_size = Column(Integer, nullable=False, doc="File size in bytes")
     mime_type = Column(String(100), nullable=True, doc="MIME type of the file")
-    uploaded_by = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="User who uploaded the file",
-    )
     description = Column(Text, nullable=True, doc="File description")
 
     # Relationships
     task = relationship("Task", back_populates="attachments")
-    uploader = relationship("User")
+    creator = relationship("User")
+    updater = relationship("User")
 
     def __repr__(self) -> str:
         return (
@@ -473,7 +475,10 @@ class TaskTimeLog(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer, primary_key=True, autoincrement=True, doc="Time log ID"
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Time log ID",
     )
     created_at = Column(
         DateTime(timezone=True),
@@ -482,7 +487,7 @@ class TaskTimeLog(Base):
         doc="Time log creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the time log",
     )
@@ -493,17 +498,17 @@ class TaskTimeLog(Base):
         doc="Time log last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the time log",
     )
 
     # Task and User Association
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
+        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
     user_id = Column(
-        Integer,
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="User who logged the time",
@@ -520,6 +525,8 @@ class TaskTimeLog(Base):
     # Relationships
     task = relationship("Task", back_populates="time_logs")
     user = relationship("User")
+    creator = relationship("User")
+    updater = relationship("User")
 
     # Constraints
     __table_args__ = (
@@ -541,7 +548,9 @@ class Tag(Base):
     __tablename__ = "tags"
 
     # Unique identifier and timestamps
-    id = Column(Integer, primary_key=True, autoincrement=True, doc="Tag ID")
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Tag ID"
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -549,7 +558,7 @@ class Tag(Base):
         doc="Tag creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the tag",
     )
@@ -560,7 +569,7 @@ class Tag(Base):
         doc="Tag last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the tag",
     )
@@ -578,6 +587,8 @@ class Tag(Base):
     task_tags = relationship(
         "TaskTag", back_populates="tag", cascade="all, delete-orphan"
     )
+    creator = relationship("User")
+    updater = relationship("User")
 
     def __repr__(self) -> str:
         return f"<Tag(id={self.id}, name='{self.name}')>"
@@ -592,7 +603,10 @@ class TaskTag(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer, primary_key=True, autoincrement=True, doc="TaskTag ID"
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="TaskTag ID",
     )
     created_at = Column(
         DateTime(timezone=True),
@@ -601,7 +615,7 @@ class TaskTag(Base):
         doc="TaskTag creation timestamp",
     )
     created_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who created the tag",
     )
@@ -612,26 +626,26 @@ class TaskTag(Base):
         doc="TaskTag last update timestamp",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated the tag",
     )
 
     # Task and Tag Association
     task_id = Column(
-        Integer, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
+        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
     )
-    tag_id = Column(
-        Integer, ForeignKey("tags.id"), nullable=False, doc="Tag ID"
-    )
+    tag_id = Column(UUID, ForeignKey("tags.id"), nullable=False, doc="Tag ID")
 
     # Relationships
     task = relationship("Task", back_populates="tags")
     tag = relationship("Tag", back_populates="task_tags")
+    creator = relationship("User")
+    updater = relationship("User")
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint("task_id", "tag_id", name="uq_task_tags_task_tag"),
+        UniqueConstraint("task_id", "tag_id", name="ux_task_tags_task_tag"),
     )
 
     def __repr__(self) -> str:

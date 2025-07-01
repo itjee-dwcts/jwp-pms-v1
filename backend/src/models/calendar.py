@@ -4,17 +4,10 @@ Calendar Models
 SQLAlchemy models for calendar and event management.
 """
 
+import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from core.base import Base
-from core.constants import (
-    EventAttendeeStatus,
-    EventReminder,
-    EventStatus,
-    EventType,
-    RecurrenceType,
-)
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -25,7 +18,17 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from core.base import Base
+from core.constants import (
+    EventAttendeeStatus,
+    EventReminder,
+    EventStatus,
+    EventType,
+    RecurrenceType,
+)
 
 if TYPE_CHECKING:
     pass
@@ -38,14 +41,19 @@ class Calendar(Base):
 
     __tablename__ = "calendars"
 
-    id = Column(Integer, primary_key=True, index=True, doc="Calendar ID")
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Calendar ID",
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         doc="Creation time",
     )
     created_by = Column(
-        Integer, nullable=True, doc="User who created this calendar"
+        UUID, nullable=True, doc="User who created this calendar"
     )
     updated_at = Column(
         DateTime(timezone=True),
@@ -54,7 +62,7 @@ class Calendar(Base):
         doc="Last update time",
     )
     updated_by = Column(
-        Integer, nullable=True, doc="User who last updated this calendar"
+        UUID, nullable=True, doc="User who last updated this calendar"
     )
 
     # Basic Information
@@ -69,7 +77,7 @@ class Calendar(Base):
 
     # Ownership and Visibility
     owner_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="Calendar owner"
+        UUID, ForeignKey("users.id"), nullable=False, doc="Calendar owner"
     )
     is_default = Column(
         Boolean,
@@ -91,6 +99,8 @@ class Calendar(Base):
     )
 
     # Relationships
+    creator = relationship("User")
+    updater = relationship("User")
     owner = relationship("User", back_populates="calendars")
     events = relationship(
         "Event", back_populates="calendar", cascade="all, delete-orphan"
@@ -110,15 +120,18 @@ class Event(Base):
 
     __tablename__ = "events"
 
-    id = Column(Integer, primary_key=True, index=True, doc="Event ID")
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Event ID",
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         doc="Creation time",
     )
-    created_by = Column(
-        Integer, nullable=True, doc="User who created this event"
-    )
+    created_by = Column(UUID, nullable=True, doc="User who created this event")
     updated_at = Column(
         DateTime(timezone=True),
         nullable=True,
@@ -126,7 +139,7 @@ class Event(Base):
         doc="Last update time",
     )
     updated_by = Column(
-        Integer, nullable=True, doc="User who last updated this event"
+        UUID, nullable=True, doc="User who last updated this event"
     )
 
     # Basic Information
@@ -153,7 +166,7 @@ class Event(Base):
         nullable=False,
         doc="Whether the event is all-day",
     )
-    timezone = Column(String(50), nullable=True, doc="Event timezone")
+    time_zone = Column(String(50), nullable=True, doc="Event timezone")
 
     # Status and Type
     event_type = Column(
@@ -171,25 +184,25 @@ class Event(Base):
 
     # Associations
     calendar_id = Column(
-        Integer,
+        UUID,
         ForeignKey("calendars.id"),
         nullable=False,
         doc="Associated calendar",
     )
     project_id = Column(
-        Integer,
+        UUID,
         ForeignKey("projects.id"),
         nullable=True,
         doc="Associated project (optional)",
     )
     task_id = Column(
-        Integer,
+        UUID,
         ForeignKey("tasks.id"),
         nullable=True,
         doc="Associated task (optional)",
     )
-    creator_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="Event creator"
+    owner_id = Column(
+        UUID, ForeignKey("users.id"), nullable=False, doc="Event owner"
     )
 
     # Recurrence
@@ -208,8 +221,8 @@ class Event(Base):
     recurrence_end_date = Column(
         DateTime(timezone=True), nullable=True, doc="When recurrence ends"
     )
-    parent_event_id = Column(
-        Integer,
+    parent_id = Column(
+        UUID,
         ForeignKey("events.id"),
         nullable=True,
         doc="Parent event for recurring instances",
@@ -240,9 +253,11 @@ class Event(Base):
     calendar = relationship("Calendar", back_populates="events")
     project = relationship("Project", back_populates="events")
     task = relationship("Task", back_populates="events")
-    creator = relationship(
-        "User", back_populates="created_events", foreign_keys=[creator_id]
+    owner = relationship(
+        "User", back_populates="created_events", foreign_keys=[owner_id]
     )
+    creator = relationship("User")
+    updater = relationship("User")
 
     # parent_event = relationship("Event", remote_side=[Base.id])
     parent_event = relationship(
@@ -282,14 +297,19 @@ class EventAttendee(Base):
 
     __tablename__ = "event_attendees"
 
-    id = Column(Integer, primary_key=True, index=True, doc="Attendee ID")
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Attendee ID",
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         doc="Creation time",
     )
     created_by = Column(
-        Integer, nullable=True, doc="User who created this attendee record"
+        UUID, nullable=True, doc="User who created this attendee record"
     )
     updated_at = Column(
         DateTime(timezone=True),
@@ -298,7 +318,7 @@ class EventAttendee(Base):
         doc="Last update time",
     )
     updated_by = Column(
-        Integer,
+        UUID,
         nullable=True,
         doc="User who last updated this attendee record",
     )
@@ -306,10 +326,10 @@ class EventAttendee(Base):
     # Basic Information
 
     event_id = Column(
-        Integer, ForeignKey("events.id"), nullable=False, doc="Event ID"
+        UUID, ForeignKey("events.id"), nullable=False, doc="Event ID"
     )
     user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="Attendee user ID"
+        UUID, ForeignKey("users.id"), nullable=False, doc="Attendee user ID"
     )
     status = Column(
         String(20),
@@ -332,6 +352,8 @@ class EventAttendee(Base):
     # Relationships
     event = relationship("Event", back_populates="attendees")
     user = relationship("User")
+    creator = relationship("User")
+    updater = relationship("User")
 
     def __repr__(self) -> str:
         return (

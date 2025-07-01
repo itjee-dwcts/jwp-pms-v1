@@ -4,11 +4,10 @@ User Models
 SQLAlchemy models for user management and authentication.
 """
 
+import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from core.base import Base
-from core.constants import UserRole, UserStatus
 from sqlalchemy import (
     Boolean,
     Column,
@@ -18,7 +17,11 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from core.base import Base
+from core.constants import UserRole, UserStatus
 
 if TYPE_CHECKING:
     pass
@@ -31,7 +34,9 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True, doc="User ID")
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="User ID"
+    )
     created_at = Column(
         DateTime(timezone=False), default=datetime.now(timezone.utc)
     )
@@ -176,7 +181,9 @@ class UserActivityLog(Base):
 
     __tablename__ = "user_activity_logs"
 
-    id = Column(Integer, primary_key=True, index=True, doc="Log ID")
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Log ID"
+    )
 
     created_at = Column(
         DateTime(timezone=True),
@@ -244,7 +251,12 @@ class UserSession(Base):
 
     __tablename__ = "user_sessions"
 
-    id = Column(Integer, primary_key=True, index=True, doc="Session ID")
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        doc="Session ID",
+    )
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

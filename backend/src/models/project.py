@@ -4,12 +4,11 @@ Project Models
 SQLAlchemy models for project management.
 """
 
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from core.base import Base
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -22,7 +21,11 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from core.base import Base
+from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
 
 if TYPE_CHECKING:
     pass
@@ -37,9 +40,9 @@ class Project(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer,
+        UUID(as_uuid=True),
         primary_key=True,
-        autoincrement=True,
+        default=uuid.uuid4,
         doc="Unique identifier for the project",
     )
     created_at = Column(
@@ -113,7 +116,7 @@ class Project(Base):
     )
 
     # Ownership and Visibility
-    creator_id = Column(
+    owner_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
@@ -142,8 +145,8 @@ class Project(Base):
     tags = Column(Text, nullable=True, doc="Project tags (comma-separated)")
 
     # Relationships
-    creator = relationship(
-        "User", back_populates="created_projects", foreign_keys=[creator_id]
+    owner = relationship(
+        "User", back_populates="created_projects", foreign_keys=[owner_id]
     )
 
     members = relationship(
@@ -210,9 +213,9 @@ class ProjectMember(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer,
+        UUID(as_uuid=True),
         primary_key=True,
-        autoincrement=True,
+        default=uuid.uuid4,
         doc="Unique identifier for the project member",
     )
     created_at = Column(
@@ -253,7 +256,7 @@ class ProjectMember(Base):
     )
     joined_at = Column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="When the user joined the project",
     )
@@ -305,9 +308,9 @@ class ProjectComment(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer,
+        UUID(as_uuid=True),
         primary_key=True,
-        autoincrement=True,
+        default=uuid.uuid4,
         doc="Unique identifier for the project comment",
     )
     created_at = Column(
@@ -386,9 +389,9 @@ class ProjectAttachment(Base):
 
     # Unique identifier and timestamps
     id = Column(
-        Integer,
+        UUID(as_uuid=True),
         primary_key=True,
-        autoincrement=True,
+        default=uuid.uuid4,
         doc="Unique identifier for the project attachment",
     )
     created_at = Column(
