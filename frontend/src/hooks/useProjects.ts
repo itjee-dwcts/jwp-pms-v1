@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { apiClient } from './useAuth';
+import { TaskPriority, TaskStatus } from './useTasks';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
 export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -18,8 +19,7 @@ export interface Project {
   owner: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
   members?: ProjectMember[];
   tasks?: Task[];
@@ -36,8 +36,7 @@ export interface ProjectMember {
   user: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     email: string;
     avatar_url?: string;
   };
@@ -53,8 +52,7 @@ export interface ProjectComment {
   updated_at: string;
   user: {
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
 }
 
@@ -67,8 +65,7 @@ export interface ProjectAttachment {
   uploaded_at: string;
   uploader: {
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
 }
 
@@ -76,15 +73,14 @@ export interface Task {
   id: number;
   title: string;
   description: string;
-  status: string;
-  priority: string;
+  status: TaskStatus;
+  priority: TaskPriority;
   due_date?: string;
   created_at: string;
   updated_at: string;
   assignees: Array<{
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   }>;
 }
 
@@ -121,9 +117,9 @@ export interface ProjectSearchParams {
 
 export interface ProjectListResponse {
   projects: Project[];
-  total: number;
-  page: number;
-  limit: number;
+  total_items: number;
+  page_no: number;
+  page_size: number;
   total_pages: number;
 }
 

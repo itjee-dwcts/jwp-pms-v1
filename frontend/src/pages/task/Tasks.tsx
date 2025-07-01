@@ -1,26 +1,26 @@
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { Input } from '@/components/ui/Input';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useTasks } from '@/hooks/useTasks';
+import Input from '@/components/ui/Input';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Task as ApiTask, useTasks } from '@/hooks/useTasks';
 import {
-    CalendarIcon,
-    ClockIcon,
-    EllipsisVerticalIcon,
-    ExclamationTriangleIcon,
-    FunnelIcon,
-    MagnifyingGlassIcon,
-    PlusIcon,
-    Squares2X2Icon,
-    TableCellsIcon,
-    TagIcon,
-    UserIcon,
-    ViewColumnsIcon,
+  CalendarIcon,
+  ClockIcon,
+  EllipsisVerticalIcon,
+  ExclamationTriangleIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  TagIcon,
+  UserIcon,
+  ViewColumnsIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -30,33 +30,8 @@ type ViewMode = 'grid' | 'list' | 'table' | 'kanban';
 type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  due_date: string | null;
-  created_at: string;
-  updated_at: string;
-  project: {
-    id: number;
-    name: string;
-  };
-  assignees: Array<{
-    id: number;
-    username: string;
-    first_name: string;
-    last_name: string;
-  }>;
-  tags: Array<{
-    id: number;
-    name: string;
-    color: string;
-  }>;
-  comments_count: number;
-  attachments_count: number;
-}
+// Use the Task type from the API (useTasks hook)
+type Task = ApiTask;
 
 interface FilterOptions {
   status: TaskStatus | '';
@@ -110,13 +85,16 @@ const Tasks: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getTasks({
+      const params: any = {
         status: filters.status || undefined,
         priority: filters.priority || undefined,
         project_id: filters.project_id || undefined,
         assignee_id: filters.assignee_id || undefined,
-        search: filters.search || undefined,
-      });
+      };
+      if (filters.search) {
+        params.search = filters.search;
+      }
+      const data = await getTasks(params);
       setTasks(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load tasks';
@@ -187,16 +165,16 @@ const Tasks: React.FC = () => {
           }
           items={[
             {
-              label: 'View Details',
+              label: '상세 보기',
               onClick: () => navigate(`/tasks/${task.id}`),
             },
             {
-              label: 'Edit',
+              label: '수정',
               onClick: () => navigate(`/tasks/${task.id}/edit`),
             },
             { type: 'divider' },
             {
-              label: 'Delete',
+              label: '삭제',
               onClick: () => setDeleteConfirm({ isOpen: true, task }),
               className: 'text-red-600 dark:text-red-400',
             },
@@ -211,10 +189,10 @@ const Tasks: React.FC = () => {
         <Badge className={getPriorityColor(task.priority)}>
           {task.priority.toUpperCase()}
         </Badge>
-        {isOverdue(task.due_date) && (
+        {isOverdue(task.due_date ?? null) && (
           <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
             <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-            OVERDUE
+            기한 초과
           </Badge>
         )}
       </div>
@@ -235,7 +213,7 @@ const Tasks: React.FC = () => {
           <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
             <CalendarIcon className="h-4 w-4" />
             <span className={isOverdue(task.due_date) ? 'text-red-600 dark:text-red-400' : ''}>
-              Due: {new Date(task.due_date).toLocaleDateString()}
+              마감: {new Date(task.due_date).toLocaleDateString()}
             </span>
           </div>
         )}
@@ -245,9 +223,9 @@ const Tasks: React.FC = () => {
           <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
             <UserIcon className="h-4 w-4" />
             <span>
-              {task.assignees.length === 1
-                ? `${task.assignees[0].first_name} ${task.assignees[0].last_name}`
-                : `${task.assignees.length} assignees`
+              {task.assignees.length === 1 && task.assignees[0]
+                ? `${task.assignees[0].full_name}`
+                : `${task.assignees.length}명의 담당자`
               }
             </span>
           </div>
@@ -259,16 +237,16 @@ const Tasks: React.FC = () => {
             {task.tags.slice(0, 3).map((tag) => (
               <Badge
                 key={tag.id}
-                style={{ backgroundColor: tag.color + '20', color: tag.color }}
                 className="text-xs"
+                // If you want to use dynamic colors, you need to extend Badge to accept them or use a fixed set of classes
               >
                 <TagIcon className="h-3 w-3 mr-1" />
                 {tag.name}
               </Badge>
             ))}
             {task.tags.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{task.tags.length - 3} more
+              <Badge variant="default" className="text-xs">
+                +{task.tags.length - 3}개 더보기
               </Badge>
             )}
           </div>
@@ -278,10 +256,10 @@ const Tasks: React.FC = () => {
         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
           <div className="flex items-center space-x-3">
             {task.comments_count > 0 && (
-              <span>{task.comments_count} comments</span>
+              <span>{task.comments_count}개의 댓글</span>
             )}
             {task.attachments_count > 0 && (
-              <span>{task.attachments_count} files</span>
+              <span>{task.attachments_count}개의 파일</span>
             )}
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-500">
@@ -299,28 +277,28 @@ const Tasks: React.FC = () => {
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Task
+                작업
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Project
+                프로젝트
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
+                상태
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Priority
+                우선순위
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Assignee
+                담당자
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Due Date
+                마감일
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Updated
+                수정일
               </th>
               <th className="relative px-6 py-3">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">관리</span>
               </th>
             </tr>
           </thead>
@@ -358,15 +336,15 @@ const Tasks: React.FC = () => {
                     <Badge className={getPriorityColor(task.priority)}>
                       {task.priority.toUpperCase()}
                     </Badge>
-                    {isOverdue(task.due_date) && (
+                    {isOverdue(task.due_date ?? null) && (
                       <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {task.assignees.length > 0
-                    ? task.assignees[0].first_name + ' ' + task.assignees[0].last_name
-                    : 'Unassigned'}
+                  {task.assignees.length > 0 && task.assignees[0]
+                    ? task.assignees[0].full_name
+                    : '미지정'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {task.due_date ? (
@@ -389,16 +367,16 @@ const Tasks: React.FC = () => {
                     }
                     items={[
                       {
-                        label: 'View Details',
+                        label: '상세 보기',
                         onClick: () => navigate(`/tasks/${task.id}`),
                       },
                       {
-                        label: 'Edit',
+                        label: '수정',
                         onClick: () => navigate(`/tasks/${task.id}/edit`),
                       },
                       { type: 'divider' },
                       {
-                        label: 'Delete',
+                        label: '삭제',
                         onClick: () => setDeleteConfirm({ isOpen: true, task }),
                         className: 'text-red-600 dark:text-red-400',
                       },
@@ -435,15 +413,15 @@ const Tasks: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Tasks
+            작업
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Manage and track your tasks
+            작업을 관리하고 추적하세요
           </p>
         </div>
         <Button onClick={() => navigate('/tasks/new')}>
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Task
+          새 작업
         </Button>
       </div>
 
@@ -456,7 +434,7 @@ const Tasks: React.FC = () => {
             </div>
             <Input
               type="text"
-              placeholder="Search tasks..."
+              placeholder="작업 검색..."
               className="pl-10"
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -471,7 +449,7 @@ const Tasks: React.FC = () => {
             className={showFilters ? 'bg-blue-50 dark:bg-blue-900' : ''}
           >
             <FunnelIcon className="h-4 w-4 mr-2" />
-            Filters
+            필터
           </Button>
 
           {/* View Mode Toggles */}
@@ -518,12 +496,13 @@ const Tasks: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
+                상태
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as TaskStatus | '' }))}
+                title="상태"
               >
                 <option value="">All Statuses</option>
                 <option value="todo">To Do</option>
@@ -535,12 +514,13 @@ const Tasks: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
+                우선순위
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.priority}
                 onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value as TaskPriority | '' }))}
+                title="우선순위"
               >
                 <option value="">All Priorities</option>
                 <option value="low">Low</option>
@@ -552,12 +532,13 @@ const Tasks: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Project
+                프로젝트
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.project_id}
                 onChange={(e) => setFilters(prev => ({ ...prev, project_id: e.target.value ? parseInt(e.target.value) : '' }))}
+                title="프로젝트"
               >
                 <option value="">All Projects</option>
                 {/* TODO: Load projects from API */}
@@ -570,7 +551,7 @@ const Tasks: React.FC = () => {
                 onClick={() => setFilters({ status: '', priority: '', project_id: '', assignee_id: '', search: '' })}
                 className="w-full"
               >
-                Clear Filters
+                필터 초기화
               </Button>
             </div>
           </div>
@@ -586,7 +567,7 @@ const Tasks: React.FC = () => {
             <ClockIcon className="h-8 w-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            No tasks found
+            작업이 없습니다.
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {filters.search || filters.status || filters.priority || filters.project_id
@@ -597,7 +578,7 @@ const Tasks: React.FC = () => {
           {!filters.search && !filters.status && !filters.priority && !filters.project_id && (
             <Button onClick={() => navigate('/tasks/new')}>
               <PlusIcon className="h-4 w-4 mr-2" />
-              Create Task
+              작업 생성
             </Button>
           )}
         </Card>
@@ -623,7 +604,7 @@ const Tasks: React.FC = () => {
         onClose={() => setDeleteConfirm({ isOpen: false, task: null })}
         onConfirm={() => deleteConfirm.task && handleDeleteTask(deleteConfirm.task)}
         title="Delete Task"
-        message={`Are you sure you want to delete "${deleteConfirm.task?.title}"? This action cannot be undone.`}
+        message={`"${deleteConfirm.task?.title}"작업을 삭제하겠습니까? 삭제 후 복구할 수 없습니다.`}
         confirmText="Delete"
         confirmVariant="danger"
       />

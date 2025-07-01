@@ -24,8 +24,8 @@ type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
 interface ProjectFormData {
   name: string;
   description: string;
-  status: ProjectStatus;
-  priority: ProjectPriority;
+  status: string;
+  priority: string;
   start_date: string;
   end_date: string;
   budget: string;
@@ -36,8 +36,7 @@ interface ProjectFormData {
 interface User {
   id: number;
   username: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   avatar_url?: string;
 }
@@ -53,7 +52,7 @@ const ProjectCreate: React.FC = () => {
     description: '',
     status: 'planning',
     priority: 'medium',
-    start_date: new Date().toISOString().split('T')[0],
+    start_date: new Date().toISOString().split('T')[0] ?? '',
     end_date: '',
     budget: '',
     tags: [],
@@ -137,8 +136,10 @@ const ProjectCreate: React.FC = () => {
 
       const projectData = {
         ...formData,
-        budget: formData.budget ? parseFloat(formData.budget) : undefined,
-        end_date: formData.end_date || undefined,
+        status: formData.status,
+        priority: formData.priority,
+        budget: formData.budget !== '' ? parseFloat(formData.budget) : undefined,
+        end_date: formData.end_date !== '' ? formData.end_date : undefined,
       };
 
       const newProject = await createProject(projectData);
@@ -208,8 +209,7 @@ const ProjectCreate: React.FC = () => {
 
   const filteredUsers = availableUsers.filter(user =>
     !formData.member_ids.includes(user.id) &&
-    (user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -228,12 +228,12 @@ const ProjectCreate: React.FC = () => {
     return colors[status];
   };
 
-  const getPriorityColor = (priority: ProjectPriority) => {
+  const getPriorityColor = (priority: string) => {
     const colors = {
-      low: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-orange-100 text-orange-800',
-      critical: 'bg-red-100 text-red-800',
+      "low": 'bg-green-100 text-green-800',
+      "medium": 'bg-yellow-100 text-yellow-800',
+      "high": 'bg-orange-100 text-orange-800',
+      "critical": 'bg-red-100 text-red-800',
     };
     return colors[priority];
   };
@@ -329,6 +329,7 @@ const ProjectCreate: React.FC = () => {
                   onChange={handleInputChange('status')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   disabled={loading}
+                  title="Status"
                 >
                   <option value="planning">Planning</option>
                   <option value="active">Active</option>
@@ -352,6 +353,7 @@ const ProjectCreate: React.FC = () => {
                   onChange={handleInputChange('priority')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   disabled={loading}
+                  title="Priority"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -479,6 +481,7 @@ const ProjectCreate: React.FC = () => {
                       onClick={() => removeTag(tag)}
                       className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-600 hover:bg-blue-200 dark:text-blue-300 dark:hover:bg-blue-800"
                       disabled={loading}
+                      title={tag}
                     >
                       <XMarkIcon className="h-3 w-3" />
                     </button>
@@ -538,18 +541,18 @@ const ProjectCreate: React.FC = () => {
                             {user.avatar_url ? (
                               <img
                                 src={user.avatar_url}
-                                alt={`${user.first_name} ${user.last_name}`}
+                                alt={`${user.full_name}`}
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                {user.first_name[0]}{user.last_name[0]}
+                                {user.full_name[0]}
                               </span>
                             )}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {user.first_name} {user.last_name}
+                              {user.full_name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {user.email}
@@ -592,18 +595,18 @@ const ProjectCreate: React.FC = () => {
                           {member.avatar_url ? (
                             <img
                               src={member.avatar_url}
-                              alt={`${member.first_name} ${member.last_name}`}
+                              alt={`${member.full_name}`}
                               className="w-8 h-8 rounded-full object-cover"
                             />
                           ) : (
                             <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                              {member.first_name[0]}{member.last_name[0]}
+                              {member.full_name[0]}
                             </span>
                           )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {member.first_name} {member.last_name}
+                            {member.full_name}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {member.email}
@@ -615,6 +618,7 @@ const ProjectCreate: React.FC = () => {
                         onClick={() => removeMember(member.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
                         disabled={loading}
+                        title="Selected Members"
                       >
                         <XMarkIcon className="h-4 w-4" />
                       </button>

@@ -8,16 +8,16 @@ import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useProjects } from '@/hooks/useProjects';
 import {
-    CalendarIcon,
-    ClockIcon,
-    EllipsisVerticalIcon,
-    FunnelIcon,
-    MagnifyingGlassIcon,
-    PlusIcon,
-    Squares2X2Icon,
-    TableCellsIcon,
-    UserGroupIcon,
-    ViewColumnsIcon,
+  CalendarIcon,
+  ClockIcon,
+  EllipsisVerticalIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  UserGroupIcon,
+  ViewColumnsIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -43,8 +43,7 @@ interface Project {
   owner: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
 }
 
@@ -84,7 +83,7 @@ const Projects: React.FC = () => {
       const data = await getProjects({
         status: filters.status || undefined,
         priority: filters.priority || undefined,
-        search: filters.search || undefined,
+        search: filters.search ?? '',
       });
       setProjects(data);
     } catch (err) {
@@ -239,7 +238,7 @@ const Projects: React.FC = () => {
         {/* Owner */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Owner: {project.owner.first_name} {project.owner.last_name}
+            Owner: {project.owner.full_name}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-500">
             {new Date(project.updated_at).toLocaleDateString()}
@@ -324,7 +323,7 @@ const Projects: React.FC = () => {
                   {project.member_count}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {project.owner.first_name} {project.owner.last_name}
+                  {project.owner.full_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {new Date(project.updated_at).toLocaleDateString()}
@@ -465,6 +464,7 @@ const Projects: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as ProjectStatus | '' }))}
+                title="Status"
               >
                 <option value="">All Statuses</option>
                 <option value="planning">Planning</option>
@@ -483,6 +483,7 @@ const Projects: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.priority}
                 onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value as ProjectPriority | '' }))}
+                title="Priority"
               >
                 <option value="">All Priorities</option>
                 <option value="low">Low</option>

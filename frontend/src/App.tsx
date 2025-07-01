@@ -9,9 +9,9 @@ const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
 const ProjectsPage = React.lazy(() => import('./pages/project/Projects'));
 const ProjectDetailPage = React.lazy(() => import('./pages/project/ProjectDetail'));
 const TasksPage = React.lazy(() => import('./pages/task/Tasks'));
-const TaskDetailPage = React.lazy(() => import('./pages/task/TaskDetailPage'));
+const TaskDetailPage = React.lazy(() => import('./pages/task/TaskDetail'));
 const CalendarPage = React.lazy(() => import('./pages/calendar/Calendar'));
-const UsersPage = React.lazy(() => import('./pages/user/UsersPage'));
+const UsersPage = React.lazy(() => import('./pages/user/Users'));
 const ProfilePage = React.lazy(() => import('./pages/common/Profile'));
 const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
 

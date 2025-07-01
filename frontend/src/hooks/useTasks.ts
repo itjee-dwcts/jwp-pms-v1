@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { apiClient } from './useAuth';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
@@ -25,8 +25,7 @@ export interface Task {
   creator: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
   parent_task?: {
     id: number;
@@ -48,8 +47,7 @@ export interface TaskAssignee {
   user: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     email: string;
     avatar_url?: string;
   };
@@ -71,8 +69,7 @@ export interface TaskComment {
   updated_at: string;
   user: {
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     avatar_url?: string;
   };
   parent_id?: number;
@@ -88,8 +85,7 @@ export interface TaskAttachment {
   uploaded_at: string;
   uploader: {
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
 }
 
@@ -101,8 +97,7 @@ export interface TaskTimeLog {
   created_at: string;
   user: {
     id: number;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
 }
 
@@ -162,9 +157,9 @@ export interface TaskSearchParams {
 
 export interface TaskListResponse {
   tasks: Task[];
-  total: number;
-  page: number;
-  limit: number;
+  total_items: number;
+  page_no: number;
+  page_size: number;
   total_pages: number;
 }
 

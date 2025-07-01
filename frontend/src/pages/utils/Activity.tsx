@@ -7,19 +7,19 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/hooks/useUsers';
 import {
-    ArrowPathIcon,
-    CalendarIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    EyeIcon,
-    FolderIcon,
-    FunnelIcon,
-    MagnifyingGlassIcon,
-    PencilIcon,
-    PlusIcon,
-    TrashIcon,
-    UserIcon
+  ArrowPathIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  FolderIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -52,8 +52,7 @@ interface ActivityLog {
   user: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     avatar_url?: string;
   };
   resource?: {
@@ -75,8 +74,7 @@ interface ActivityFilters {
 interface User {
   id: number;
   username: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   avatar_url?: string;
 }
 
@@ -137,7 +135,7 @@ const Activity: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
-      const usersData = await getUsers({ limit: 100 });
+      const usersData = await getUsers({ page_size: 100 });
       setUsers(usersData);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -307,7 +305,7 @@ const Activity: React.FC = () => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-sm font-medium text-gray-900 dark:text-white">
-                {activity.user.first_name} {activity.user.last_name}
+                {activity.user.full_name}
               </span>
               <Badge variant="outline" className="text-xs">
                 {activity.action}
@@ -361,12 +359,12 @@ const Activity: React.FC = () => {
               {activity.user.avatar_url ? (
                 <img
                   src={activity.user.avatar_url}
-                  alt={`${activity.user.first_name} ${activity.user.last_name}`}
+                  alt={`${activity.user.full_name}`}
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                  {activity.user.first_name[0]}{activity.user.last_name[0]}
+                  {activity.user.full_name[0]}
                 </span>
               )}
             </div>
@@ -424,11 +422,12 @@ const Activity: React.FC = () => {
                 onChange={(e) => handleFilterChange('user_id', e.target.value ? parseInt(e.target.value) : undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 disabled={usersLoading}
+                title="User"
               >
                 <option value="">All Users</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
+                    {user.full_name}
                   </option>
                 ))}
               </select>
@@ -443,6 +442,7 @@ const Activity: React.FC = () => {
                 value={filters.action || ''}
                 onChange={(e) => handleFilterChange('action', e.target.value || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                title="Action"
               >
                 <option value="">All Actions</option>
                 <option value="create">Create</option>
@@ -465,6 +465,7 @@ const Activity: React.FC = () => {
                 value={filters.resource_type || ''}
                 onChange={(e) => handleFilterChange('resource_type', e.target.value || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                title="Resource Type"
               >
                 <option value="">All Types</option>
                 <option value="project">Project</option>

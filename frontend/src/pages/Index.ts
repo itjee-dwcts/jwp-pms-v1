@@ -19,27 +19,27 @@ export { default as ProjectDetail } from './project/ProjectDetail';
 export { default as ProjectEdit } from './project/ProjectEdit';
 export { default as Projects } from './project/Projects';
 
+export { default as TaskCreate } from './task/TaskCreate';
+export { default as TaskDetail } from './task/TaskDetail';
+export { default as TaskEdit } from './task/TaskEdit';
 export { default as Tasks } from './task/Tasks';
-export { default as TaskCreate } from './TaskCreate';
-export { default as TaskDetail } from './TaskDetail';
-export { default as TaskEdit } from './TaskEdit';
 
 export { default as Calendar } from './calendar/Calendar';
-export { default as EventCreate } from './EventCreate';
-export { default as EventDetail } from './EventDetail';
-export { default as EventEdit } from './EventEdit';
+export { default as EventCreate } from './calendar/EventCreate';
+export { default as EventDetail } from './calendar/EventDetail';
+export { default as EventEdit } from './calendar/EventEdit';
 
 // User and profile pages
 export { default as Profile } from './common/Profile';
 export { default as Settings } from './common/Settings';
+export { default as Users } from './user/Users';
 export { default as UserDetail } from './UserDetail';
-export { default as Users } from './Users';
 
 // Utility pages
-export { default as Help } from './utils/Help';
 export { default as Reports } from './reports/Reports';
-export { default as Search } from './Search';
 export { default as Activity } from './utils/Activity';
+export { default as Help } from './utils/Help';
+export { default as Search } from './utils/Search';
 
 // Error pages
 export { default as NotFound } from './error/NotFound';

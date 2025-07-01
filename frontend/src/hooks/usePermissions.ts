@@ -405,7 +405,6 @@ export const withPermissions = <P extends object>(
 
     if (!hasRequiredPermissions) {
       if (fallbackComponent) {
-        const FallbackComponent = fallbackComponent;
         return <FallbackComponent {...props} />;
       }
       return null;

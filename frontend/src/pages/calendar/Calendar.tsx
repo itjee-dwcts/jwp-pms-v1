@@ -47,8 +47,7 @@ interface Event {
     user: {
       id: number;
       username: string;
-      first_name: string;
-      last_name: string;
+      full_name: string;
     };
     response_status: string;
   }>;
@@ -340,12 +339,12 @@ const Calendar: React.FC = () => {
                 </div>
 
                 <div className="flex items-center space-x-2 mt-3">
-                  <Badge variant="outline">{event.calendar.name}</Badge>
+                  <Badge variant="default">{event.calendar.name}</Badge>
                   {event.project && (
-                    <Badge variant="outline">Project: {event.project.name}</Badge>
+                    <Badge variant="default">Project: {event.project.name}</Badge>
                   )}
                   {event.task && (
-                    <Badge variant="outline">Task: {event.task.title}</Badge>
+                    <Badge variant="default">Task: {event.task.title}</Badge>
                   )}
                 </div>
               </div>

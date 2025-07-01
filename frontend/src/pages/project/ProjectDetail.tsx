@@ -1,10 +1,10 @@
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -37,16 +37,14 @@ interface Project {
   owner: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
   members: Array<{
     id: number;
     user: {
       id: number;
       username: string;
-      first_name: string;
-      last_name: string;
+      full_name: string;
       avatar_url: string;
     };
     role: string;
@@ -60,8 +58,7 @@ interface Project {
     due_date: string;
     assignees: Array<{
       id: number;
-      first_name: string;
-      last_name: string;
+      full_name: string;
     }>;
   }>;
   comments: Array<{
@@ -70,8 +67,7 @@ interface Project {
     created_at: string;
     user: {
       id: number;
-      first_name: string;
-      last_name: string;
+      full_name: string;
     };
   }>;
   attachments: Array<{
@@ -81,8 +77,7 @@ interface Project {
     uploaded_at: string;
     uploader: {
       id: number;
-      first_name: string;
-      last_name: string;
+      full_name: string;
     };
   }>;
 }
@@ -202,7 +197,7 @@ const ProjectDetail: React.FC = () => {
               {project.name}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-1">
-              Created by {project.owner.first_name} {project.owner.last_name}
+              Created by {project.owner.full_name}
             </p>
           </div>
         </div>
@@ -363,7 +358,7 @@ const ProjectDetail: React.FC = () => {
                     </div>
                     {task.assignees.length > 0 && (
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {task.assignees[0].first_name} {task.assignees[0].last_name}
+                        {task.assignees[0].full_name}
                       </div>
                     )}
                   </div>
@@ -435,18 +430,18 @@ const ProjectDetail: React.FC = () => {
                       {member.user.avatar_url ? (
                         <img
                           src={member.user.avatar_url}
-                          alt={`${member.user.first_name} ${member.user.last_name}`}
+                          alt={`${member.user.full_name}`}
                           className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                          {member.user.first_name[0]}{member.user.last_name[0]}
+                          {member.user.full_name[0]}
                         </span>
                       )}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {member.user.first_name} {member.user.last_name}
+                        {member.user.full_name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {member.role}
@@ -498,7 +493,7 @@ const ProjectDetail: React.FC = () => {
                 {task.assignees.length > 0 && (
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     {task.assignees.map(assignee =>
-                      `${assignee.first_name} ${assignee.last_name}`
+                      `${assignee.full_name}`
                     ).join(', ')}
                   </div>
                 )}
@@ -523,13 +518,13 @@ const ProjectDetail: React.FC = () => {
               <div key={comment.id} className="flex space-x-3">
                 <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                    {comment.user.first_name[0]}{comment.user.last_name[0]}
+                    {comment.user.full_name[0]}
                   </span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {comment.user.first_name} {comment.user.last_name}
+                      {comment.user.full_name}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(comment.created_at).toLocaleString()}
@@ -572,7 +567,7 @@ const ProjectDetail: React.FC = () => {
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {formatFileSize(attachment.file_size)} •
-                      Uploaded by {attachment.uploader.first_name} {attachment.uploader.last_name} •
+                      Uploaded by {attachment.uploader.full_name} •
                       {new Date(attachment.uploaded_at).toLocaleDateString()}
                     </p>
                   </div>

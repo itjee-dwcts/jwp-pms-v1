@@ -1,15 +1,15 @@
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import {
-    CameraIcon,
-    EnvelopeIcon,
-    EyeIcon,
-    EyeSlashIcon,
-    LockClosedIcon,
-    UserIcon
+  CameraIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -17,8 +17,7 @@ import { toast } from 'react-hot-toast';
 interface ProfileFormData {
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   bio: string;
   phone: string;
   location: string;
@@ -49,8 +48,7 @@ const Profile: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileFormData>({
     username: '',
     email: '',
-    first_name: '',
-    last_name: '',
+    full_name: '',
     bio: '',
     phone: '',
     location: '',
@@ -82,8 +80,7 @@ const Profile: React.FC = () => {
       setProfileData({
         username: user.username || '',
         email: user.email || '',
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
+        full_name: user.full_name || '',
         bio: user.bio || '',
         phone: user.phone || '',
         location: user.location || '',
@@ -108,12 +105,8 @@ const Profile: React.FC = () => {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!profileData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
-    }
-
-    if (!profileData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
+    if (!profileData.full_name.trim()) {
+      newErrors.full_name = 'Full name is required';
     }
 
     if (profileData.website && !/^https?:\/\/.+/.test(profileData.website)) {
@@ -278,20 +271,22 @@ const Profile: React.FC = () => {
               {user.avatar_url ? (
                 <img
                   src={user.avatar_url}
-                  alt={`${user.first_name} ${user.last_name}`}
+                  alt={`${user.full_name}`}
                   className="w-24 h-24 rounded-full object-cover"
                 />
               ) : (
                 <UserIcon className="w-12 h-12 text-gray-400" />
               )}
             </div>
-            <button className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors">
+            <button
+              className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+              title="카메라">
               <CameraIcon className="w-4 h-4" />
             </button>
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {user.first_name} {user.last_name}
+              {user.full_name}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
@@ -371,37 +366,18 @@ const Profile: React.FC = () => {
               {/* First Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  First Name
+                  전체이름
                 </label>
                 <Input
                   type="text"
-                  value={profileData.first_name}
-                  onChange={handleProfileInputChange('first_name')}
-                  className={errors.first_name ? 'border-red-500' : ''}
+                  value={profileData.full_name}
+                  onChange={handleProfileInputChange('full_name')}
+                  className={errors.full_name ? 'border-red-500' : ''}
                   disabled={loading}
                 />
-                {errors.first_name && (
+                {errors.full_name && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.first_name}
-                  </p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Last Name
-                </label>
-                <Input
-                  type="text"
-                  value={profileData.last_name}
-                  onChange={handleProfileInputChange('last_name')}
-                  className={errors.last_name ? 'border-red-500' : ''}
-                  disabled={loading}
-                />
-                {errors.last_name && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.last_name}
+                    {errors.full_name}
                   </p>
                 )}
               </div>
@@ -409,7 +385,7 @@ const Profile: React.FC = () => {
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone
+                  전화번호
                 </label>
                 <Input
                   type="tel"
@@ -422,7 +398,7 @@ const Profile: React.FC = () => {
               {/* Location */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Location
+                  위치
                 </label>
                 <Input
                   type="text"
@@ -435,7 +411,7 @@ const Profile: React.FC = () => {
               {/* Website */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Website
+                  웹사이트
                 </label>
                 <Input
                   type="url"
@@ -455,13 +431,14 @@ const Profile: React.FC = () => {
               {/* Timezone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Timezone
+                  타임존
                 </label>
                 <select
                   value={profileData.timezone}
                   onChange={(e) => setProfileData(prev => ({ ...prev, timezone: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   disabled={loading}
+                  title="타임존"
                 >
                   <option value="UTC">UTC</option>
                   <option value="America/New_York">Eastern Time</option>
@@ -479,7 +456,7 @@ const Profile: React.FC = () => {
             {/* Bio */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Bio
+                건강
               </label>
               <textarea
                 rows={4}
@@ -496,10 +473,10 @@ const Profile: React.FC = () => {
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
-                    Updating...
+                    업데이트하는중...
                   </>
                 ) : (
-                  'Update Profile'
+                  '프로필 저장'
                 )}
               </Button>
             </div>
@@ -513,7 +490,7 @@ const Profile: React.FC = () => {
             {/* Current Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Current Password
+                현재 비밀번호
               </label>
               <div className="relative">
                 <Input
@@ -545,7 +522,7 @@ const Profile: React.FC = () => {
             {/* New Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                New Password
+                변경 비밀번호
               </label>
               <div className="relative">
                 <Input
@@ -577,7 +554,7 @@ const Profile: React.FC = () => {
             {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Confirm New Password
+                변경 비밀번호 확인
               </label>
               <div className="relative">
                 <Input
@@ -611,10 +588,10 @@ const Profile: React.FC = () => {
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
-                    Changing...
+                    변경하는중...
                   </>
                 ) : (
-                  'Change Password'
+                  '비밀번호 변경'
                 )}
               </Button>
             </div>
@@ -668,7 +645,7 @@ const Profile: React.FC = () => {
                     Saving...
                   </>
                 ) : (
-                  'Save Preferences'
+                  '설정 저장'
                 )}
               </Button>
             </div>

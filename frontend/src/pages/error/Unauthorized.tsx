@@ -3,14 +3,14 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
 import {
-    ArrowLeftIcon,
-    ArrowRightOnRectangleIcon,
-    ChatBubbleLeftEllipsisIcon,
-    ClockIcon,
-    HomeIcon,
-    LockClosedIcon,
-    ShieldExclamationIcon,
-    UserIcon
+  ArrowLeftIcon,
+  ArrowRightOnRectangleIcon,
+  ChatBubbleLeftEllipsisIcon,
+  ClockIcon,
+  HomeIcon,
+  LockClosedIcon,
+  ShieldExclamationIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -187,14 +187,14 @@ const Unauthorized: React.FC = () => {
               </div>
               <div className="text-left flex-1">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Signed in as: {user.first_name} {user.last_name}
+                  Signed in as: {user.full_name}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
                   {user.email}
                 </p>
               </div>
               {user.role && (
-                <Badge variant="outline" className="text-blue-700 border-blue-300">
+                <Badge variant="default" className="text-blue-700 border-blue-300">
                   {user.role}
                 </Badge>
               )}
@@ -212,7 +212,7 @@ const Unauthorized: React.FC = () => {
               {details.requiredRole && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-600 dark:text-gray-400">Role:</span>
-                  <Badge variant="outline">{details.requiredRole}</Badge>
+                  <Badge variant="default">{details.requiredRole}</Badge>
                 </div>
               )}
               {details.requiredPermissions && details.requiredPermissions.length > 0 && (
@@ -222,7 +222,7 @@ const Unauthorized: React.FC = () => {
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {details.requiredPermissions.map((permission, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
+                      <Badge key={index} variant="default" className="text-xs">
                         {permission}
                       </Badge>
                     ))}

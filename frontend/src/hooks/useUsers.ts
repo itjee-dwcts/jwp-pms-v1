@@ -8,9 +8,8 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: UserRole;
+  full_name: string;
+  role: string;
   status: UserStatus;
   avatar_url?: string;
   bio?: string;
@@ -80,9 +79,8 @@ export interface UserCreateRequest {
   username: string;
   email: string;
   password: string;
-  first_name: string;
-  last_name: string;
-  role: UserRole;
+  full_name: string;
+  role: string;
   bio?: string;
   phone?: string;
   location?: string;
@@ -93,10 +91,9 @@ export interface UserCreateRequest {
 export interface UserUpdateRequest {
   username?: string;
   email?: string;
-  first_name?: string;
-  last_name?: string;
-  role?: UserRole;
-  status?: UserStatus;
+  full_name?: string;
+  role?: string;
+  status?: string;
   bio?: string;
   phone?: string;
   location?: string;
@@ -106,24 +103,24 @@ export interface UserUpdateRequest {
 
 export interface UserSearchParams {
   search?: string;
-  role?: UserRole;
-  status?: UserStatus;
+  role?: string;
+  status?: string;
   is_verified?: boolean;
   created_after?: string;
   created_before?: string;
   last_login_after?: string;
   last_login_before?: string;
-  page?: number;
-  limit?: number;
+  page_no?: number;
+  page_size?: number;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
 }
 
 export interface UserListResponse {
   users: User[];
-  total: number;
-  page: number;
-  limit: number;
+  total_items: number;
+  page_no: number;
+  page_size: number;
   total_pages: number;
 }
 
@@ -144,16 +141,15 @@ export interface PasswordChangeRequest {
 
 export interface UserInviteRequest {
   email: string;
-  role: UserRole;
-  first_name?: string;
-  last_name?: string;
+  role: string;
+  full_name?: string;
   message?: string;
 }
 
 export interface UserInviteResponse {
   id: number;
   email: string;
-  role: UserRole;
+  role: string;
   invite_token: string;
   expires_at: string;
   created_at: string;

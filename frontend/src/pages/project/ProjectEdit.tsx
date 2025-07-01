@@ -8,14 +8,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { ProjectPriority, ProjectStatus, useProjects } from '@/hooks/useProjects';
 import { useUsers } from '@/hooks/useUsers';
 import {
-    ArrowLeftIcon,
-    CalendarIcon,
-    FolderIcon,
-    PlusIcon,
-    TagIcon,
-    TrashIcon,
-    UserGroupIcon,
-    XMarkIcon
+  ArrowLeftIcon,
+  CalendarIcon,
+  FolderIcon,
+  PlusIcon,
+  TagIcon,
+  TrashIcon,
+  UserGroupIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -36,8 +36,7 @@ interface ProjectFormData {
 interface User {
   id: number;
   username: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   avatar_url?: string;
 }
@@ -60,8 +59,7 @@ interface Project {
   owner: {
     id: number;
     username: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
   };
   created_at: string;
   updated_at: string;
@@ -213,13 +211,11 @@ const ProjectEdit: React.FC = () => {
       setSaving(true);
       setErrors({});
 
-      const updateData: any = {
+      const updateData = {
         ...formData,
         budget: formData.budget ? parseFloat(formData.budget) : undefined,
+        end_date: formData.end_date || undefined,
       };
-      if (formData.end_date) {
-        updateData.end_date = formData.end_date;
-      }
 
       const updatedProject = await updateProject(project.id, updateData);
       setProject(updatedProject);
@@ -313,8 +309,7 @@ const ProjectEdit: React.FC = () => {
 
   const filteredUsers = availableUsers.filter(user =>
     !formData.member_ids.includes(user.id) &&
-    (user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -679,18 +674,18 @@ const ProjectEdit: React.FC = () => {
                             {user.avatar_url ? (
                               <img
                                 src={user.avatar_url}
-                                alt={`${user.first_name} ${user.last_name}`}
+                                alt={`${user.full_name}`}
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                {user.first_name[0]}{user.last_name[0]}
+                                {user.full_name[0]}
                               </span>
                             )}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {user.first_name} {user.last_name}
+                              {user.full_name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {user.email}
@@ -733,18 +728,18 @@ const ProjectEdit: React.FC = () => {
                           {member.avatar_url ? (
                             <img
                               src={member.avatar_url}
-                              alt={`${member.first_name} ${member.last_name}`}
+                              alt={`${member.full_name}`}
                               className="w-8 h-8 rounded-full object-cover"
                             />
                           ) : (
                             <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                              {member.first_name[0]}{member.last_name[0]}
+                              {member.full_name[0]}
                             </span>
                           )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {member.first_name} {member.last_name}
+                            {member.full_name}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {member.email}
@@ -756,8 +751,8 @@ const ProjectEdit: React.FC = () => {
                         onClick={() => removeMember(member.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
                         disabled={saving}
-                        title={`Remove member ${member.first_name} ${member.last_name}`}
-                        aria-label={`Remove member ${member.first_name} ${member.last_name}`}
+                        title={`Remove member ${member.full_name}`}
+                        aria-label={`Remove member ${member.full_name}`}
                       >
                         <XMarkIcon className="h-4 w-4" />
                       </button>
