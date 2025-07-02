@@ -1,16 +1,16 @@
 import {
-  BellIcon,
-  CogIcon,
-  MagnifyingGlassIcon,
-  MoonIcon,
-  PowerIcon,
-  SunIcon,
-  UserIcon
+    BellIcon,
+    CogIcon,
+    MagnifyingGlassIcon,
+    MoonIcon,
+    PowerIcon,
+    SunIcon,
+    UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useThemeStore } from '../../stores/themeStore';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuthStore();

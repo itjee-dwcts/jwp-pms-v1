@@ -1,18 +1,18 @@
 import {
-  CalendarIcon,
-  ChartBarIcon,
-  CheckSquareIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CogIcon,
-  FolderIcon,
-  HomeIcon,
-  UsersIcon,
+    CalendarIcon,
+    ChartBarIcon,
+    CheckSquareIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    CogIcon,
+    FolderIcon,
+    HomeIcon,
+    UsersIcon,
 } from '@heroicons/react/24/outline';
 import classNames from 'classnames';
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuthStore, usePermissions } from '../../store/authStore';
+import { useAuthStore, usePermissions } from '../../stores/authStore';
 
 interface SidebarProps {
   collapsed: boolean;

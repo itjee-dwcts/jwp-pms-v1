@@ -1,15 +1,4 @@
-import { gql, useMutation, useQuery } from '@apollo/client';
-import { ArrowBack, Delete, Edit } from '@mui/icons-material';
-import {
-    Alert,
-    Box,
-    Card,
-    CardContent,
-    CircularProgress,
-    Grid,
-    IconButton,
-    Typography
-} from '@mui/material';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useThemeStore } from '../../store/themeStore';
+import { useThemeStore } from '../../stores/themeStore';
 import Header from './Header';
 import Sidebar from './Sidebar';
 

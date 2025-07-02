@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/layout/Layout';
-import { useAuthStore } from './store/authStore';
-import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './stores/authStore';
+import { useThemeStore } from './stores/themeStore';
 
 // Lazy load pages for better performance
 const DashboardPage = React.lazy(() => import('./pages/Dashboard'));

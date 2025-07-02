@@ -1,16 +1,16 @@
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import {
-  ArrowLeftIcon,
-  ArrowRightOnRectangleIcon,
-  ChatBubbleLeftEllipsisIcon,
-  ClockIcon,
-  HomeIcon,
-  LockClosedIcon,
-  ShieldExclamationIcon,
-  UserIcon
+    ArrowLeftIcon,
+    ArrowRightOnRectangleIcon,
+    ChatBubbleLeftEllipsisIcon,
+    ClockIcon,
+    HomeIcon,
+    LockClosedIcon,
+    ShieldExclamationIcon,
+    UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
