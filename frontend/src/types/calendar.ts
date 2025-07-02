@@ -38,6 +38,10 @@ export interface CalendarEvent {
   is_recurring: boolean;
   parent_event_id?: string;
 
+  //
+  reminder_type?: string;
+  reminder_minutes?: number[];
+
   // 메타데이터
   timezone?: string;
   visibility: 'public' | 'private' | 'confidential';

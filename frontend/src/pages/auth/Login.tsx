@@ -18,7 +18,7 @@ interface LoginFormData {
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',

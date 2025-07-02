@@ -4,11 +4,11 @@ import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
 import {
-    CheckCircleIcon,
-    EyeIcon,
-    EyeSlashIcon,
-    KeyIcon,
-    LockClosedIcon
+  CheckCircleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  KeyIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -22,7 +22,7 @@ interface ResetPasswordFormData {
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { resetPassword, isAuthenticated, loading: authLoading } = useAuth();
+  const { resetPassword, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState<ResetPasswordFormData>({
     password: '',

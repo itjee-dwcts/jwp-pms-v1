@@ -2,13 +2,13 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import {
-    ArrowLeftIcon,
-    ArrowPathIcon,
-    ChatBubbleLeftEllipsisIcon,
-    ClockIcon,
-    ExclamationTriangleIcon,
-    HomeIcon,
-    ServerIcon
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  ChatBubbleLeftEllipsisIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  HomeIcon,
+  ServerIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -58,6 +58,7 @@ const ServerError: React.FC = () => {
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [retryCount, isNetworkError]);
 
   const handleRetry = async () => {

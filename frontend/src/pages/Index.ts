@@ -13,7 +13,7 @@ export { default as Register } from './auth/Register';
 export { default as ResetPassword } from './auth/ResetPassword';
 
 // Main application pages
-export { default as Dashboard } from './Dashboard';
+export { default as Dashboard } from './dashboard/Dashboard';
 export { default as ProjectCreate } from './project/ProjectCreate';
 export { default as ProjectDetail } from './project/ProjectDetail';
 export { default as ProjectEdit } from './project/ProjectEdit';
@@ -32,14 +32,14 @@ export { default as EventEdit } from './calendar/EventEdit';
 // User and profile pages
 export { default as Settings } from './common/Settings';
 export { default as Profile } from './user/Profile';
+export { default as UserDetail } from './user/UserDetail';
 export { default as Users } from './user/Users';
-export { default as UserDetail } from './UserDetail';
 
 // Utility pages
 export { default as Activity } from './common/Activity';
-export { default as Reports } from './reports/Reports';
 export { default as Help } from './common/Help';
 export { default as Search } from './common/Search';
+export { default as Reports } from './reports/Reports';
 
 // Error pages
 export { default as NotFound } from './error/NotFound';

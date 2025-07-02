@@ -5,7 +5,7 @@ import { useAuthStore } from './stores/authStore';
 import { useThemeStore } from './stores/themeStore';
 
 // Lazy load pages for better performance
-const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
+const DashboardPage = React.lazy(() => import('./pages/dashboard/Dashboard'));
 const ProjectsPage = React.lazy(() => import('./pages/project/Projects'));
 const ProjectDetailPage = React.lazy(() => import('./pages/project/ProjectDetail'));
 const TasksPage = React.lazy(() => import('./pages/task/Tasks'));

@@ -1,104 +1,62 @@
+// ============================================================================
+// Calendar.tsx - 메인 캘린더 페이지
+// ============================================================================
+
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FunnelIcon,
+  ListBulletIcon,
+  PlusIcon,
+  Squares2X2Icon,
+  ViewColumnsIcon
+} from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useCalendar } from '@/hooks/useCalendar';
-import {
-  CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ListBulletIcon,
-  PlusIcon,
-  Squares2X2Icon,
-  ViewColumnsIcon,
-} from '@heroicons/react/24/outline';
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/use-auth';
+import { useCalendar } from '@/hooks/use-calendar';
+import type { CalendarEvent } from '@/types/calendar';
 
 type ViewMode = 'month' | 'week' | 'day' | 'list';
 
-interface Event {
-  id: number;
-  title: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  is_all_day: boolean;
-  location: string | null;
-  event_type: string;
+interface CalendarFilters {
+  search: string;
   status: string;
-  calendar: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  project: {
-    id: number;
-    name: string;
-  } | null;
-  task: {
-    id: number;
-    title: string;
-  } | null;
-  attendees: Array<{
-    id: number;
-    user: {
-      id: number;
-      username: string;
-      full_name: string;
-    };
-    response_status: string;
-  }>;
+  priority: string;
 }
 
 const Calendar: React.FC = () => {
   const navigate = useNavigate();
-  const { getEvents, getCalendars } = useCalendar();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const {
+    events,
+    isLoadingEvents,
+    eventsError,
+    useEventsInRange,
+    refetchEvents,
+  } = useCalendar();
 
-  const [events, setEvents] = useState<Event[]>([]);
-  const [calendars, setCalendars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  // 상태 관리
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedCalendars, setSelectedCalendars] = useState<number[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<CalendarFilters>({
+    search: '',
+    status: '',
+    priority: '',
+  });
 
-  useEffect(() => {
-    fetchCalendarsAndEvents();
-  }, [currentDate, viewMode]);
-
-  const fetchCalendarsAndEvents = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [calendarsData, eventsData] = await Promise.all([
-        getCalendars(),
-        getEvents({
-          start_date: getViewStartDate(),
-          end_date: getViewEndDate(),
-          calendar_ids: selectedCalendars.length > 0 ? selectedCalendars : undefined,
-        }),
-      ]);
-
-      setCalendars(calendarsData);
-      setEvents(eventsData);
-
-      // Initialize selected calendars if empty
-      if (selectedCalendars.length === 0) {
-        setSelectedCalendars(calendarsData.map((cal: any) => cal.id));
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load calendar data';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 현재 뷰에서 표시할 날짜 범위 계산
   const getViewStartDate = (): string => {
     const date = new Date(currentDate);
     switch (viewMode) {
@@ -115,7 +73,7 @@ const Calendar: React.FC = () => {
         date.setDate(1);
         break;
     }
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0] ?? '';
   };
 
   const getViewEndDate = (): string => {
@@ -136,9 +94,17 @@ const Calendar: React.FC = () => {
         date.setDate(0);
         break;
     }
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0] ?? '';
   };
 
+  // 특정 기간의 이벤트 데이터 조회
+  const {
+    data: rangeEvents = [],
+    isLoading: isLoadingRangeEvents,
+    error: rangeEventsError,
+  } = useEventsInRange(getViewStartDate(), getViewEndDate());
+
+  // 날짜 네비게이션
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     switch (viewMode) {
@@ -158,92 +124,112 @@ const Calendar: React.FC = () => {
     setCurrentDate(newDate);
   };
 
-  const toggleCalendar = (calendarId: number) => {
-    setSelectedCalendars(prev =>
-      prev.includes(calendarId)
-        ? prev.filter(id => id !== calendarId)
-        : [...prev, calendarId]
-    );
+  // 현재 날짜로 이동
+  const goToToday = () => {
+    setCurrentDate(new Date());
   };
 
-  const getDateTitle = (): string => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-    };
-
+  // 날짜 타이틀 포맷팅
+  const getDateTitle = () => {
+    const date = new Date(currentDate);
     switch (viewMode) {
       case 'month':
-        return currentDate.toLocaleDateString('en-US', options);
+        return date.toLocaleString('ko-KR', { year: 'numeric', month: 'long' });
       case 'week':
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
         const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        weekEnd.setDate(weekStart.getDate() + 6);
+        return `${weekStart.toLocaleDateString('ko-KR')} - ${weekEnd.toLocaleDateString('ko-KR')}`;
       case 'day':
-        return currentDate.toLocaleDateString('en-US', {
-          weekday: 'long',
+        return date.toLocaleDateString('ko-KR', {
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
+          weekday: 'long'
         });
       case 'list':
-        return currentDate.toLocaleDateString('en-US', options);
+        return date.toLocaleString('ko-KR', { year: 'numeric', month: 'long' });
+      default:
+        return '';
     }
   };
 
+  // 이벤트 상태에 따른 배지 색상
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'tentative':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  // 우선순위에 따른 배지 색상
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  // 월 뷰 렌더링
   const renderMonthView = () => {
-    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
-
+    const startDate = new Date(getViewStartDate());
+    const endDate = new Date(getViewEndDate());
     const days = [];
-    const today = new Date();
 
+    // 요일 헤더
+    const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+
+    // 6주 * 7일 = 42일 그리드 생성
+    const currentDate = new Date(startDate);
     for (let i = 0; i < 42; i++) {
-      const day = new Date(startDate);
-      day.setDate(startDate.getDate() + i);
-
-      const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.start_time);
-        return eventDate.toDateString() === day.toDateString() &&
-               selectedCalendars.includes(event.calendar.id);
+      const dayEvents = rangeEvents.filter((event: CalendarEvent) => {
+        const eventDate = new Date(event.start_date);
+        return eventDate.toDateString() === currentDate.toDateString();
       });
-
-      const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-      const isToday = day.toDateString() === today.toDateString();
 
       days.push(
         <div
-          key={day.toISOString()}
-          className={`min-h-[120px] border border-gray-200 dark:border-gray-700 p-2 ${
-            isCurrentMonth ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'
-          } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+          key={i}
+          className={`min-h-[120px] p-2 border border-gray-200 dark:border-gray-700 ${
+            currentDate.getMonth() !== new Date().getMonth()
+              ? 'bg-gray-50 dark:bg-gray-800'
+              : 'bg-white dark:bg-gray-900'
+          } hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer`}
+          onClick={() => navigate(`/calendar/events/new?date=${currentDate.toISOString().split('T')[0]}`)}
         >
-          <div className={`text-sm font-medium mb-2 ${
-            isCurrentMonth ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'
-          } ${isToday ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-            {day.getDate()}
+          <div className="flex justify-between items-center mb-2">
+            <span className={`text-sm font-medium ${
+              currentDate.toDateString() === new Date().toDateString()
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-gray-900 dark:text-white'
+            }`}>
+              {currentDate.getDate()}
+            </span>
           </div>
           <div className="space-y-1">
-            {dayEvents.slice(0, 3).map((event) => (
+            {dayEvents.slice(0, 3).map((event: CalendarEvent) => (
               <div
                 key={event.id}
-                className="text-xs p-1 rounded cursor-pointer hover:opacity-80"
-                style={{ backgroundColor: event.calendar.color + '20', color: event.calendar.color }}
-                onClick={() => navigate(`/calendar/events/${event.id}`)}
+                className="text-xs p-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 truncate cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/calendar/events/${event.id}`);
+                }}
               >
-                <div className="font-medium truncate">{event.title}</div>
-                {!event.is_all_day && (
-                  <div className="text-xs opacity-75">
-                    {new Date(event.start_time).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                )}
+                {event.title}
               </div>
             ))}
             {dayEvents.length > 3 && (
@@ -254,42 +240,56 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       );
+
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return (
-      <div className="grid grid-cols-7 gap-0 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        {/* Day headers */}
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div
-            key={day}
-            className="bg-gray-100 dark:bg-gray-800 p-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {day}
-          </div>
-        ))}
-        {days}
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        {/* 요일 헤더 */}
+        <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
+          {weekDays.map((day) => (
+            <div key={day} className="p-4 text-center font-medium text-gray-700 dark:text-gray-300">
+              {day}
+            </div>
+          ))}
+        </div>
+        {/* 날짜 그리드 */}
+        <div className="grid grid-cols-7">
+          {days}
+        </div>
       </div>
     );
   };
 
+  // 리스트 뷰 렌더링
   const renderListView = () => {
-    const filteredEvents = events.filter(event =>
-      selectedCalendars.includes(event.calendar.id)
-    ).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    const filteredEvents = rangeEvents.filter((event: CalendarEvent) => {
+      if (filters.search && !event.title.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false;
+      }
+      if (filters.status && event.status !== filters.status) {
+        return false;
+      }
+      if (filters.priority && event.priority !== filters.priority) {
+        return false;
+      }
+      return true;
+    });
 
     if (filteredEvents.length === 0) {
       return (
-        <Card className="p-12 text-center">
-          <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <Card className="p-8 text-center">
+          <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            No events found
+            이벤트가 없습니다
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            No events scheduled for this period
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            새로운 이벤트를 생성해보세요.
           </p>
           <Button onClick={() => navigate('/calendar/events/new')}>
             <PlusIcon className="h-4 w-4 mr-2" />
-            Create Event
+            새 이벤트
           </Button>
         </Card>
       );
@@ -297,72 +297,60 @@ const Calendar: React.FC = () => {
 
     return (
       <div className="space-y-4">
-        {filteredEvents.map((event) => (
-          <Card
-            key={event.id}
-            className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/calendar/events/${event.id}`)}
-          >
+        {filteredEvents.map((event: CalendarEvent) => (
+          <Card key={event.id} className="p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: event.calendar.color }}
-                  />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h3
+                    className="text-lg font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                    onClick={() => navigate(`/calendar/events/${event.id}`)}
+                  >
                     {event.title}
                   </h3>
+                  <Badge className={getStatusBadgeColor(event.status)}>
+                    {event.status.toUpperCase()}
+                  </Badge>
+                  <Badge className={getPriorityBadgeColor(event.priority)}>
+                    {event.priority.toUpperCase()}
+                  </Badge>
                 </div>
 
                 {event.description && (
-                  <p className="text-gray-600 dark:text-gray-400 mb-3">
+                  <p className="text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
                     {event.description}
                   </p>
                 )}
 
-                <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                  <div>
-                    {event.is_all_day ? (
-                      <span>All day</span>
-                    ) : (
-                      <span>
-                        {new Date(event.start_time).toLocaleString()} - {' '}
-                        {new Date(event.end_time).toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-
+                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span>
+                    시작: {new Date(event.start_date).toLocaleString('ko-KR')}
+                  </span>
+                  <span>
+                    종료: {new Date(event.end_date).toLocaleString('ko-KR')}
+                  </span>
                   {event.location && (
-                    <div>📍 {event.location}</div>
+                    <span>위치: {event.location}</span>
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2 mt-3">
-                  <Badge variant="default">{event.calendar.name}</Badge>
-                  {event.project && (
-                    <Badge variant="default">Project: {event.project.name}</Badge>
-                  )}
-                  {event.task && (
-                    <Badge variant="default">Task: {event.task.title}</Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-right">
-                <Badge className={
-                  event.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                  event.status === 'tentative' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                }>
-                  {event.status.toUpperCase()}
-                </Badge>
-
-                {event.attendees.length > 0 && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    {event.attendees.length} attendee{event.attendees.length !== 1 ? 's' : ''}
+                {event.attendees && event.attendees.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      참여자 {event.attendees.length}명
+                    </span>
                   </div>
                 )}
+              </div>
+
+              <div className="flex space-x-2 ml-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(`/calendar/events/${event.id}/edit`)}
+                >
+                  수정
+                </Button>
               </div>
             </div>
           </Card>
@@ -371,7 +359,8 @@ const Calendar: React.FC = () => {
     );
   };
 
-  if (loading) {
+  // 로딩 상태
+  if (isLoadingEvents || isLoadingRangeEvents) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <LoadingSpinner size="lg" />
@@ -379,33 +368,37 @@ const Calendar: React.FC = () => {
     );
   }
 
-  if (error) {
+  // 에러 상태
+  if (eventsError || rangeEventsError) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <ErrorMessage message={error} onRetry={fetchCalendarsAndEvents} />
+        <ErrorMessage
+          message={eventsError?.message || rangeEventsError?.message || '데이터를 불러올 수 없습니다'}
+          onRetry={refetchEvents}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
+      {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Calendar
+            캘린더
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Manage your events and schedule
+            일정과 이벤트를 관리하세요
           </p>
         </div>
         <Button onClick={() => navigate('/calendar/events/new')}>
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Event
+          새 이벤트
         </Button>
       </div>
 
-      {/* Calendar Controls */}
+      {/* 캘린더 컨트롤 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -418,9 +411,9 @@ const Calendar: React.FC = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setCurrentDate(new Date())}
+              onClick={goToToday}
             >
-              Today
+              오늘
             </Button>
             <Button
               variant="outline"
@@ -436,106 +429,126 @@ const Calendar: React.FC = () => {
           </h2>
         </div>
 
-        {/* View Mode Toggles */}
-        <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
+        {/* 뷰 모드 토글 */}
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className={`rounded-none ${viewMode === 'month'
+                ? 'bg-gray-100 dark:bg-gray-700'
+                : ''}`}
+            >
+              <ViewColumnsIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('week')}
+              className={`rounded-none ${viewMode === 'week'
+                ? 'bg-gray-100 dark:bg-gray-700'
+                : ''}`}
+            >
+              <Squares2X2Icon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={`rounded-none ${viewMode === 'list'
+                ? 'bg-gray-100 dark:bg-gray-700'
+                : ''}`}
+            >
+              <ListBulletIcon className="h-4 w-4" />
+            </Button>
+          </div>
+
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => setViewMode('month')}
-            className={`rounded-none ${viewMode === 'month' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
           >
-            <Squares2X2Icon className="h-4 w-4 mr-1" />
-            Month
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode('week')}
-            className={`rounded-none ${viewMode === 'week' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-          >
-            <ViewColumnsIcon className="h-4 w-4 mr-1" />
-            Week
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode('day')}
-            className={`rounded-none ${viewMode === 'day' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-          >
-            Day
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode('list')}
-            className={`rounded-none ${viewMode === 'list' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-          >
-            <ListBulletIcon className="h-4 w-4 mr-1" />
-            List
+            <FunnelIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              My Calendars
-            </h3>
-            <div className="space-y-2">
-              {calendars.map((calendar) => (
-                <div key={calendar.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`calendar-${calendar.id}`}
-                    checked={selectedCalendars.includes(calendar.id)}
-                    onChange={() => toggleCalendar(calendar.id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: calendar.color }}
-                  />
-                  <label
-                    htmlFor={`calendar-${calendar.id}`}
-                    className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                  >
-                    {calendar.name}
-                  </label>
-                </div>
-              ))}
+      {/* 필터 */}
+      {showFilters && (
+        <Card className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                검색
+              </label>
+              <Input
+                type="text"
+                placeholder="이벤트 제목 검색..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full"
+              />
             </div>
-
-            <div className="mt-6">
+            <div>
+              <label
+                htmlFor="status-filter"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                상태
+              </label>
+              <select
+                id="status-filter"
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="">모든 상태</option>
+                <option value="confirmed">확정</option>
+                <option value="tentative">미정</option>
+                <option value="cancelled">취소</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                우선순위
+              </label>
+              <select
+                aria-label="우선순위"
+                value={filters.priority}
+                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="">모든 우선순위</option>
+                <option value="high">높음</option>
+                <option value="medium">보통</option>
+                <option value="low">낮음</option>
+              </select>
+            </div>
+            <div className="flex items-end">
               <Button
                 variant="outline"
-                onClick={() => navigate('/calendar/calendars/new')}
+                onClick={() => setFilters({ search: '', status: '', priority: '' })}
                 className="w-full"
               >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                New Calendar
+                필터 초기화
               </Button>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
+      )}
 
-        {/* Main Calendar Content */}
-        <div className="lg:col-span-3">
-          {viewMode === 'month' && renderMonthView()}
-          {viewMode === 'list' && renderListView()}
-          {(viewMode === 'week' || viewMode === 'day') && (
-            <Card className="p-8 text-center">
-              <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                {viewMode === 'week' ? 'Week' : 'Day'} View Coming Soon
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                This view is currently under development. Please use Month or List view for now.
-              </p>
-            </Card>
-          )}
-        </div>
+      {/* 캘린더 뷰 */}
+      <div>
+        {viewMode === 'month' && renderMonthView()}
+        {viewMode === 'list' && renderListView()}
+        {(viewMode === 'week' || viewMode === 'day') && (
+          <Card className="p-8 text-center">
+            <p className="text-gray-500 dark:text-gray-400">
+              {viewMode === 'week' ? '주' : '일'} 뷰는 현재 개발 중입니다.
+            </p>
+          </Card>
+        )}
       </div>
     </div>
   );

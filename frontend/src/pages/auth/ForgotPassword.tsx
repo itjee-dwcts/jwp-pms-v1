@@ -10,7 +10,7 @@ interface ForgotPasswordFormData {
   email: string;
 }
 
-const ForgotPasswordPage: React.FC = () => {
+const ForgotPassword: React.FC = () => {
   const {
     register,
     handleSubmit,
@@ -51,7 +51,7 @@ const ForgotPasswordPage: React.FC = () => {
                   message: '올바른 이메일 형식을 입력해주세요.',
                 },
               })}
-              error={errors.email?.message}
+              error={errors.email?.message || ''}
               placeholder="이메일을 입력하세요"
             />
 
@@ -75,4 +75,4 @@ const ForgotPasswordPage: React.FC = () => {
   );
 };
 
-export default ForgotPasswordPage;
+export default ForgotPassword;

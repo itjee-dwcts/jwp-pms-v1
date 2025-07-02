@@ -4,12 +4,12 @@ import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
 import {
-    EnvelopeIcon,
-    EyeIcon,
-    EyeSlashIcon,
-    LockClosedIcon,
-    UserIcon,
-    UserPlusIcon
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+  UserIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -26,7 +26,7 @@ interface RegisterFormData {
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register, isAuthenticated, loading: authLoading } = useAuth();
+  const { register, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
