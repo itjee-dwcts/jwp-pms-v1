@@ -1,6 +1,7 @@
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/hooks/use-permissions';
+import type { Permission, Role } from '@/types/permission';
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -9,15 +10,19 @@ interface ProtectedRouteProps {
   /**
    * 필요한 권한들 (모든 권한이 있어야 접근 가능)
    */
-  requiredPermissions?: string[];
+  requiredPermissions?: Permission[];
   /**
    * 필요한 역할들 (하나 이상의 역할이 있으면 접근 가능)
    */
-  requiredRoles?: string[];
+  requiredRoles?: Role[];
   /**
    * 관리자만 접근 가능한지 여부
    */
   adminOnly?: boolean;
+  /**
+   * 모든 권한이 필요한지 여부 (기본: true)
+   */
+  requireAll?: boolean;
   /**
    * 접근 거부 시 리다이렉트할 경로 (기본: /dashboard)
    */
@@ -33,15 +38,22 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermissions = [],
   requiredRoles = [],
   adminOnly = false,
+  requireAll = true,
   fallbackPath = '/dashboard',
   loadingComponent
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
-  const { hasPermissions, hasAnyRole, isAdmin } = usePermissions();
+  const {
+    hasRole,
+    hasAllPermissions,
+    hasAnyPermission,
+    role: currentRole,
+    loading: permissionsLoading
+  } = usePermissions();
   const location = useLocation();
 
   // 로딩 중이면 로딩 스피너 표시
-  if (isLoading) {
+  if (isLoading || permissionsLoading) {
     if (loadingComponent) {
       return <>{loadingComponent}</>;
     }
@@ -59,18 +71,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 관리자 전용 페이지 체크
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && currentRole !== 'admin') {
     return <Navigate to={fallbackPath} replace />;
   }
 
   // 역할 기반 접근 제어
-  if (requiredRoles.length > 0 && !hasAnyRole(requiredRoles)) {
-    return <Navigate to={fallbackPath} replace />;
+  if (requiredRoles.length > 0) {
+    const hasRequiredRole = requiredRoles.some(role => hasRole(role));
+    if (!hasRequiredRole) {
+      return <Navigate to={fallbackPath} replace />;
+    }
   }
 
   // 권한 기반 접근 제어
-  if (requiredPermissions.length > 0 && !hasPermissions(requiredPermissions)) {
-    return <Navigate to={fallbackPath} replace />;
+  if (requiredPermissions.length > 0) {
+    const hasRequiredPermissions = requireAll
+      ? hasAllPermissions(requiredPermissions)
+      : hasAnyPermission(requiredPermissions);
+
+    if (!hasRequiredPermissions) {
+      return <Navigate to={fallbackPath} replace />;
+    }
   }
 
   return <>{children}</>;

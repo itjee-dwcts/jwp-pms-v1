@@ -8,9 +8,9 @@ export const withPermissions = <P extends object>(
   options: WithPermissionsOptions = {}
 ) => {
   const WrappedComponent: React.FC<P> = (props) => {
-    const { hasPermission, loading } = usePermissions();
+    const { hasPermission, hasAllPermissions, hasAnyPermission, loading } = usePermissions();
     const {
-      requireAll = false,
+      requireAll = true,
       fallbackComponent: FallbackComponent,
       loadingComponent: LoadingComponent
     } = options;
@@ -19,7 +19,10 @@ export const withPermissions = <P extends object>(
       return <LoadingComponent />;
     }
 
-    const hasRequiredPermissions = hasPermission(requiredPermissions, { requireAll });
+    // 권한 체크 로직 수정
+    const hasRequiredPermissions = requireAll
+      ? hasAllPermissions(requiredPermissions)
+      : hasAnyPermission(requiredPermissions);
 
     if (!hasRequiredPermissions) {
       if (FallbackComponent) {

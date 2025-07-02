@@ -1,89 +1,80 @@
-import type {
-    Permission,
-    PermissionCheckOptions,
-    PermissionsState,
-    Role,
-} from '@/types/permission';
+import type { Permission, PermissionsState, Role } from '@/types/permission';
 import { useCallback, useState } from 'react';
 
-export const usePermissionState = () => {
-  const [state, setState] = useState<PermissionsState>({
-    permissions: [],
-    role: null,
-    loading: true,
-    error: null,
-  });
+/**
+ * 권한 상태 관리를 위한 내부 훅
+ */
+export const usePermissionState = (): PermissionsState & {
+  setPermissions: (permissions: Permission[]) => void;
+  setRole: (role: Role | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  hasPermission: (permission: Permission | Permission[], options?: { requireAll?: boolean }) => boolean;
+  hasRole: (role: Role | Role[]) => boolean;
+  hasAnyPermission: (permissions: Permission[]) => boolean;
+  hasAllPermissions: (permissions: Permission[]) => boolean;
+  clearError: () => void;
+} => {
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [role, setRole] = useState<Role | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const updateState = useCallback((updates: Partial<PermissionsState>) => {
-    setState(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const setPermissions = useCallback((permissions: Permission[]) => {
-    updateState({ permissions });
-  }, [updateState]);
-
-  const setRole = useCallback((role: Role | null) => {
-    updateState({ role });
-  }, [updateState]);
-
-  const setLoading = useCallback((loading: boolean) => {
-    updateState({ loading });
-  }, [updateState]);
-
-  const setError = useCallback((error: string | null) => {
-    updateState({ error });
-  }, [updateState]);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, [setError]);
-
-  // Permission checking logic
+  // 단일 또는 다중 권한 체크
   const hasPermission = useCallback((
     permission: Permission | Permission[],
-    options: PermissionCheckOptions = {}
+    options: { requireAll?: boolean } = {}
   ): boolean => {
-    if (state.permissions.length === 0) {
-      return false;
+    const { requireAll = true } = options;
+
+    if (Array.isArray(permission)) {
+      return requireAll
+        ? permission.every(p => permissions.includes(p))
+        : permission.some(p => permissions.includes(p));
     }
 
-    const { requireAll = false } = options;
-    const permsToCheck = Array.isArray(permission) ? permission : [permission];
+    return permissions.includes(permission);
+  }, [permissions]);
 
-    if (requireAll) {
-      return permsToCheck.every(perm => state.permissions.includes(perm));
-    } else {
-      return permsToCheck.some(perm => state.permissions.includes(perm));
-    }
-  }, [state.permissions]);
-
+  // 역할 체크
   const hasRole = useCallback((roleToCheck: Role | Role[]): boolean => {
-    if (!state.role) {
-      return false;
+    if (!role) return false;
+
+    if (Array.isArray(roleToCheck)) {
+      return roleToCheck.includes(role);
     }
 
-    const rolesToCheck = Array.isArray(roleToCheck) ? roleToCheck : [roleToCheck];
-    return rolesToCheck.includes(state.role);
-  }, [state.role]);
+    return role === roleToCheck;
+  }, [role]);
 
-  const hasAnyPermission = useCallback((permsToCheck: Permission[]): boolean => {
-    return hasPermission(permsToCheck, { requireAll: false });
-  }, [hasPermission]);
+  // 하나 이상의 권한 보유 체크
+  const hasAnyPermission = useCallback((permissionsToCheck: Permission[]): boolean => {
+    return permissionsToCheck.some(p => permissions.includes(p));
+  }, [permissions]);
 
-  const hasAllPermissions = useCallback((permsToCheck: Permission[]): boolean => {
-    return hasPermission(permsToCheck, { requireAll: true });
-  }, [hasPermission]);
+  // 모든 권한 보유 체크
+  const hasAllPermissions = useCallback((permissionsToCheck: Permission[]): boolean => {
+    return permissionsToCheck.every(p => permissions.includes(p));
+  }, [permissions]);
+
+  // 에러 초기화
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   return {
-    ...state,
+    permissions,
+    role,
+    loading,
+    error,
     setPermissions,
     setRole,
     setLoading,
     setError,
-    clearError,
     hasPermission,
     hasRole,
     hasAnyPermission,
     hasAllPermissions,
+    clearError,
   };
 };

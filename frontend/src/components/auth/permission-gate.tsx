@@ -1,4 +1,5 @@
 import { usePermissions } from '@/hooks/use-permissions';
+import type { Permission, Role } from '@/types/permission';
 import React from 'react';
 
 interface PermissionGateProps {
@@ -6,15 +7,19 @@ interface PermissionGateProps {
   /**
    * 필요한 권한들 (모든 권한이 있어야 렌더링)
    */
-  permissions?: string[];
+  permissions?: Permission[];
   /**
    * 필요한 역할들 (하나 이상의 역할이 있으면 렌더링)
    */
-  roles?: string[];
+  roles?: Role[];
   /**
    * 관리자만 접근 가능한지 여부
    */
   adminOnly?: boolean;
+  /**
+   * 모든 권한이 필요한지 여부 (기본: true)
+   */
+  requireAll?: boolean;
   /**
    * 권한이 없을 때 보여줄 컴포넌트
    */
@@ -33,24 +38,40 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   permissions = [],
   roles = [],
   adminOnly = false,
+  requireAll = true,
   fallback = null,
   hideWhenDenied = false
 }) => {
-  const { hasPermissions, hasAnyRole, isAdmin } = usePermissions();
+  const {
+    hasPermission,
+    hasRole,
+    hasAnyPermission,
+    hasAllPermissions,
+    role: currentRole
+  } = usePermissions();
 
   // 관리자 체크
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && currentRole !== 'admin') {
     return hideWhenDenied ? null : <>{fallback}</>;
   }
 
   // 역할 체크
-  if (roles.length > 0 && !hasAnyRole(roles)) {
-    return hideWhenDenied ? null : <>{fallback}</>;
+  if (roles.length > 0) {
+    const hasRequiredRole = roles.some(role => hasRole(role));
+    if (!hasRequiredRole) {
+      return hideWhenDenied ? null : <>{fallback}</>;
+    }
   }
 
   // 권한 체크
-  if (permissions.length > 0 && !hasPermissions(permissions)) {
-    return hideWhenDenied ? null : <>{fallback}</>;
+  if (permissions.length > 0) {
+    const hasRequiredPermissions = requireAll
+      ? hasAllPermissions(permissions)
+      : hasAnyPermission(permissions);
+
+    if (!hasRequiredPermissions) {
+      return hideWhenDenied ? null : <>{fallback}</>;
+    }
   }
 
   return <>{children}</>;
