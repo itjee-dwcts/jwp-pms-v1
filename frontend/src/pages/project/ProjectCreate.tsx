@@ -6,6 +6,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProjects } from '@/hooks/use-projects';
 import { useUsers } from '@/hooks/use-users';
 import {
+  ProjectCreateRequest,
+  ProjectPriority,
+  ProjectStatus
+} from '@/types/project';
+import { User } from '@/types/user';
+import {
   ArrowLeftIcon,
   CalendarIcon,
   FolderIcon,
@@ -18,14 +24,12 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
-type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
-
+// 프로젝트 폼 데이터 인터페이스 (내부 폼 상태용)
 interface ProjectFormData {
   name: string;
   description: string;
-  status: string;
-  priority: string;
+  status: ProjectStatus;
+  priority: ProjectPriority;
   start_date: string;
   end_date: string;
   budget: string;
@@ -33,20 +37,17 @@ interface ProjectFormData {
   member_ids: number[];
 }
 
-interface User {
-  id: number;
-  username: string;
-  full_name: string;
-  email: string;
-  avatar_url?: string;
-}
-
+/**
+ * 프로젝트 생성 페이지 컴포넌트
+ * 새로운 프로젝트를 생성하기 위한 폼을 제공합니다.
+ */
 const ProjectCreate: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createProject } = useProjects();
   const { getUsers } = useUsers();
 
+  // 폼 데이터 상태
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: '',
@@ -59,6 +60,7 @@ const ProjectCreate: React.FC = () => {
     member_ids: [],
   });
 
+  // UI 상태
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,66 +69,77 @@ const ProjectCreate: React.FC = () => {
   const [newTag, setNewTag] = useState('');
   const [showUserSearch, setShowUserSearch] = useState(false);
 
+  // 컴포넌트 마운트 시 사용자 목록 로드
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  /**
+   * 사용자 목록을 가져오는 함수
+   */
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
       const users = await getUsers();
-      setAvailableUsers(users.filter((u: User) => u.id !== user?.id)); // Exclude current user
+      // 현재 사용자는 제외
+      setAvailableUsers(users.filter((u: User) => u.id !== user?.id));
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      toast.error('Failed to load users');
+      console.error('사용자 목록 로드 실패:', error);
+      toast.error('사용자 목록을 불러오는데 실패했습니다');
     } finally {
       setUsersLoading(false);
     }
   };
 
+  /**
+   * 폼 유효성 검사
+   */
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Name validation
+    // 프로젝트명 검증
     if (!formData.name.trim()) {
-      newErrors.name = 'Project name is required';
+      newErrors.name = '프로젝트명은 필수 입력사항입니다';
     } else if (formData.name.length < 3) {
-      newErrors.name = 'Project name must be at least 3 characters';
+      newErrors.name = '프로젝트명은 최소 3글자 이상이어야 합니다';
     } else if (formData.name.length > 100) {
-      newErrors.name = 'Project name must be less than 100 characters';
+      newErrors.name = '프로젝트명은 100글자를 초과할 수 없습니다';
     }
 
-    // Description validation
+    // 설명 검증
     if (!formData.description.trim()) {
-      newErrors.description = 'Project description is required';
+      newErrors.description = '프로젝트 설명은 필수 입력사항입니다';
     } else if (formData.description.length < 10) {
-      newErrors.description = 'Description must be at least 10 characters';
+      newErrors.description = '설명은 최소 10글자 이상이어야 합니다';
     }
 
-    // Date validation
+    // 날짜 검증
     if (formData.start_date && formData.end_date) {
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
 
       if (endDate <= startDate) {
-        newErrors.end_date = 'End date must be after start date';
+        newErrors.end_date = '종료일은 시작일보다 늦어야 합니다';
       }
     }
 
-    // Budget validation
+    // 예산 검증
     if (formData.budget && isNaN(Number(formData.budget))) {
-      newErrors.budget = 'Budget must be a valid number';
+      newErrors.budget = '예산은 유효한 숫자여야 합니다';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * 폼 제출 처리
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error('폼에 오류가 있습니다. 확인해주세요');
       return;
     }
 
@@ -134,7 +147,7 @@ const ProjectCreate: React.FC = () => {
       setLoading(true);
       setErrors({});
 
-      const projectData = {
+      const projectData: ProjectCreateRequest = {
         ...formData,
         status: formData.status as ProjectStatus,
         priority: formData.priority as ProjectPriority,
@@ -143,32 +156,38 @@ const ProjectCreate: React.FC = () => {
       };
 
       const newProject = await createProject(projectData);
-      toast.success('Project created successfully!');
+      toast.success('프로젝트가 성공적으로 생성되었습니다!');
       navigate(`/projects/${newProject.id}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create project';
+      const errorMessage = error instanceof Error ? error.message : '프로젝트 생성에 실패했습니다';
       toast.error(errorMessage);
 
-      // Handle specific validation errors from backend
+      // 백엔드 유효성 검사 오류 처리
       if (errorMessage.toLowerCase().includes('name')) {
-        setErrors({ name: 'Project name already exists' });
+        setErrors({ name: '이미 존재하는 프로젝트명입니다' });
       }
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * 입력 필드 변경 핸들러
+   */
   const handleInputChange = (field: keyof ProjectFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
 
-    // Clear error for this field
+    // 해당 필드의 오류 제거
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
+  /**
+   * 태그 추가
+   */
   const addTag = () => {
     if (!newTag.trim()) return;
 
@@ -182,6 +201,9 @@ const ProjectCreate: React.FC = () => {
     setNewTag('');
   };
 
+  /**
+   * 태그 제거
+   */
   const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
@@ -189,6 +211,9 @@ const ProjectCreate: React.FC = () => {
     }));
   };
 
+  /**
+   * 팀원 추가
+   */
   const addMember = (userId: number) => {
     if (!formData.member_ids.includes(userId)) {
       setFormData(prev => ({
@@ -200,6 +225,9 @@ const ProjectCreate: React.FC = () => {
     setSearchTerm('');
   };
 
+  /**
+   * 팀원 제거
+   */
   const removeMember = (userId: number) => {
     setFormData(prev => ({
       ...prev,
@@ -207,16 +235,21 @@ const ProjectCreate: React.FC = () => {
     }));
   };
 
+  // 필터링된 사용자 목록
   const filteredUsers = availableUsers.filter(user =>
     !formData.member_ids.includes(user.id) &&
     (user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // 선택된 팀원 목록
   const selectedMembers = availableUsers.filter(user =>
     formData.member_ids.includes(user.id)
   );
 
+  /**
+   * 상태별 색상 반환
+   */
   const getStatusColor = (status: ProjectStatus) => {
     const colors = {
       planning: 'bg-gray-100 text-gray-800',
@@ -228,6 +261,9 @@ const ProjectCreate: React.FC = () => {
     return colors[status];
   };
 
+  /**
+   * 우선순위별 색상 반환
+   */
   const getPriorityColor = (priority: string) => {
     const colors = {
       "low": 'bg-green-100 text-green-800',
@@ -240,7 +276,7 @@ const ProjectCreate: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-6">
-      {/* Header */}
+      {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
@@ -252,37 +288,37 @@ const ProjectCreate: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Create New Project
+              새 프로젝트 만들기
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-1">
-              Set up a new project to organize your team's work
+              팀의 업무를 관리할 새로운 프로젝트를 설정하세요
             </p>
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
+        {/* 기본 정보 */}
         <Card className="p-6">
           <div className="flex items-center space-x-2 mb-6">
             <FolderIcon className="h-5 w-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Basic Information
+              기본 정보
             </h2>
           </div>
 
           <div className="space-y-6">
-            {/* Project Name */}
+            {/* 프로젝트명 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Project Name *
+                프로젝트명 *
               </label>
               <Input
                 type="text"
                 value={formData.name}
                 onChange={handleInputChange('name')}
                 className={errors.name ? 'border-red-500' : ''}
-                placeholder="Enter project name"
+                placeholder="프로젝트명을 입력하세요"
                 disabled={loading}
                 maxLength={100}
               />
@@ -292,23 +328,23 @@ const ProjectCreate: React.FC = () => {
                 </p>
               )}
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {formData.name.length}/100 characters
+                {formData.name.length}/100 글자
               </p>
             </div>
 
-            {/* Description */}
+            {/* 설명 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description *
+                설명 *
               </label>
               <textarea
                 rows={4}
                 value={formData.description}
                 onChange={handleInputChange('description')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600 ${
-                  errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  errors.description ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Describe the project goals, objectives, and key deliverables..."
+                placeholder="프로젝트에 대한 설명을 입력하세요"
                 disabled={loading}
               />
               {errors.description && (
@@ -318,114 +354,102 @@ const ProjectCreate: React.FC = () => {
               )}
             </div>
 
-            {/* Status and Priority */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 상태 및 우선순위 */}
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
+                  상태
                 </label>
                 <select
                   value={formData.status}
                   onChange={handleInputChange('status')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
                   disabled={loading}
-                  title="Status"
                 >
-                  <option value="planning">Planning</option>
-                  <option value="active">Active</option>
-                  <option value="on_hold">On Hold</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="planning">계획 중</option>
+                  <option value="active">진행 중</option>
+                  <option value="on_hold">대기</option>
+                  <option value="completed">완료</option>
+                  <option value="cancelled">취소</option>
                 </select>
-                <div className="mt-2">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(formData.status)}`}>
-                    {formData.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Priority
+                  우선순위
                 </label>
                 <select
                   value={formData.priority}
                   onChange={handleInputChange('priority')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
                   disabled={loading}
-                  title="Priority"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
+                  <option value="low">낮음</option>
+                  <option value="medium">보통</option>
+                  <option value="high">높음</option>
+                  <option value="critical">긴급</option>
                 </select>
-                <div className="mt-2">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(formData.priority)}`}>
-                    {formData.priority.toUpperCase()}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Timeline and Budget */}
+        {/* 일정 및 예산 */}
         <Card className="p-6">
           <div className="flex items-center space-x-2 mb-6">
             <CalendarIcon className="h-5 w-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Timeline & Budget
+              일정 및 예산
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Start Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Start Date
-              </label>
-              <Input
-                type="date"
-                value={formData.start_date}
-                onChange={handleInputChange('start_date')}
-                disabled={loading}
-              />
+          <div className="space-y-6">
+            {/* 시작일 및 종료일 */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  시작일
+                </label>
+                <Input
+                  type="date"
+                  value={formData.start_date}
+                  onChange={handleInputChange('start_date')}
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  종료일
+                </label>
+                <Input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={handleInputChange('end_date')}
+                  className={errors.end_date ? 'border-red-500' : ''}
+                  disabled={loading}
+                />
+                {errors.end_date && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.end_date}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* End Date */}
+            {/* 예산 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                End Date
-              </label>
-              <Input
-                type="date"
-                value={formData.end_date}
-                onChange={handleInputChange('end_date')}
-                className={errors.end_date ? 'border-red-500' : ''}
-                disabled={loading}
-                min={formData.start_date}
-              />
-              {errors.end_date && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {errors.end_date}
-                </p>
-              )}
-            </div>
-
-            {/* Budget */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Budget (Optional)
+                예산 (선택사항)
               </label>
               <Input
                 type="number"
                 value={formData.budget}
                 onChange={handleInputChange('budget')}
                 className={errors.budget ? 'border-red-500' : ''}
-                placeholder="0.00"
-                step="0.01"
+                placeholder="0"
                 min="0"
+                step="0.01"
                 disabled={loading}
               />
               {errors.budget && (
@@ -437,23 +461,22 @@ const ProjectCreate: React.FC = () => {
           </div>
         </Card>
 
-        {/* Tags */}
+        {/* 태그 */}
         <Card className="p-6">
           <div className="flex items-center space-x-2 mb-6">
             <TagIcon className="h-5 w-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Tags
+              태그
             </h2>
           </div>
 
           <div className="space-y-4">
-            {/* Add Tag Input */}
             <div className="flex space-x-2">
               <Input
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add a tag..."
+                placeholder="태그를 입력하세요"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 disabled={loading}
               />
@@ -461,27 +484,25 @@ const ProjectCreate: React.FC = () => {
                 type="button"
                 onClick={addTag}
                 variant="outline"
-                disabled={!newTag.trim() || loading}
+                disabled={loading || !newTag.trim()}
               >
                 <PlusIcon className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Current Tags */}
             {formData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {formData.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-600 hover:bg-blue-200 dark:text-blue-300 dark:hover:bg-blue-800"
+                      className="ml-2 text-blue-600 hover:text-blue-800"
                       disabled={loading}
-                      title={tag}
                     >
                       <XMarkIcon className="h-3 w-3" />
                     </button>
@@ -492,135 +513,83 @@ const ProjectCreate: React.FC = () => {
           </div>
         </Card>
 
-        {/* Team Members */}
+        {/* 팀원 */}
         <Card className="p-6">
           <div className="flex items-center space-x-2 mb-6">
             <UserGroupIcon className="h-5 w-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Team Members
+              팀원
             </h2>
           </div>
 
           <div className="space-y-4">
-            {/* Add Member Button */}
-            <div>
-              <Button
-                type="button"
-                onClick={() => setShowUserSearch(!showUserSearch)}
-                variant="outline"
-                disabled={usersLoading || loading}
-              >
-                {usersLoading ? (
-                  <LoadingSpinner size="sm" className="mr-2" />
-                ) : (
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                )}
-                Add Team Member
-              </Button>
+            {/* 팀원 검색 */}
+            <div className="relative">
+              <Input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="팀원을 검색하세요..."
+                onFocus={() => setShowUserSearch(true)}
+                disabled={loading || usersLoading}
+              />
+
+              {showUserSearch && searchTerm && filteredUsers.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => addMember(user.id)}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+                    >
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.full_name}
+                          className="h-8 w-8 rounded-full"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {user.full_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {user.full_name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* User Search */}
-            {showUserSearch && (
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                <Input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search users by name or email..."
-                  className="mb-3"
-                />
-                <div className="max-h-60 overflow-y-auto space-y-2">
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            {user.avatar_url ? (
-                              <img
-                                src={user.avatar_url}
-                                alt={`${user.full_name}`}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                {user.full_name[0]}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {user.full_name}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {user.email}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={() => addMember(user.id)}
-                          size="sm"
-                          disabled={loading}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                      No users found
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Selected Members */}
+            {/* 선택된 팀원 목록 */}
             {selectedMembers.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Selected Members ({selectedMembers.length})
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  선택된 팀원 ({selectedMembers.length}명)
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-wrap gap-2">
                   {selectedMembers.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200"
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                          {member.avatar_url ? (
-                            <img
-                              src={member.avatar_url}
-                              alt={`${member.full_name}`}
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                              {member.full_name[0]}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {member.full_name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {member.email}
-                          </p>
-                        </div>
-                      </div>
+                      {member.full_name}
                       <button
                         type="button"
                         onClick={() => removeMember(member.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                        className="ml-2 text-green-600 hover:text-green-800"
                         disabled={loading}
-                        title="Selected Members"
                       >
-                        <XMarkIcon className="h-4 w-4" />
+                        <XMarkIcon className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
@@ -630,28 +599,23 @@ const ProjectCreate: React.FC = () => {
           </div>
         </Card>
 
-        {/* Form Actions */}
-        <div className="flex items-center justify-end space-x-4 pt-6">
+        {/* 제출 버튼 */}
+        <div className="flex justify-end space-x-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate('/projects')}
             disabled={loading}
           >
-            Cancel
+            취소
           </Button>
           <Button
             type="submit"
-            disabled={loading || !formData.name || !formData.description}
+            disabled={loading}
+            className="flex items-center space-x-2"
           >
-            {loading ? (
-              <>
-                <LoadingSpinner size="sm" className="mr-2" />
-                Creating...
-              </>
-            ) : (
-              'Create Project'
-            )}
+            {loading && <LoadingSpinner size="sm" />}
+            <span>{loading ? '생성 중...' : '프로젝트 생성'}</span>
           </Button>
         </div>
       </form>

@@ -20,6 +20,7 @@ export interface Project {
     id: number;
     username: string;
     full_name: string;
+    avatar_url?: string;
   };
   members?: ProjectMember[];
   tasks?: Task[];

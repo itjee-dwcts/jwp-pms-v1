@@ -1,613 +1,793 @@
-import { KanbanBoard } from '@/components/tasks/KanbanBoard';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { DropdownMenu } from '@/components/ui/DropdownMenu';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { Task as ApiTask, useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/hooks/use-auth';
+import { useProjects } from '@/hooks/use-projects';
+import { useTasks } from '@/hooks/use-tasks';
+import {
+  SortOrder,
+  Task,
+  TaskListResponse,
+  TaskPriority,
+  TaskSearchParams,
+  TaskStatus,
+  TaskType
+} from '@/types/task';
 import {
   CalendarIcon,
   ClockIcon,
-  EllipsisVerticalIcon,
-  ExclamationTriangleIcon,
+  EyeIcon,
+  FlagIcon,
   FunnelIcon,
+  ListBulletIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
   PlusIcon,
   Squares2X2Icon,
-  TableCellsIcon,
-  TagIcon,
   UserIcon,
-  ViewColumnsIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-type ViewMode = 'grid' | 'list' | 'table' | 'kanban';
-type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
-type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
+// 정렬 필드 타입
+type SortField = 'title' | 'created_at' | 'updated_at' | 'due_date' | 'status' | 'priority';
 
-// Use the Task type from the API (useTasks hook)
-type Task = ApiTask;
+// 뷰 타입
+type ViewType = 'list' | 'kanban';
 
-interface FilterOptions {
-  status: TaskStatus | '';
-  priority: TaskPriority | '';
-  project_id: number | '';
-  assignee_id: number | '';
+// 필터 인터페이스 (내부 상태 관리용)
+interface TaskFilters {
   search: string;
+  project_id: string;
+  assignee_id: string;
+  status: string;
+  priority: string;
+  type: string;
+  due_before: string;
+  due_after: string;
+  has_due_date: string;
+  is_overdue: string;
+  sort_by: SortField;
+  sort_order: SortOrder;
 }
 
+/**
+ * 작업 목록 페이지 컴포넌트
+ * 모든 작업을 검색, 필터링, 정렬하여 표시합니다.
+ */
 const Tasks: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { getTasks, deleteTask } = useTasks();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { getTasks } = useTasks();
+  const { getProjects } = useProjects();
 
+  // 상태 관리
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [filters, setFilters] = useState<FilterOptions>({
-    status: '',
-    priority: '',
-    project_id: '',
-    assignee_id: '',
-    search: '',
-  });
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
   const [showFilters, setShowFilters] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    isOpen: boolean;
-    task: Task | null;
-  }>({ isOpen: false, task: null });
+  const [viewType, setViewType] = useState<ViewType>('list');
 
-  useEffect(() => {
-    // Initialize filters from URL params
-    const projectId = searchParams.get('project_id');
-    const status = searchParams.get('status');
+  // 필터 상태
+  const [filters, setFilters] = useState<TaskFilters>({
+    search: searchParams.get('search') || '',
+    project_id: searchParams.get('project_id') || '',
+    assignee_id: searchParams.get('assignee_id') || '',
+    status: searchParams.get('status') || '',
+    priority: searchParams.get('priority') || '',
+    type: searchParams.get('type') || '',
+    due_before: searchParams.get('due_before') || '',
+    due_after: searchParams.get('due_after') || '',
+    has_due_date: searchParams.get('has_due_date') || '',
+    is_overdue: searchParams.get('is_overdue') || '',
+    sort_by: (searchParams.get('sort_by') as SortField) || 'updated_at',
+    sort_order: (searchParams.get('sort_order') as SortOrder) || 'desc',
+  });
 
-    if (projectId || status) {
-      setFilters(prev => ({
-        ...prev,
-        project_id: projectId ? parseInt(projectId) : '',
-        status: (status as TaskStatus) || '',
-      }));
-    }
-  }, [searchParams]);
-
+  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     fetchTasks();
-  }, [filters]);
+    fetchProjects();
+  }, [currentPage, filters]);
 
+  // URL 파라미터 업데이트
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== '') {
+        params.set(key, value.toString());
+      }
+    });
+
+    if (currentPage > 1) {
+      params.set('page', currentPage.toString());
+    }
+
+    setSearchParams(params);
+  }, [filters, currentPage, setSearchParams]);
+
+  /**
+   * 작업 목록 가져오기
+   */
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const params: any = {
-        status: filters.status || undefined,
-        priority: filters.priority || undefined,
-        project_id: filters.project_id || undefined,
-        assignee_id: filters.assignee_id || undefined,
+
+      const queryParams: TaskSearchParams = {
+        ...filters,
+        page_no: currentPage,
+        page_size: pageSize,
+        ...(filters.project_id && { project_id: parseInt(filters.project_id) }),
+        ...(filters.assignee_id && { assignee_id: parseInt(filters.assignee_id) }),
+        ...(filters.has_due_date && { has_due_date: filters.has_due_date === 'true' }),
+        ...(filters.is_overdue && { is_overdue: filters.is_overdue === 'true' }),
       };
-      if (filters.search) {
-        params.search = filters.search;
-      }
-      const data = await getTasks(params);
-      setTasks(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load tasks';
-      setError(errorMessage);
-      toast.error(errorMessage);
+
+      const response: TaskListResponse = await getTasks(queryParams);
+      setTasks(response.tasks);
+      setTotalItems(response.total_items);
+    } catch (error) {
+      console.error('작업 목록 로드 실패:', error);
+      toast.error('작업 목록을 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteTask = async (task: Task) => {
+  /**
+   * 프로젝트 목록 가져오기 (필터용)
+   */
+  const fetchProjects = async () => {
     try {
-      await deleteTask(task.id);
-      setTasks(prev => prev.filter(t => t.id !== task.id));
-      toast.success(`Task "${task.title}" deleted successfully`);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete task';
-      toast.error(errorMessage);
+      setProjectsLoading(true);
+      const response = await getProjects({ page_size: 100 });
+      setProjects(response.projects);
+    } catch (error) {
+      console.error('프로젝트 목록 로드 실패:', error);
     } finally {
-      setDeleteConfirm({ isOpen: false, task: null });
+      setProjectsLoading(false);
     }
   };
 
-  const getStatusColor = (status: TaskStatus): string => {
+  /**
+   * 필터 변경 핸들러
+   */
+  const handleFilterChange = (field: keyof TaskFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setCurrentPage(1);
+  };
+
+  /**
+   * 검색어 변경 핸들러
+   */
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilters(prev => ({ ...prev, search: value }));
+    setCurrentPage(1);
+  };
+
+  /**
+   * 필터 초기화
+   */
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      project_id: '',
+      assignee_id: '',
+      status: '',
+      priority: '',
+      type: '',
+      due_before: '',
+      due_after: '',
+      has_due_date: '',
+      is_overdue: '',
+      sort_by: 'updated_at',
+      sort_order: 'desc',
+    });
+    setCurrentPage(1);
+  };
+
+  /**
+   * 페이지 변경 핸들러
+   */
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  /**
+   * 상태별 색상 반환
+   */
+  const getStatusColor = (status: TaskStatus) => {
     const colors = {
       todo: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-      in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      in_review: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      done: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
+      in_review: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
+      done: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
     };
     return colors[status];
   };
 
-  const getPriorityColor = (priority: TaskPriority): string => {
+  /**
+   * 우선순위별 색상 반환
+   */
+  const getPriorityColor = (priority: TaskPriority) => {
     const colors = {
-      low: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      high: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      low: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
+      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
+      high: 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200',
+      critical: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
     };
     return colors[priority];
   };
 
-  const isOverdue = (dueDate: string | null): boolean => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
+  /**
+   * 타입별 색상 반환
+   */
+  const getTypeColor = (type: TaskType) => {
+    const colors = {
+      task: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
+      bug: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
+      feature: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
+      improvement: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200',
+      research: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200',
+    };
+    return colors[type];
   };
 
-  const renderTaskCard = (task: Task) => (
-    <Card key={task.id} className="p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <Link
-            to={`/tasks/${task.id}`}
-            className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            {task.title}
-          </Link>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-            {task.description}
-          </p>
-        </div>
-        <DropdownMenu
-          trigger={
-            <Button variant="ghost" size="sm">
-              <EllipsisVerticalIcon className="h-4 w-4" />
-            </Button>
-          }
-          items={[
-            {
-              label: '상세 보기',
-              onClick: () => navigate(`/tasks/${task.id}`),
-            },
-            {
-              label: '수정',
-              onClick: () => navigate(`/tasks/${task.id}/edit`),
-            },
-            { type: 'divider' },
-            {
-              label: '삭제',
-              onClick: () => setDeleteConfirm({ isOpen: true, task }),
-              className: 'text-red-600 dark:text-red-400',
-            },
-          ]}
-        />
-      </div>
+  /**
+   * 상태 텍스트 변환
+   */
+  const getStatusText = (status: TaskStatus) => {
+    const statusMap = {
+      todo: '할 일',
+      in_progress: '진행 중',
+      in_review: '검토 중',
+      done: '완료',
+    };
+    return statusMap[status];
+  };
 
-      <div className="flex items-center space-x-2 mb-4">
-        <Badge className={getStatusColor(task.status)}>
-          {task.status.replace('_', ' ').toUpperCase()}
-        </Badge>
-        <Badge className={getPriorityColor(task.priority)}>
-          {task.priority.toUpperCase()}
-        </Badge>
-        {isOverdue(task.due_date ?? null) && (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-            <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-            기한 초과
-          </Badge>
-        )}
-      </div>
+  /**
+   * 우선순위 텍스트 변환
+   */
+  const getPriorityText = (priority: TaskPriority) => {
+    const priorityMap = {
+      low: '낮음',
+      medium: '보통',
+      high: '높음',
+      critical: '긴급',
+    };
+    return priorityMap[priority];
+  };
 
-      <div className="space-y-3">
-        {/* Project */}
-        <div className="flex items-center justify-between">
-          <Link
-            to={`/projects/${task.project.id}`}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            {task.project.name}
-          </Link>
-        </div>
+  /**
+   * 타입 텍스트 변환
+   */
+  const getTypeText = (type: TaskType) => {
+    const typeMap = {
+      task: '작업',
+      bug: '버그',
+      feature: '기능',
+      improvement: '개선',
+      research: '연구',
+    };
+    return typeMap[type];
+  };
 
-        {/* Due Date */}
-        {task.due_date && (
-          <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
-            <CalendarIcon className="h-4 w-4" />
-            <span className={isOverdue(task.due_date) ? 'text-red-600 dark:text-red-400' : ''}>
-              마감: {new Date(task.due_date).toLocaleDateString()}
-            </span>
-          </div>
-        )}
+  /**
+   * 날짜 포맷팅
+   */
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
-        {/* Assignees */}
-        {task.assignees.length > 0 && (
-          <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
-            <UserIcon className="h-4 w-4" />
-            <span>
-              {task.assignees.length === 1 && task.assignees[0]
-                ? `${task.assignees[0].full_name}`
-                : `${task.assignees.length}명의 담당자`
-              }
-            </span>
-          </div>
-        )}
+  /**
+   * 마감일까지 남은 일수 계산
+   */
+  const getDaysUntilDue = (dueDate: string) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        {/* Tags */}
-        {task.tags.length > 0 && (
-          <div className="flex items-center flex-wrap gap-1">
-            {task.tags.slice(0, 3).map((tag) => (
-              <Badge
-                key={tag.id}
-                className="text-xs"
-                // If you want to use dynamic colors, you need to extend Badge to accept them or use a fixed set of classes
-              >
-                <TagIcon className="h-3 w-3 mr-1" />
-                {tag.name}
-              </Badge>
-            ))}
-            {task.tags.length > 3 && (
-              <Badge variant="default" className="text-xs">
-                +{task.tags.length - 3}개 더보기
-              </Badge>
-            )}
-          </div>
-        )}
+    if (diffDays < 0) return `${Math.abs(diffDays)}일 지연`;
+    if (diffDays === 0) return '오늘 마감';
+    if (diffDays === 1) return '내일 마감';
+    return `${diffDays}일 남음`;
+  };
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-center space-x-3">
-            {task.comments_count > 0 && (
-              <span>{task.comments_count}개의 댓글</span>
-            )}
-            {task.attachments_count > 0 && (
-              <span>{task.attachments_count}개의 파일</span>
-            )}
-          </div>
-          <span className="text-xs text-gray-500 dark:text-gray-500">
-            {new Date(task.updated_at).toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
+  /**
+   * 마감일 색상 반환
+   */
+  const getDueDateColor = (dueDate: string) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  const renderTaskTable = () => (
-    <Card>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                작업
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                프로젝트
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                상태
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                우선순위
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                담당자
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                마감일
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                수정일
-              </th>
-              <th className="relative px-6 py-3">
-                <span className="sr-only">관리</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {tasks.map((task) => (
-              <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-                    >
-                      {task.title}
-                    </Link>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                      {task.description}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Link
-                    to={`/projects/${task.project.id}`}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {task.project.name}
-                  </Link>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge className={getStatusColor(task.status)}>
-                    {task.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority.toUpperCase()}
-                    </Badge>
-                    {isOverdue(task.due_date ?? null) && (
-                      <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {task.assignees.length > 0 && task.assignees[0]
-                    ? task.assignees[0].full_name
-                    : '미지정'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {task.due_date ? (
-                    <span className={isOverdue(task.due_date) ? 'text-red-600 dark:text-red-400' : ''}>
-                      {new Date(task.due_date).toLocaleDateString()}
-                    </span>
-                  ) : (
-                    '-'
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(task.updated_at).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <DropdownMenu
-                    trigger={
-                      <Button variant="ghost" size="sm">
-                        <EllipsisVerticalIcon className="h-4 w-4" />
-                      </Button>
-                    }
-                    items={[
-                      {
-                        label: '상세 보기',
-                        onClick: () => navigate(`/tasks/${task.id}`),
-                      },
-                      {
-                        label: '수정',
-                        onClick: () => navigate(`/tasks/${task.id}/edit`),
-                      },
-                      { type: 'divider' },
-                      {
-                        label: '삭제',
-                        onClick: () => setDeleteConfirm({ isOpen: true, task }),
-                        className: 'text-red-600 dark:text-red-400',
-                      },
-                    ]}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
+    if (diffDays < 0) return 'text-red-600 dark:text-red-400';
+    if (diffDays <= 1) return 'text-orange-600 dark:text-orange-400';
+    if (diffDays <= 3) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-gray-600 dark:text-gray-400';
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  /**
+   * 사용자가 작업 담당자인지 확인
+   */
+  const isTaskAssignee = (task: Task) => {
+    return task.assignees.some(assignee => assignee.user.id === user?.id);
+  };
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <ErrorMessage message={error} onRetry={fetchTasks} />
-      </div>
-    );
-  }
+  // 총 페이지 수 계산
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
+    <div className="max-w-7xl mx-auto space-y-6 p-6">
+      {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             작업
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
-            작업을 관리하고 추적하세요
+            모든 작업을 관리하고 추적하세요
           </p>
         </div>
-        <Button onClick={() => navigate('/tasks/new')}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          새 작업
-        </Button>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <Input
-              type="text"
-              placeholder="작업 검색..."
-              className="pl-10"
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? 'bg-blue-50 dark:bg-blue-900' : ''}
-          >
-            <FunnelIcon className="h-4 w-4 mr-2" />
-            필터
-          </Button>
-
-          {/* View Mode Toggles */}
-          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
+        <div className="flex items-center space-x-3">
+          {/* 뷰 전환 버튼 */}
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
             <Button
-              variant="ghost"
+              variant={viewType === 'list' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode('grid')}
-              className={`rounded-none ${viewMode === 'grid' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+              onClick={() => setViewType('list')}
+              className="px-3"
+            >
+              <ListBulletIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewType === 'kanban' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewType('kanban')}
+              className="px-3"
             >
               <Squares2X2Icon className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className={`rounded-none ${viewMode === 'list' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-            >
-              <ViewColumnsIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('table')}
-              className={`rounded-none ${viewMode === 'table' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-            >
-              <TableCellsIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className={`rounded-none ${viewMode === 'kanban' ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
-            >
-              Kanban
-            </Button>
           </div>
+
+          <Button
+            onClick={() => navigate('/tasks/create')}
+            className="flex items-center space-x-2"
+          >
+            <PlusIcon className="h-4 w-4" />
+            <span>새 작업</span>
+          </Button>
         </div>
       </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                상태
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as TaskStatus | '' }))}
-                title="상태"
-              >
-                <option value="">All Statuses</option>
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="in_review">In Review</option>
-                <option value="done">Done</option>
-              </select>
+      {/* 검색 및 필터 */}
+      <Card className="p-6">
+        <div className="space-y-4">
+          {/* 검색바 */}
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="작업명, 설명으로 검색..."
+                value={filters.search}
+                onChange={handleSearchChange}
+                className="pl-10"
+              />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                우선순위
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                value={filters.priority}
-                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value as TaskPriority | '' }))}
-                title="우선순위"
-              >
-                <option value="">All Priorities</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2"
+            >
+              <FunnelIcon className="h-4 w-4" />
+              <span>필터</span>
+            </Button>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                프로젝트
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                value={filters.project_id}
-                onChange={(e) => setFilters(prev => ({ ...prev, project_id: e.target.value ? parseInt(e.target.value) : '' }))}
-                title="프로젝트"
-              >
-                <option value="">All Projects</option>
-                {/* TODO: Load projects from API */}
-              </select>
-            </div>
+            {/* 빠른 필터 */}
+            <Button
+              variant={filters.assignee_id === user?.id?.toString() ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFilterChange('assignee_id',
+                filters.assignee_id === user?.id?.toString() ? '' : user?.id?.toString() || ''
+              )}
+            >
+              내 작업
+            </Button>
 
-            <div className="flex items-end">
+            <Button
+              variant={filters.is_overdue === 'true' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFilterChange('is_overdue',
+                filters.is_overdue === 'true' ? '' : 'true'
+              )}
+            >
+              지연된 작업
+            </Button>
+
+            {Object.values(filters).some(value => value !== '' && value !== 'updated_at' && value !== 'desc') && (
               <Button
-                variant="outline"
-                onClick={() => setFilters({ status: '', priority: '', project_id: '', assignee_id: '', search: '' })}
-                className="w-full"
+                variant="ghost"
+                onClick={clearFilters}
+                className="flex items-center space-x-2 text-gray-500"
               >
-                필터 초기화
+                <XMarkIcon className="h-4 w-4" />
+                <span>초기화</span>
+              </Button>
+            )}
+          </div>
+
+          {/* 필터 옵션 */}
+          {showFilters && (
+            <div className="grid md:grid-cols-5 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {/* 프로젝트 필터 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  프로젝트
+                </label>
+                <select
+                  value={filters.project_id}
+                  onChange={(e) => handleFilterChange('project_id', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                  disabled={projectsLoading}
+                >
+                  <option value="">모든 프로젝트</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 상태 필터 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  상태
+                </label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                >
+                  <option value="">모든 상태</option>
+                  <option value="todo">할 일</option>
+                  <option value="in_progress">진행 중</option>
+                  <option value="in_review">검토 중</option>
+                  <option value="done">완료</option>
+                </select>
+              </div>
+
+              {/* 우선순위 필터 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  우선순위
+                </label>
+                <select
+                  value={filters.priority}
+                  onChange={(e) => handleFilterChange('priority', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                >
+                  <option value="">모든 우선순위</option>
+                  <option value="low">낮음</option>
+                  <option value="medium">보통</option>
+                  <option value="high">높음</option>
+                  <option value="critical">긴급</option>
+                </select>
+              </div>
+
+              {/* 타입 필터 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  타입
+                </label>
+                <select
+                  value={filters.type}
+                  onChange={(e) => handleFilterChange('type', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                >
+                  <option value="">모든 타입</option>
+                  <option value="task">작업</option>
+                  <option value="bug">버그</option>
+                  <option value="feature">기능</option>
+                  <option value="improvement">개선</option>
+                  <option value="research">연구</option>
+                </select>
+              </div>
+
+              {/* 정렬 기준 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  정렬 기준
+                </label>
+                <select
+                  value={`${filters.sort_by}_${filters.sort_order}`}
+                  onChange={(e) => {
+                    const [sort_by, sort_order] = e.target.value.split('_');
+                    handleFilterChange('sort_by', sort_by);
+                    handleFilterChange('sort_order', sort_order);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                >
+                  <option value="updated_at_desc">최근 수정순</option>
+                  <option value="created_at_desc">최근 생성순</option>
+                  <option value="due_date_asc">마감일 빠른순</option>
+                  <option value="due_date_desc">마감일 늦은순</option>
+                  <option value="priority_desc">우선순위 높은순</option>
+                  <option value="title_asc">제목 오름차순</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* 결과 요약 */}
+      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+        <div>
+          총 {totalItems.toLocaleString()}개의 작업
+          {filters.search && ` • "${filters.search}" 검색 결과`}
+        </div>
+        <div>
+          {totalPages > 1 && `${currentPage} / ${totalPages} 페이지`}
+        </div>
+      </div>
+
+      {/* 작업 목록 */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : tasks.length > 0 ? (
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <Card
+              key={task.id}
+              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/tasks/${task.id}`)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      {task.title}
+                    </h3>
+
+                    {/* 배지들 */}
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(task.status)}`}>
+                        {getStatusText(task.status)}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                        {getPriorityText(task.priority)}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(task.type)}`}>
+                        {getTypeText(task.type)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                    {task.description}
+                  </p>
+
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    {/* 프로젝트 */}
+                    <span className="flex items-center space-x-1">
+                      <span>📁</span>
+                      <span>{task.project.name}</span>
+                    </span>
+
+                    {/* 담당자 */}
+                    {task.assignees.length > 0 && (
+                      <span className="flex items-center space-x-1">
+                        <UserIcon className="h-3 w-3" />
+                        <span>
+                          {task.assignees.length === 1
+                            ? task.assignees[0].user.full_name
+                            : `${task.assignees[0].user.full_name} 외 ${task.assignees.length - 1}명`
+                          }
+                        </span>
+                      </span>
+                    )}
+
+                    {/* 마감일 */}
+                    {task.due_date && (
+                      <span className={`flex items-center space-x-1 ${getDueDateColor(task.due_date)}`}>
+                        <CalendarIcon className="h-3 w-3" />
+                        <span>{getDaysUntilDue(task.due_date)}</span>
+                      </span>
+                    )}
+
+                    {/* 생성일 */}
+                    <span className="flex items-center space-x-1">
+                      <ClockIcon className="h-3 w-3" />
+                      <span>{formatDate(task.created_at)}</span>
+                    </span>
+
+                    {/* 태그 */}
+                    {task.tags && task.tags.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        {task.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                            {tag.name}
+                          </span>
+                        ))}
+                        {task.tags.length > 2 && (
+                          <span className="text-xs">+{task.tags.length - 2}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 액션 버튼 */}
+                <div className="flex items-center space-x-2 ml-4">
+                  {/* 우선순위 표시 */}
+                  {task.priority === 'critical' && (
+                    <FlagIcon className="h-4 w-4 text-red-500" />
+                  )}
+                  {task.priority === 'high' && (
+                    <FlagIcon className="h-4 w-4 text-orange-500" />
+                  )}
+
+                  {/* 담당자 아바타 */}
+                  {task.assignees.length > 0 && (
+                    <div className="flex -space-x-1">
+                      {task.assignees.slice(0, 3).map((assignee) => (
+                        <div key={assignee.id} className="relative">
+                          {assignee.user.avatar_url ? (
+                            <img
+                              src={assignee.user.avatar_url}
+                              alt={assignee.user.full_name}
+                              className="h-6 w-6 rounded-full border-2 border-white dark:border-gray-800"
+                            />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                {assignee.user.full_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {task.assignees.length > 3 && (
+                        <div className="h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                            +{task.assignees.length - 3}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/tasks/${task.id}`);
+                    }}
+                    className="p-1"
+                  >
+                    <EyeIcon className="h-4 w-4" />
+                  </Button>
+
+                  {isTaskAssignee(task) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/tasks/${task.id}/edit`);
+                      }}
+                      className="p-1"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="p-12">
+          <div className="text-center">
+            <div className="h-24 w-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FunnelIcon className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              작업을 찾을 수 없습니다
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {Object.values(filters).some(value => value !== '' && value !== 'updated_at' && value !== 'desc')
+                ? '검색 조건을 변경하거나 필터를 초기화해보세요.'
+                : '아직 작업이 없습니다. 첫 번째 작업을 만들어보세요.'}
+            </p>
+            <div className="flex justify-center space-x-3">
+              {Object.values(filters).some(value => value !== '' && value !== 'updated_at' && value !== 'desc') && (
+                <Button variant="outline" onClick={clearFilters}>
+                  필터 초기화
+                </Button>
+              )}
+              <Button onClick={() => navigate('/tasks/create')}>
+                새 작업 만들기
               </Button>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Tasks Content */}
-      {viewMode === 'kanban' ? (
-        <KanbanBoard tasks={tasks} onTaskUpdate={fetchTasks} />
-      ) : tasks.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-            <ClockIcon className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            작업이 없습니다.
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {filters.search || filters.status || filters.priority || filters.project_id
-              ? "No tasks match your current filters"
-              : "Get started by creating your first task"
-            }
-          </p>
-          {!filters.search && !filters.status && !filters.priority && !filters.project_id && (
-            <Button onClick={() => navigate('/tasks/new')}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              작업 생성
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              이전
             </Button>
-          )}
-        </Card>
-      ) : (
-        <>
-          {viewMode === 'table' ? (
-            renderTaskTable()
-          ) : (
-            <div className={`grid gap-6 ${
-              viewMode === 'grid'
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                : 'grid-cols-1'
-            }`}>
-              {tasks.map(renderTaskCard)}
-            </div>
-          )}
-        </>
-      )}
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={deleteConfirm.isOpen}
-        onClose={() => setDeleteConfirm({ isOpen: false, task: null })}
-        onConfirm={() => deleteConfirm.task && handleDeleteTask(deleteConfirm.task)}
-        title="Delete Task"
-        message={`"${deleteConfirm.task?.title}"작업을 삭제하겠습니까? 삭제 후 복구할 수 없습니다.`}
-        confirmText="Delete"
-        confirmVariant="danger"
-      />
+            {/* 페이지 번호 */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                    className="w-10"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              다음
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
