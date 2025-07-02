@@ -20,12 +20,17 @@ export const config: EnvironmentConfig = {
   ENABLE_GANTT_CHART: process.env.REACT_APP_ENABLE_GANTT_CHART === 'true',
 
   // External Services
-  GOOGLE_CLIENT_ID: process.env.REACT_APP_GOOGLE_CLIENT_ID,
-  GITHUB_CLIENT_ID: process.env.REACT_APP_GITHUB_CLIENT_ID,
-  SENTRY_DSN: process.env.REACT_APP_SENTRY_DSN,
+  GOOGLE_CLIENT_ID: process.env.REACT_APP_GOOGLE_CLIENT_ID || '',
+  GITHUB_CLIENT_ID: process.env.REACT_APP_GITHUB_CLIENT_ID || '',
+  SENTRY_DSN: process.env.REACT_APP_SENTRY_DSN || '',
 
   // Development
   DEBUG_MODE: process.env.REACT_APP_DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development',
+
+  //Token
+  TOKEN_STORAGE_KEY: 'pms_token',
+  REFRESH_TOKEN_STORAGE_KEY: 'pms_refresh_token',
+  TOKEN_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes
 };
 
 /**

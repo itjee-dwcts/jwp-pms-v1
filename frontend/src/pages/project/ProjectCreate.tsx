@@ -52,7 +52,7 @@ const ProjectCreate: React.FC = () => {
     description: '',
     status: 'planning',
     priority: 'medium',
-    start_date: new Date().toISOString().split('T')[0] ?? '',
+    start_date: new Date().toISOString().split('T')[0] || '',
     end_date: '',
     budget: '',
     tags: [],

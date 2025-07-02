@@ -1,35 +1,35 @@
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useReports } from '@/hooks/useReports';
 import {
-    ChartBarIcon,
-    ClockIcon,
-    DocumentArrowDownIcon,
-    FolderIcon,
-    FunnelIcon,
-    PresentationChartLineIcon,
-    UserGroupIcon
+  ChartBarIcon,
+  ClockIcon,
+  DocumentArrowDownIcon,
+  FolderIcon,
+  FunnelIcon,
+  PresentationChartLineIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
-    Area,
-    AreaChart,
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Line,
-    LineChart,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 
 interface ReportFilters {
@@ -124,6 +124,20 @@ const Reports: React.FC = () => {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+  const PROGRESS_CLASSES = [
+    'w-0',     // 0-9%
+    'w-1/12',  // 10-19%
+    'w-1/6',   // 20-29%
+    'w-1/4',   // 30-39%
+    'w-2/5',   // 40-49%
+    'w-1/2',   // 50-59%
+    'w-3/5',   // 60-69%
+    'w-2/3',   // 70-79%
+    'w-3/4',   // 80-89%
+    'w-5/6',   // 90-99%
+    'w-full'   // 100%
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -179,6 +193,7 @@ const Reports: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                 value={filters.dateRange}
                 onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value as any }))}
+                title="Date Range"
               >
                 <option value="week">Last Week</option>
                 <option value="month">Last Month</option>
@@ -314,7 +329,7 @@ const Reports: React.FC = () => {
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {reportData.task_status_distribution.map((entry, index) => (
+                  {reportData.task_status_distribution.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -396,10 +411,7 @@ const Reports: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{ width: `${project.completion_rate}%` }}
-                          />
+                          <div className={`bg-green-600 h-2 rounded-full transition-all duration-300 ${PROGRESS_CLASSES[Math.floor(project.completion_rate / 10)]}`} />
                         </div>
                         <span className="text-sm text-gray-900 dark:text-white">
                           {project.completion_rate}%
@@ -441,7 +453,7 @@ const Reports: React.FC = () => {
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Average Task Duration
                 </span>
-                <Badge variant="outline">
+                <Badge variant="default">
                   {reportData.summary.average_task_duration} days
                 </Badge>
               </div>

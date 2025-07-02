@@ -30,16 +30,16 @@ export { default as EventDetail } from './calendar/EventDetail';
 export { default as EventEdit } from './calendar/EventEdit';
 
 // User and profile pages
-export { default as Profile } from './common/Profile';
 export { default as Settings } from './common/Settings';
+export { default as Profile } from './user/Profile';
 export { default as Users } from './user/Users';
 export { default as UserDetail } from './UserDetail';
 
 // Utility pages
+export { default as Activity } from './common/Activity';
 export { default as Reports } from './reports/Reports';
-export { default as Activity } from './utils/Activity';
-export { default as Help } from './utils/Help';
-export { default as Search } from './utils/Search';
+export { default as Help } from './common/Help';
+export { default as Search } from './common/Search';
 
 // Error pages
 export { default as NotFound } from './error/NotFound';

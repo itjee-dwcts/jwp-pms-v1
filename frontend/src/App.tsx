@@ -12,7 +12,7 @@ const TasksPage = React.lazy(() => import('./pages/task/Tasks'));
 const TaskDetailPage = React.lazy(() => import('./pages/task/TaskDetail'));
 const CalendarPage = React.lazy(() => import('./pages/calendar/Calendar'));
 const UsersPage = React.lazy(() => import('./pages/user/Users'));
-const ProfilePage = React.lazy(() => import('./pages/common/Profile'));
+const ProfilePage = React.lazy(() => import('./pages/user/Profile'));
 const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
 
 // Auth pages
@@ -33,6 +33,7 @@ const LoadingSpinner: React.FC = () => (
 // Protected Route Component
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: string;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {

@@ -8,6 +8,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, cast
 
+from sqlalchemy import desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count
+
 from core.constants import UserRole, UserStatus
 from core.database import get_async_session
 from models.user import User, UserActivityLog
@@ -19,9 +23,6 @@ from schemas.user import (
     UserStatsResponse,
     UserUpdateRequest,
 )
-from sqlalchemy import desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import count
 from utils.auth import get_password_hash, verify_password
 from utils.exceptions import AuthenticationError, ConflictError, NotFoundError
 
@@ -469,8 +470,8 @@ class UserService:
         List users with filtering and pagination
 
         Args:
-            skip: Number of records to skip
-            limit: Number of records to return
+            page_no: Number of records to skip
+            page_size: Number of records to return
             search: Search term for name, email, or full_name
             role: Filter by user role
             status: Filter by user status
@@ -743,15 +744,15 @@ class UserService:
             logger.error("Failed to log activity: %s", e)
 
     async def get_user_activity_logs(
-        self, user_id: int, skip: int = 0, limit: int = 50
+        self, user_id: int, page_no: int = 0, page_size: int = 50
     ) -> List[UserActivityLog]:
         """
         Get user activity logs
 
         Args:
             user_id: User ID
-            skip: Number of records to skip
-            limit: Number of records to return
+            page_no: Number of records to skip
+            page_size: Number of records to return
 
         Returns:
             List of UserActivityLog objects
@@ -760,8 +761,8 @@ class UserService:
             select(UserActivityLog)
             .where(UserActivityLog.user_id == user_id)
             .order_by(UserActivityLog.created_at.desc())
-            .offset(skip)
-            .limit(limit)
+            .offset(page_no)
+            .limit(page_size)
         )
 
         result = await self.db.execute(query)

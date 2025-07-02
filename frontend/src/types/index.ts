@@ -377,17 +377,17 @@ export interface SortOption {
 }
 
 export interface PaginationParams {
-  page: number;
-  limit: number;
+  page_no: number;
+  page_size: number;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
 }
 
 export interface PaginatedResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
+  total_items: number;
+  page_no: number;
+  page_size: number;
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
@@ -717,6 +717,9 @@ export type Prettify<T> = {
 // ============================================================================
 
 export interface EnvironmentConfig {
+  TOKEN_STORAGE_KEY: string;
+  REFRESH_TOKEN_STORAGE_KEY: string;
+  TOKEN_REFRESH_THRESHOLD: number;
   API_BASE_URL: string;
   GRAPHQL_URL: string;
   APP_NAME: string;

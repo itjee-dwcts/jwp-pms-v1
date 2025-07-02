@@ -801,7 +801,7 @@ class DatabaseMonitor:
     """Database monitoring utilities"""
 
     @staticmethod
-    async def get_slow_queries(limit: int = 10):
+    async def get_slow_queries(page_size: int = 10):
         """Get slow running queries"""
         try:
             async with engine.begin() as conn:
@@ -811,10 +811,10 @@ class DatabaseMonitor:
                     SELECT query, mean_time, calls, total_time
                     FROM pg_stat_statements
                     ORDER BY mean_time DESC
-                    LIMIT :limit
+                    LIMIT :page_size
                 """
                     ),
-                    {"limit": limit},
+                    {"page_size": page_size},
                 )
 
                 return [dict(row) for row in result.fetchall()]

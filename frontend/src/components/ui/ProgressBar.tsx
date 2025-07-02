@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import React from 'react';
 
-interface ProgressBarProps {
+interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * The percentage of completion, from 0 to 100.
    */
@@ -23,6 +23,11 @@ interface ProgressBarProps {
    * Additional CSS classes for the container element.
    */
   className?: string;
+
+  /**
+   * Provides an accessible name for the progress bar.
+   */
+  'aria-label'?: string;
 }
 
 /**
@@ -34,9 +39,16 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   percentage,
   size = 'md',
   color = 'bg-blue-600',
-  className = '',
+  className,
+  'aria-label': ariaLabel,
+  ...props
 }) => {
-  const clampedPercentage = Math.max(0, Math.min(100, percentage));
+  const validPercentage = typeof percentage === 'number' && !isNaN(percentage) ? percentage : 0;
+  const clampedPercentage = Math.max(0, Math.min(100, validPercentage));
+
+  // ARIA 속성을 위한 정수값 계산
+  const ariaValueNow = Math.round(clampedPercentage);
+  const completionText = `${ariaValueNow}% complete`;
 
   const sizeClasses = {
     sm: 'h-1',
@@ -55,18 +67,24 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     color
   );
 
+  // ARIA 속성을 객체로 분리
+  const ariaProps = {
+    'aria-valuenow': ariaValueNow,
+    'aria-valuemin': 0,
+    'aria-valuemax': 100,
+    'aria-label': ariaLabel || completionText,
+  };
+
   return (
     <div
       className={containerClasses}
       role="progressbar"
-      aria-valuenow={clampedPercentage}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      title={`${Math.round(clampedPercentage)}% complete`}
+      title={completionText}
+      {...ariaProps}
+      {...props}
     >
       <div
-        className={barClasses}
-        style={{ width: `${clampedPercentage}%` }}
+        className={classNames(barClasses, `progress-bar-width-${ariaValueNow}`)}
       />
     </div>
   );

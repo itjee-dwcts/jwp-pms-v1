@@ -7,19 +7,19 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/hooks/useUsers';
 import {
-  ArrowPathIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  EyeIcon,
-  FolderIcon,
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-  UserIcon
+    ArrowPathIcon,
+    CalendarIcon,
+    CheckCircleIcon,
+    ClockIcon,
+    DocumentTextIcon,
+    EyeIcon,
+    FolderIcon,
+    FunnelIcon,
+    MagnifyingGlassIcon,
+    PencilIcon,
+    PlusIcon,
+    TrashIcon,
+    UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -160,8 +160,8 @@ const Activity: React.FC = () => {
 
       const params = {
         ...filters,
-        page: currentPage,
-        limit: 20,
+        page_no: currentPage,
+        page_size: 20,
       };
 
       const data = await getUserActivity(targetUserId, params);

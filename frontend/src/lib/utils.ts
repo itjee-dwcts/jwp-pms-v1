@@ -263,7 +263,7 @@ export function generateRandomColor(): string {
     '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
   ];
 
-  return colors[Math.floor(Math.random() * colors.length)];
+  return colors[Math.floor(Math.random() * colors.length)] ?? '#000000';
 }
 
 /**
@@ -271,11 +271,19 @@ export function generateRandomColor(): string {
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
+  if (
+    result &&
+    typeof result[1] === 'string' &&
+    typeof result[2] === 'string' &&
+    typeof result[3] === 'string'
+  ) {
+    return {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    };
+  }
+  return null;
 }
 
 /**
@@ -333,7 +341,7 @@ export function groupBy<T, K extends keyof T>(
  * Remove duplicates from array
  */
 export function unique<T>(array: T[]): T[] {
-  return [...new Set(array)];
+  return Array.from(new Set(array));
 }
 
 /**
@@ -395,7 +403,11 @@ export function deepMerge<T extends Record<string, any>>(
     for (const key in source) {
       if (isObject(source[key])) {
         if (!target[key]) Object.assign(target, { [key]: {} });
-        deepMerge(target[key], source[key]);
+       if (isObject(target[key]) && isObject(source[key])) {
+          deepMerge(target[key] as Record<string, any>, source[key] as Record<string, any>);
+        } else {
+          Object.assign(target, { [key]: source[key] });
+        }
       } else {
         Object.assign(target, { [key]: source[key] });
       }
@@ -438,7 +450,7 @@ export function parseQueryString(queryString: string): Record<string, string | s
   const params = new URLSearchParams(queryString);
   const result: Record<string, string | string[]> = {};
 
-  for (const [key, value] of params.entries()) {
+  params.forEach((value, key) => {
     if (result[key]) {
       if (Array.isArray(result[key])) {
         (result[key] as string[]).push(value);
@@ -448,7 +460,7 @@ export function parseQueryString(queryString: string): Record<string, string | s
     } else {
       result[key] = value;
     }
-  }
+  });
 
   return result;
 }
