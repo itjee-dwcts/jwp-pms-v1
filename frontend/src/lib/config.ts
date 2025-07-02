@@ -1,4 +1,24 @@
-import { EnvironmentConfig } from '@/types';
+// ============================================================================
+// Environment Types
+// ============================================================================
+
+export interface EnvironmentConfig {
+  TOKEN_STORAGE_KEY: string;
+  REFRESH_TOKEN_STORAGE_KEY: string;
+  TOKEN_REFRESH_THRESHOLD: number;
+  API_BASE_URL: string;
+  GRAPHQL_URL: string;
+  APP_NAME: string;
+  APP_VERSION: string;
+  ENABLE_DARK_MODE: boolean;
+  ENABLE_NOTIFICATIONS: boolean;
+  ENABLE_CALENDAR: boolean;
+  ENABLE_GANTT_CHART: boolean;
+  GOOGLE_CLIENT_ID?: string;
+  GITHUB_CLIENT_ID?: string;
+  SENTRY_DSN?: string;
+  DEBUG_MODE: boolean;
+}
 
 /**
  * Application configuration

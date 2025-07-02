@@ -1,15 +1,15 @@
 import {
-    CalendarIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    DocumentIcon,
-    ExclamationCircleIcon,
-    FolderIcon,
-    FunnelIcon,
-    InformationCircleIcon,
-    MagnifyingGlassIcon,
-    TagIcon,
-    UserIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentIcon,
+  ExclamationCircleIcon,
+  FolderIcon,
+  FunnelIcon,
+  InformationCircleIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -281,10 +281,11 @@ const Search: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* 타입 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="search-type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   타입
                 </label>
                 <select
+                  id="search-type-select"
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -299,10 +300,11 @@ const Search: React.FC = () => {
 
               {/* 상태 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="search-status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   상태
                 </label>
                 <select
+                  id="search-status-select"
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -317,10 +319,11 @@ const Search: React.FC = () => {
 
               {/* 우선순위 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="search-priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   우선순위
                 </label>
                 <select
+                  id="search-priority-select"
                   value={filters.priority}
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -335,10 +338,11 @@ const Search: React.FC = () => {
 
               {/* 날짜 범위 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="search-date-range-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   날짜 범위
                 </label>
                 <select
+                  id = "search-date-range-select"
                   value={filters.dateRange}
                   onChange={(e) => handleFilterChange('dateRange', e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"

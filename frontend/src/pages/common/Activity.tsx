@@ -1,25 +1,25 @@
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { Input } from '@/components/ui/Input';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import Input from '@/components/ui/Input';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
-import { useUsers } from '@/hooks/useUsers';
+import { useUsers } from '@/hooks/use-users';
 import {
-    ArrowPathIcon,
-    CalendarIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    EyeIcon,
-    FolderIcon,
-    FunnelIcon,
-    MagnifyingGlassIcon,
-    PencilIcon,
-    PlusIcon,
-    TrashIcon,
-    UserIcon
+  ArrowPathIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  FolderIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -63,9 +63,9 @@ interface ActivityLog {
 }
 
 interface ActivityFilters {
-  user_id?: number;
-  action?: ActivityAction;
-  resource_type?: ResourceType;
+  user_id?: number | undefined;
+  action?: ActivityAction | undefined;
+  resource_type?: ResourceType | undefined;
   start_date?: string;
   end_date?: string;
   search?: string;
@@ -158,19 +158,24 @@ const Activity: React.FC = () => {
         throw new Error('No user selected');
       }
 
-      const params = {
-        ...filters,
+      // Remove undefined properties to satisfy exactOptionalPropertyTypes
+      const params: Record<string, any> = {
         page_no: currentPage,
         page_size: 20,
       };
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params[key] = value;
+        }
+      });
 
       const data = await getUserActivity(targetUserId, params);
 
       if (reset) {
-        setActivities(data);
+        setActivities(data as ActivityLog[]);
         setPage(2);
       } else {
-        setActivities(prev => [...prev, ...data]);
+        setActivities(prev => [...prev, ...(data as ActivityLog[])]);
         setPage(prev => prev + 1);
       }
 
@@ -307,7 +312,7 @@ const Activity: React.FC = () => {
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {activity.user.full_name}
               </span>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="default" className="text-xs">
                 {activity.action}
               </Badge>
               <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">

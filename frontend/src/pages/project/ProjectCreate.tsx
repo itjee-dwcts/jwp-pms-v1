@@ -3,8 +3,8 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/useProjects';
-import { useUsers } from '@/hooks/useUsers';
+import { useProjects } from '@/hooks/use-projects';
+import { useUsers } from '@/hooks/use-users';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -136,10 +136,10 @@ const ProjectCreate: React.FC = () => {
 
       const projectData = {
         ...formData,
-        status: formData.status,
-        priority: formData.priority,
-        budget: formData.budget !== '' ? parseFloat(formData.budget) : undefined,
-        end_date: formData.end_date !== '' ? formData.end_date : undefined,
+        status: formData.status as ProjectStatus,
+        priority: formData.priority as ProjectPriority,
+        ...(formData.budget !== '' && { budget: parseFloat(formData.budget) }),
+        ...(formData.end_date !== '' && { end_date: formData.end_date }),
       };
 
       const newProject = await createProject(projectData);
