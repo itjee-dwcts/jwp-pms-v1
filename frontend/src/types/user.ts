@@ -16,10 +16,11 @@ export interface User {
   phone?: string;
   location?: string;
   website?: string;
-  timezone?: string;
+  time_zone?: string;
   last_login?: string;
   created_at: string;
   updated_at: string;
+  is_active?: boolean;
   is_verified?: boolean;
   preferences?: UserPreferences;
   stats?: UserStats;
@@ -86,7 +87,7 @@ export interface UserCreateRequest {
   phone?: string;
   location?: string;
   website?: string;
-  timezone?: string;
+  time_zone?: string;
 }
 
 export interface UserUpdateRequest {
@@ -99,7 +100,9 @@ export interface UserUpdateRequest {
   phone?: string;
   location?: string;
   website?: string;
-  timezone?: string;
+  time_zone?: string;
+  is_active?: boolean;
+  avatar_url?: string;
 }
 
 export interface UserSearchParams {
