@@ -1,25 +1,20 @@
 import { userService } from '@/services/user-service';
+import { PasswordChangeRequest, User, UserActivityLog, UserPreferences, UserSession, UserStats } from '@/types/auth';
 import type {
-    AvatarUploadResponse,
-    BulkDeleteRequest,
-    BulkUpdateRequest,
-    ExportFormat,
-    PasswordChangeRequest,
-    User,
-    UserActivityLog,
-    UserActivityParams,
-    UserCreateRequest,
-    UserInviteRequest,
-    UserInviteResponse,
-    UserNotificationParams,
-    UserPreferences,
-    UserProjectParams,
-    UserSearchParams,
-    UserSession,
-    UserStats,
-    UserStatsResponse,
-    UserTaskParams,
-    UserUpdateRequest,
+  AvatarUploadResponse,
+  BulkDeleteRequest,
+  BulkUpdateRequest,
+  ExportFormat,
+  UserActivityParams,
+  UserCreateRequest,
+  UserInviteRequest,
+  UserInviteResponse,
+  UserNotificationParams,
+  UserProjectParams,
+  UserSearchParams,
+  UserStatsResponse,
+  UserTaskParams,
+  UserUpdateRequest
 } from '@/types/user';
 import { useCallback } from 'react';
 import { useUserState } from './use-user-state';
@@ -254,7 +249,7 @@ export const useUsers = () => {
     return handleRequest(async () => {
       await userService.bulkDeleteUsers(data);
       // Remove users from state
-      data.ids.forEach(id => {
+      data.user_ids.forEach(id => {
         userState.removeUser(id);
       });
     });

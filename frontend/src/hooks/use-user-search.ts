@@ -1,6 +1,7 @@
 import { useDebounce } from '@/hooks/use-debounce';
 import { userService } from '@/services/user-service';
-import type { User, UserSearchParams } from '@/types/user';
+import type { User } from '@/types/auth';
+import type { UserSearchParams } from '@/types/user';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseUserSearchReturn {

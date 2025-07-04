@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
-import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
+import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
 /**
  * Utility function to combine class names

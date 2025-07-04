@@ -29,20 +29,37 @@ import Select from '../../components/ui/Select';
 import Tabs from '../../components/ui/Tabs';
 import Textarea from '../../components/ui/Textarea';
 import { useAuth } from '../../hooks/use-auth';
-import { useUsers } from '../../hooks/use-users';
-import { Project, ProjectStatus } from '../../types/project';
-import { Task } from '../../types/task';
-import { User, UserUpdateRequest } from '../../types/user';
+import type { User, UserRole, UserStatus } from '../../types/auth';
+import type { UserUpdateRequest } from '../../types/user';
+
+// TODO: 실제 서비스에서 가져올 임시 타입들
+interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  status: 'active' | 'completed' | 'on_hold';
+}
+
+interface Task {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  due_date?: string;
+}
 
 /**
  * 사용자 상세 페이지 컴포넌트
- * 특정 사용자의 상세 정보를 보여주고 관리할 수 있는 페이지
+ * - 특정 사용자의 상세 정보 표시
+ * - 관리자 권한으로 사용자 정보 편집/삭제
+ * - 사용자 활동 통계 및 프로젝트/작업 관리
+ * - 탭 기반 정보 구성
  */
 const UserDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: currentUser, isLoading } = useAuth();
-  const { getUserById, updateUser, deleteUser } = useUsers();
 
   // 상태 관리
   const [user, setUser] = useState<User | null>(null);
@@ -51,6 +68,7 @@ const UserDetail: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // 편집 폼 상태
   const [editForm, setEditForm] = useState<UserUpdateRequest>({
@@ -60,9 +78,72 @@ const UserDetail: React.FC = () => {
     bio: '',
     location: '',
     website: '',
-    role: 'VIEWER',
+    role: 'viewer',
+    status: 'active',
     is_active: true,
   });
+
+  /**
+   * 사용자 역할 한글 변환 함수
+   */
+  const getRoleDisplayName = (role: UserRole): string => {
+    const roleNames: Record<UserRole, string> = {
+      admin: '관리자',
+      manager: '매니저',
+      developer: '개발자',
+      viewer: '뷰어',
+    };
+    return roleNames[role] || '사용자';
+  };
+
+  /**
+   * 사용자 상태 한글 변환 함수
+   */
+  const getStatusDisplayName = (status: UserStatus): string => {
+    const statusNames: Record<UserStatus, string> = {
+      active: '활성',
+      inactive: '비활성',
+      pending: '대기 중',
+      suspended: '정지됨',
+    };
+    return statusNames[status] || '알 수 없음';
+  };
+
+  /**
+   * 역할별 배지 색상 결정 함수
+   */
+  const getRoleBadgeVariant = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return 'danger';
+      case 'manager':
+        return 'warning';
+      case 'developer':
+        return 'primary';
+      case 'viewer':
+        return 'default';
+      default:
+        return 'primary';
+    }
+  };
+
+  /**
+   * 상태별 배지 색상 결정 함수
+   */
+  const getStatusBadgeVariant = (status: UserStatus) => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'inactive':
+        return 'default';
+      case 'pending':
+        return 'warning';
+      case 'suspended':
+        return 'danger';
+      default:
+        return 'default';
+    }
+  };
 
   /**
    * 사용자 데이터 로드
@@ -72,7 +153,34 @@ const UserDetail: React.FC = () => {
       if (!id) return;
 
       try {
-        const userData = await getUserById(id);
+        // TODO: 실제 API 호출로 대체
+        // const userData = await userService.getUserById(id);
+
+        // 임시 더미 데이터
+        const userData: User = {
+          id: parseInt(id),
+          username: `user${id}`,
+          email: `user${id}@example.com`,
+          full_name: `사용자 ${id}`,
+          role: 'developer',
+          status: 'active',
+          is_active: true,
+          is_email_verified: true,
+          avatar_url: '',
+          bio: '프로젝트 관리 시스템을 사용하는 개발자입니다.',
+          phone: '010-1234-5678',
+          location: '서울, 대한민국',
+          website: 'https://example.com',
+          timezone: 'Asia/Seoul',
+          last_login_at: '2024-01-15T10:30:00Z',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-15T10:30:00Z',
+          project_count: 5,
+          completed_tasks_count: 23,
+          active_tasks_count: 7,
+          contribution_score: 85,
+        };
+
         setUser(userData);
 
         // 편집 폼 초기화
@@ -83,22 +191,45 @@ const UserDetail: React.FC = () => {
           bio: userData.bio || '',
           location: userData.location || '',
           website: userData.website || '',
+          timezone: userData.timezone || '',
           role: userData.role,
+          status: userData.status,
           is_active: userData.is_active,
         });
 
         // TODO: 사용자의 프로젝트 및 작업 데이터 로드
-        // setUserProjects(await getProjectsByUserId(id));
-        // setUserTasks(await getTasksByUserId(id));
+        setUserProjects([
+          { id: 1, name: '웹사이트 리뉴얼', description: '회사 웹사이트 UI/UX 개선', status: 'active' },
+          { id: 2, name: '모바일 앱 개발', description: 'React Native 기반 모바일 앱', status: 'completed' },
+        ]);
+
+        setUserTasks([
+          {
+            id: 1,
+            title: 'API 문서 작성',
+            description: 'REST API 문서화 작업',
+            status: 'in_progress',
+            priority: 'high',
+            due_date: '2024-02-01T00:00:00Z'
+          },
+          {
+            id: 2,
+            title: '데이터베이스 최적화',
+            description: '쿼리 성능 개선',
+            status: 'completed',
+            priority: 'medium'
+          },
+        ]);
+
       } catch (error) {
         toast.error('사용자 정보를 불러오는데 실패했습니다.');
-        console.error('User data loading error:', error);
+        console.error('사용자 데이터 로딩 오류:', error);
         navigate('/users');
       }
     };
 
     loadUserData();
-  }, [id, getUserById, navigate]);
+  }, [id, navigate]);
 
   /**
    * 사용자 정보 업데이트 처리
@@ -109,13 +240,26 @@ const UserDetail: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      const updatedUser = await updateUser(user.id, editForm);
+      setIsUpdating(true);
+
+      // TODO: 실제 API 호출로 대체
+      // const updatedUser = await userService.updateUser(user.id, editForm);
+
+      // 임시로 로컬 상태 업데이트
+      const updatedUser: User = {
+        ...user,
+        ...editForm,
+        updated_at: new Date().toISOString(),
+      };
+
       setUser(updatedUser);
       setIsEditModalOpen(false);
       toast.success('사용자 정보가 성공적으로 업데이트되었습니다.');
     } catch (error) {
       toast.error('사용자 정보 업데이트에 실패했습니다.');
-      console.error('User update error:', error);
+      console.error('사용자 업데이트 오류:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -126,12 +270,18 @@ const UserDetail: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      await deleteUser(user.id);
+      setIsUpdating(true);
+
+      // TODO: 실제 API 호출로 대체
+      // await userService.deleteUser(user.id);
+
       toast.success('사용자가 성공적으로 삭제되었습니다.');
       navigate('/users');
     } catch (error) {
       toast.error('사용자 삭제에 실패했습니다.');
-      console.error('User delete error:', error);
+      console.error('사용자 삭제 오류:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -147,14 +297,32 @@ const UserDetail: React.FC = () => {
    */
   const canManageUser = () => {
     if (!currentUser || !user) return false;
-    return currentUser.role === 'ADMIN' || currentUser.id === user.id;
+    return currentUser.role === 'admin' || currentUser.id === user.id;
   };
 
   /**
    * 관리자 권한 확인
    */
   const isAdmin = () => {
-    return currentUser?.role === 'ADMIN';
+    return currentUser?.role === 'admin';
+  };
+
+  /**
+   * 날짜 포맷팅 함수
+   */
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  /**
+   * 날짜시간 포맷팅 함수
+   */
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('ko-KR');
   };
 
   if (isLoading || !user) {
@@ -204,19 +372,15 @@ const UserDetail: React.FC = () => {
               </p>
 
               <div className="flex items-center space-x-3 mt-3">
-                <Badge
-                  variant={user.role === 'ADMIN' ? 'success' : 'primary'}
-                >
-                  {user.role}
+                <Badge variant={getRoleBadgeVariant(user.role)}>
+                  {getRoleDisplayName(user.role)}
                 </Badge>
-                <Badge
-                  variant={user.is_active ? 'success' : 'danger'}
-                >
-                  {user.is_active ? '활성' : '비활성'}
+                <Badge variant={getStatusBadgeVariant(user.status)}>
+                  {getStatusDisplayName(user.status)}
                 </Badge>
-                {user.last_login && (
+                {user.last_login_at && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    마지막 로그인: {new Date(user.last_login).toLocaleDateString('ko-KR')}
+                    마지막 로그인: {formatDate(user.last_login_at)}
                   </span>
                 )}
               </div>
@@ -285,6 +449,11 @@ const UserDetail: React.FC = () => {
                       <p className="font-medium text-gray-900 dark:text-white">
                         {user.email}
                       </p>
+                      {user.is_email_verified && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
+                          인증됨
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -315,7 +484,7 @@ const UserDetail: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">가입일</p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                        {formatDate(user.created_at)}
                       </p>
                     </div>
                   </div>
@@ -324,18 +493,27 @@ const UserDetail: React.FC = () => {
                     <ShieldCheckIcon className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">권한</p>
-                      <Badge variant={user.role === 'ADMIN' ? 'success' : 'primary'}>
-                        {user.role}
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {getRoleDisplayName(user.role)}
                       </Badge>
                     </div>
                   </div>
+
+                  {user.timezone && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">시간대</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {user.timezone}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {user.bio && (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">소개</p>
-                  <p className="text-gray-900 dark:text-white">{user.bio}</p>
+                  <p className="text-gray-900 dark:text-white leading-relaxed">{user.bio}</p>
                 </div>
               )}
 
@@ -346,7 +524,7 @@ const UserDetail: React.FC = () => {
                     href={user.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors"
                   >
                     {user.website}
                   </a>
@@ -377,8 +555,9 @@ const UserDetail: React.FC = () => {
                             {project.description}
                           </p>
                         </div>
-                        <Badge variant={project.status === ProjectStatus.COMPLETED ? 'success' : 'primary'}>
-                          {project.status}
+                        <Badge variant={project.status === 'completed' ? 'success' : 'primary'}>
+                          {project.status === 'completed' ? '완료' :
+                           project.status === 'active' ? '진행 중' : '보류'}
                         </Badge>
                       </div>
                     </div>
@@ -418,16 +597,19 @@ const UserDetail: React.FC = () => {
                           </p>
                           {task.due_date && (
                             <p className="text-xs text-gray-400 mt-2">
-                              마감일: {new Date(task.due_date).toLocaleDateString('ko-KR')}
+                              마감일: {formatDate(task.due_date)}
                             </p>
                           )}
                         </div>
                         <div className="flex flex-col items-end space-y-2">
-                          <Badge variant={task.status === 'COMPLETED' ? 'success' : 'primary'}>
-                            {task.status}
+                          <Badge variant={task.status === 'completed' ? 'success' : 'primary'}>
+                            {task.status === 'completed' ? '완료' :
+                             task.status === 'in_progress' ? '진행 중' : '할 일'}
                           </Badge>
-                          <Badge variant={task.priority === 'HIGH' ? 'danger' : 'secondary'}>
-                            {task.priority}
+                          <Badge variant={task.priority === 'high' ? 'danger' :
+                                         task.priority === 'medium' ? 'warning' : 'default'}>
+                            {task.priority === 'high' ? '높음' :
+                             task.priority === 'medium' ? '보통' : '낮음'}
                           </Badge>
                         </div>
                       </div>
@@ -476,7 +658,7 @@ const UserDetail: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">참여 프로젝트</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.project_count || 0}
+                  {user.project_count || 0}개
                 </span>
               </div>
 
@@ -486,7 +668,7 @@ const UserDetail: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">완료한 작업</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.completed_tasks_count || 0}
+                  {user.completed_tasks_count || 0}개
                 </span>
               </div>
 
@@ -496,17 +678,17 @@ const UserDetail: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">진행 중인 작업</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.active_tasks_count || 0}
+                  {user.active_tasks_count || 0}개
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <ChatBubbleLeftRightIcon className="w-5 h-5 text-purple-500" />
-                  <span className="text-gray-700 dark:text-gray-300">댓글 수</span>
+                  <span className="text-gray-700 dark:text-gray-300">기여도</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.comments_count || 0}
+                  {user.contribution_score || 0}%
                 </span>
               </div>
             </div>
@@ -521,31 +703,31 @@ const UserDetail: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">계정 상태</p>
-                <Badge variant={user.is_active ? 'success' : 'danger'}>
-                  {user.is_active ? '활성' : '비활성'}
+                <Badge variant={getStatusBadgeVariant(user.status)}>
+                  {getStatusDisplayName(user.status)}
                 </Badge>
               </div>
 
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">가입일</p>
                 <p className="text-gray-900 dark:text-white">
-                  {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                  {formatDate(user.created_at)}
                 </p>
               </div>
 
-              {user.last_login && (
+              {user.last_login_at && (
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">마지막 로그인</p>
                   <p className="text-gray-900 dark:text-white">
-                    {new Date(user.last_login).toLocaleString('ko-KR')}
+                    {formatDateTime(user.last_login_at)}
                   </p>
                 </div>
               )}
 
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">권한</p>
-                <Badge variant={user.role === 'ADMIN' ? 'success' : 'primary'}>
-                  {user.role}
+                <Badge variant={getRoleBadgeVariant(user.role)}>
+                  {getRoleDisplayName(user.role)}
                 </Badge>
               </div>
             </div>
@@ -564,14 +746,14 @@ const UserDetail: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="이름"
-              value={editForm.full_name}
+              value={editForm.full_name || ''}
               onChange={(e) => updateEditField('full_name', e.target.value)}
               required
             />
             <Input
               label="이메일"
               type="email"
-              value={editForm.email}
+              value={editForm.email || ''}
               onChange={(e) => updateEditField('email', e.target.value)}
               required
             />
@@ -589,8 +771,16 @@ const UserDetail: React.FC = () => {
 
           <Input
             label="웹사이트"
+            type="url"
             value={editForm.website || ''}
             onChange={(e) => updateEditField('website', e.target.value)}
+          />
+
+          <Input
+            label="시간대"
+            value={editForm.timezone || ''}
+            onChange={(e) => updateEditField('timezone', e.target.value)}
+            placeholder="예: Asia/Seoul"
           />
 
           <Textarea
@@ -605,22 +795,24 @@ const UserDetail: React.FC = () => {
               <Select
                 label="권한"
                 value={editForm.role}
-                onChange={(e) => updateEditField('role', e.target.value)}
+                onChange={(e) => updateEditField('role', e.target.value as UserRole)}
                 options={[
-                  { value: 'ADMIN', label: '관리자' },
-                  { value: 'PROJECT_MANAGER', label: '프로젝트 매니저' },
-                  { value: 'DEVELOPER', label: '개발자' },
-                  { value: 'VIEWER', label: '뷰어' },
+                  { value: 'admin', label: '관리자' },
+                  { value: 'manager', label: '매니저' },
+                  { value: 'developer', label: '개발자' },
+                  { value: 'viewer', label: '뷰어' },
                 ]}
               />
 
               <Select
                 label="계정 상태"
-                value={editForm.is_active ? 'true' : 'false'}
-                onChange={(e) => updateEditField('is_active', e.target.value === 'true')}
+                value={editForm.status}
+                onChange={(e) => updateEditField('status', e.target.value as UserStatus)}
                 options={[
-                  { value: 'true', label: '활성' },
-                  { value: 'false', label: '비활성' },
+                  { value: 'active', label: '활성' },
+                  { value: 'inactive', label: '비활성' },
+                  { value: 'pending', label: '대기 중' },
+                  { value: 'suspended', label: '정지됨' },
                 ]}
               />
             </div>
@@ -636,7 +828,7 @@ const UserDetail: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              loading={isLoading}
+              loading={isUpdating}
             >
               저장
             </Button>
@@ -682,7 +874,7 @@ const UserDetail: React.FC = () => {
             <Button
               variant="danger"
               onClick={handleDeleteUser}
-              loading={isLoading}
+              loading={isUpdating}
             >
               삭제
             </Button>

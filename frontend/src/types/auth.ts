@@ -1,28 +1,70 @@
 // ============================================================================
-// User Types
+// 기본 타입 정의
 // ============================================================================
+
+export type UserRole = 'admin' | 'manager' | 'developer' | 'viewer';
+export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
+export type ThemeType = 'light' | 'dark' | 'system';
+export type TimeFormat = '12h' | '24h';
+
+// ============================================================================
+// 사용자 관련 타입
+// ============================================================================
+
+export interface UserPreferences {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  task_reminders: boolean;
+  project_updates: boolean;
+  calendar_reminders: boolean;
+  weekly_digest: boolean;
+  theme: ThemeType;
+  language: string;
+  date_format: string;
+  time_format: TimeFormat;
+}
+
+export interface UserStats {
+  total_projects: number;
+  active_projects: number;
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+  completion_rate: number;
+  hours_logged: number;
+  last_activity: string;
+}
 
 export interface User {
   id: number;
   username: string;
   email: string;
   full_name: string;
-  role?: string;
+  role: UserRole;
+  status: UserStatus;
   avatar_url?: string;
   bio?: string;
   phone?: string;
   location?: string;
   website?: string;
   timezone?: string;
-  is_active?: boolean;
-  is_verified?: boolean;
+  is_active: boolean;
+  is_verified: boolean;
   last_login?: string;
   created_at: string;
   updated_at: string;
+
+  // 확장 필드 (선택적)
+  preferences?: UserPreferences;
+  stats?: UserStats;
+  project_count?: number;
+  completed_tasks_count?: number;
+  active_tasks_count?: number;
+  contribution_score?: number;
 }
 
 // ============================================================================
-// Request Types
+// 인증 요청/응답 타입
 // ============================================================================
 
 export interface LoginRequest {
@@ -39,31 +81,6 @@ export interface RegisterRequest {
   full_name: string;
   terms_accepted?: boolean;
 }
-
-export interface ChangePasswordRequest {
-  current_password: string;
-  new_password: string;
-}
-
-export interface ResetPasswordRequest {
-  token: string;
-  email: string;
-  new_password: string;
-}
-
-export interface UpdateProfileRequest {
-  full_name?: string;
-  bio?: string;
-  phone?: string;
-  location?: string;
-  website?: string;
-  timezone?: string;
-  avatar_url?: string;
-}
-
-// ============================================================================
-// Response Types
-// ============================================================================
 
 export interface LoginResponse {
   access_token: string;
@@ -91,10 +108,33 @@ export interface RefreshTokenResponse {
   user?: User;
 }
 
-export interface AuthResponse extends LoginResponse {}
+// ============================================================================
+// 프로필 및 비밀번호 관리
+// ============================================================================
+
+export interface UpdateProfileRequest {
+  full_name?: string;
+  bio?: string;
+  phone?: string;
+  location?: string;
+  website?: string;
+  timezone?: string;
+  avatar_url?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  email: string;
+  new_password: string;
+}
 
 // ============================================================================
-// OAuth Types
+// OAuth 관련 타입
 // ============================================================================
 
 export interface OAuthProvider {
@@ -111,7 +151,7 @@ export interface OAuthCallbackRequest {
 }
 
 // ============================================================================
-// Two-Factor Authentication Types
+// 2단계 인증 관련 타입
 // ============================================================================
 
 export interface TwoFactorSetupResponse {
@@ -126,33 +166,77 @@ export interface TwoFactorVerificationRequest {
 }
 
 // ============================================================================
-// State Types
+// 세션 관리
+// ============================================================================
+
+export interface UserSession {
+  id: string;
+  user_id: number;
+  device_info?: string;
+  ip_address?: string;
+  user_agent?: string;
+  location?: string;
+  is_current: boolean;
+  last_activity: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface SessionListResponse {
+  sessions: UserSession[];
+  total: number;
+}
+
+// ============================================================================
+// 계정 설정 및 보안
+// ============================================================================
+
+export interface AccountSettings {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  two_factor_enabled: boolean;
+  session_timeout: number;
+  timezone: string;
+  language: string;
+  theme: ThemeType;
+}
+
+export interface AccountSecurityInfo {
+  two_factor_enabled: boolean;
+  last_password_change: string;
+  active_sessions_count: number;
+  recent_login_attempts: Array<{
+    ip_address: string;
+    timestamp: string;
+    success: boolean;
+    user_agent?: string;
+  }>;
+}
+
+// ============================================================================
+// 상태 관리 타입
 // ============================================================================
 
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;  // 변경: loading → isLoading
+  isLoading: boolean;
   error: string | null;
 }
 
-// ============================================================================
-// Action Types
-// ============================================================================
-
 export interface AuthActions {
-  // 인증 관련
+  // 기본 인증
   login: (credentials: LoginRequest) => Promise<LoginResponse>;
   register: (credentials: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
-  refreshToken: (token?: string) => Promise<boolean>;
+  refreshToken: (token?: string) => Promise<void>;
 
   // 사용자 관리
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
 
   // 비밀번호 재설정
-  requestPasswordReset: (email: string) => Promise<void>;  // 변경: forgotPassword → requestPasswordReset
+  forgotPassword: (email: string) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
 
   // 이메일 인증
@@ -163,18 +247,18 @@ export interface AuthActions {
   getOAuthUrl: (provider: string) => string;
   handleOAuthCallback: (provider: string, code: string, state?: string) => Promise<LoginResponse>;
 
-  // 2FA
+  // 2단계 인증
   enable2FA: () => Promise<TwoFactorSetupResponse>;
   disable2FA: (code: string) => Promise<void>;
   verify2FA: (code: string) => Promise<LoginResponse>;
 
   // 상태 관리
-  checkAuthStatus: () => Promise<void>;  // 변경: checkAuth → checkAuthStatus
+  checkAuthStatus: () => Promise<void>;
   getCurrentUser: () => Promise<User>;
   clearError: () => void;
   reset: () => void;
 
-  // 설정
+  // 내부 상태 설정
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -184,18 +268,18 @@ export interface AuthActions {
 export type AuthContextType = AuthState & AuthActions;
 
 // ============================================================================
-// Token Types
+// 토큰 관련 타입
 // ============================================================================
 
 export interface TokenPayload {
-  sub: string | number;  // subject (user ID)
+  sub: string | number;  // 사용자 ID
   email: string;
   role?: string;
   name?: string;
-  iat: number;  // issued at
-  exp: number;  // expiration
-  aud?: string; // audience
-  iss?: string; // issuer
+  iat: number;  // 발급 시간
+  exp: number;  // 만료 시간
+  aud?: string; // 대상
+  iss?: string; // 발급자
 }
 
 export interface TokenPair {
@@ -204,7 +288,7 @@ export interface TokenPair {
 }
 
 // ============================================================================
-// Validation Types
+// 오류 처리 타입
 // ============================================================================
 
 export interface ValidationError {
@@ -221,53 +305,7 @@ export interface AuthError {
 }
 
 // ============================================================================
-// Session Types
-// ============================================================================
-
-export interface UserSession {
-  id: string;
-  user_id: number;
-  device_info?: string;
-  ip_address?: string;
-  user_agent?: string;
-  last_activity: string;
-  expires_at: string;
-  is_current?: boolean;
-}
-
-export interface SessionListResponse {
-  sessions: UserSession[];
-  total: number;
-}
-
-// ============================================================================
-// Account Types
-// ============================================================================
-
-export interface AccountSettings {
-  email_notifications: boolean;
-  push_notifications: boolean;
-  two_factor_enabled: boolean;
-  session_timeout: number;
-  timezone: string;
-  language: string;
-  theme: 'light' | 'dark' | 'auto';
-}
-
-export interface AccountSecurityInfo {
-  two_factor_enabled: boolean;
-  last_password_change: string;
-  active_sessions_count: number;
-  recent_login_attempts: Array<{
-    ip_address: string;
-    timestamp: string;
-    success: boolean;
-    user_agent?: string;
-  }>;
-}
-
-// ============================================================================
-// API Response Types
+// API 응답 타입
 // ============================================================================
 
 export interface ApiSuccessResponse<T = any> {
@@ -285,7 +323,7 @@ export interface ApiErrorResponse {
 export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 // ============================================================================
-// Form Types
+// 폼 데이터 타입
 // ============================================================================
 
 export interface LoginFormData {
@@ -319,34 +357,51 @@ export interface PasswordFormData {
 }
 
 // ============================================================================
-// Route Types
+// 활동 로그 타입
 // ============================================================================
 
-export interface AuthRoute {
-  path: string;
-  component: React.ComponentType;
-  requiresAuth: boolean;
-  requiredRole?: string;
-  redirect?: string;
+export interface UserActivityLog {
+  id: number;
+  user_id: number;
+  action: string;
+  resource_type: string;
+  resource_id?: number;
+  description: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+  metadata?: Record<string, any>;
 }
 
 // ============================================================================
-// Hook Return Types
+// 훅 반환 타입
 // ============================================================================
 
 export interface UseAuthReturn extends AuthState {
   actions: AuthActions;
   utils: {
     isLoggedIn: boolean;
-    hasRole: (role: string) => boolean;
-    hasAnyRole: (roles: string[]) => boolean;
+    hasRole: (role: UserRole) => boolean;
+    hasAnyRole: (roles: UserRole[]) => boolean;
     isTokenValid: () => boolean;
     getTokenExpiration: () => number | null;
   };
 }
 
 // ============================================================================
-// Legacy Type Aliases (하위 호환성)
+// 라우트 보호 타입
+// ============================================================================
+
+export interface AuthRoute {
+  path: string;
+  component: React.ComponentType;
+  requiresAuth: boolean;
+  requiredRole?: UserRole;
+  redirect?: string;
+}
+
+// ============================================================================
+// 레거시 타입 별칭 (하위 호환성)
 // ============================================================================
 
 /** @deprecated Use LoginRequest instead */

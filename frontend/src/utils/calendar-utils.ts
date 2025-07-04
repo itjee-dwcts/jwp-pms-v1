@@ -1,44 +1,115 @@
 import type { CalendarEvent, DateRange, RecurrenceRule } from '@/types/calendar';
-import { addDays, format, isWithinInterval, parseISO } from 'date-fns';
-import { ko } from 'date-fns/locale';
 
 /**
- * 캘린더 관련 유틸리티 함수들
+ * 캘린더 관련 유틸리티 함수들 (네이티브 JavaScript Date 사용)
  */
+
+// ============================================================================
+// 날짜 파싱 및 변환 함수들
+// ============================================================================
+
+/**
+ * 문자열을 Date 객체로 변환
+ */
+const parseDate = (date: string | Date): Date => {
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return date;
+};
+
+/**
+ * 날짜에 일수 더하기
+ */
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+/**
+ * 날짜 포맷팅 (한국어 형식)
+ */
+const formatDate = (date: Date, formatType: 'date' | 'time' | 'datetime' | 'custom' = 'date', customFormat?: string): string => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+
+  // 숫자를 2자리로 패딩
+  const pad = (num: number): string => num.toString().padStart(2, '0');
+
+  switch (formatType) {
+    case 'date':
+      return `${year}-${pad(month)}-${pad(day)}`;
+    case 'time':
+      return `${pad(hours)}:${pad(minutes)}`;
+    case 'datetime':
+      return `${year}-${pad(month)}-${pad(day)} ${pad(hours)}:${pad(minutes)}`;
+    case 'custom':
+      if (customFormat) {
+        return customFormat
+          .replace('yyyy', year.toString())
+          .replace('MM', pad(month))
+          .replace('M', month.toString())
+          .replace('dd', pad(day))
+          .replace('d', day.toString())
+          .replace('HH', pad(hours))
+          .replace('H', hours.toString())
+          .replace('mm', pad(minutes))
+          .replace('m', minutes.toString())
+          .replace('ss', pad(seconds))
+          .replace('s', seconds.toString());
+      }
+      return formatDate(date, 'datetime');
+    default:
+      return formatDate(date, 'date');
+  }
+};
 
 // ============================================================================
 // 날짜 포맷팅 함수들
 // ============================================================================
 
-export const formatEventDate = (date: string | Date, formatStr: string = 'PPP'): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return format(dateObj, formatStr, { locale: ko });
+export const formatEventDate = (date: string | Date, formatStr: string = 'yyyy-MM-dd'): string => {
+  const dateObj = parseDate(date);
+  return formatDate(dateObj, 'custom', formatStr);
 };
 
 export const formatEventTime = (date: string | Date, use24Hour: boolean = true): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  const formatStr = use24Hour ? 'HH:mm' : 'h:mm a';
-  return format(dateObj, formatStr, { locale: ko });
+  const dateObj = parseDate(date);
+  if (use24Hour) {
+    return formatDate(dateObj, 'time');
+  } else {
+    const hours = dateObj.getHours();
+    const minutes = dateObj.getMinutes();
+    const ampm = hours >= 12 ? '오후' : '오전';
+    const displayHours = hours % 12 || 12;
+    return `${ampm} ${displayHours}:${minutes.toString().padStart(2, '0')}`;
+  }
 };
 
 export const formatEventDateTime = (date: string | Date, use24Hour: boolean = true): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  const formatStr = use24Hour ? 'PPP HH:mm' : 'PPP h:mm a';
-  return format(dateObj, formatStr, { locale: ko });
+  const dateObj = parseDate(date);
+  const dateStr = formatDate(dateObj, 'date');
+  const timeStr = formatEventTime(dateObj, use24Hour);
+  return `${dateStr} ${timeStr}`;
 };
 
 export const formatDateRange = (start: string | Date, end: string | Date): string => {
-  const startDate = typeof start === 'string' ? parseISO(start) : start;
-  const endDate = typeof end === 'string' ? parseISO(end) : end;
+  const startDate = parseDate(start);
+  const endDate = parseDate(end);
 
-  const startFormatted = format(startDate, 'M월 d일 HH:mm', { locale: ko });
-  const endFormatted = format(endDate, 'HH:mm', { locale: ko });
+  const startFormatted = formatDate(startDate, 'custom', 'M월 d일 HH:mm');
+  const endFormatted = formatDate(endDate, 'custom', 'HH:mm');
 
   // 같은 날인지 확인
-  if (format(startDate, 'yyyy-MM-dd') === format(endDate, 'yyyy-MM-dd')) {
+  if (formatDate(startDate, 'date') === formatDate(endDate, 'date')) {
     return `${startFormatted} - ${endFormatted}`;
   } else {
-    const endDateFormatted = format(endDate, 'M월 d일 HH:mm', { locale: ko });
+    const endDateFormatted = formatDate(endDate, 'custom', 'M월 d일 HH:mm');
     return `${startFormatted} - ${endDateFormatted}`;
   }
 };
@@ -49,13 +120,13 @@ export const formatDateRange = (start: string | Date, end: string | Date): strin
 
 export const isEventToday = (event: CalendarEvent): boolean => {
   const today = new Date();
-  const eventStart = parseISO(event.start_date);
-  return format(eventStart, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+  const eventStart = parseDate(event.start_date);
+  return formatDate(eventStart, 'date') === formatDate(today, 'date');
 };
 
 export const isEventUpcoming = (event: CalendarEvent, daysAhead: number = 7): boolean => {
   const now = new Date();
-  const eventStart = parseISO(event.start_date);
+  const eventStart = parseDate(event.start_date);
   const endRange = addDays(now, daysAhead);
 
   return eventStart >= now && eventStart <= endRange;
@@ -63,13 +134,13 @@ export const isEventUpcoming = (event: CalendarEvent, daysAhead: number = 7): bo
 
 export const isEventOverdue = (event: CalendarEvent): boolean => {
   const now = new Date();
-  const eventEnd = parseISO(event.end_date);
+  const eventEnd = parseDate(event.end_date);
   return eventEnd < now;
 };
 
 export const getEventDuration = (event: CalendarEvent): number => {
-  const start = parseISO(event.start_date);
-  const end = parseISO(event.end_date);
+  const start = parseDate(event.start_date);
+  const end = parseDate(event.end_date);
   return Math.round((end.getTime() - start.getTime()) / (1000 * 60)); // minutes
 };
 
@@ -78,9 +149,9 @@ export const isEventAllDay = (event: CalendarEvent): boolean => {
 };
 
 export const isEventMultiDay = (event: CalendarEvent): boolean => {
-  const start = parseISO(event.start_date);
-  const end = parseISO(event.end_date);
-  return format(start, 'yyyy-MM-dd') !== format(end, 'yyyy-MM-dd');
+  const start = parseDate(event.start_date);
+  const end = parseDate(event.end_date);
+  return formatDate(start, 'date') !== formatDate(end, 'date');
 };
 
 // ============================================================================
@@ -88,10 +159,10 @@ export const isEventMultiDay = (event: CalendarEvent): boolean => {
 // ============================================================================
 
 export const doEventsOverlap = (event1: CalendarEvent, event2: CalendarEvent): boolean => {
-  const start1 = parseISO(event1.start_date);
-  const end1 = parseISO(event1.end_date);
-  const start2 = parseISO(event2.start_date);
-  const end2 = parseISO(event2.end_date);
+  const start1 = parseDate(event1.start_date);
+  const end1 = parseDate(event1.end_date);
+  const start2 = parseDate(event2.start_date);
+  const end2 = parseDate(event2.end_date);
 
   return (
     (start1 < end2 && end1 > start2) ||
@@ -131,24 +202,25 @@ export const filterEventsByDateRange = (
   dateRange: DateRange
 ): CalendarEvent[] => {
   return events.filter(event => {
-    const eventStart = parseISO(event.start_date);
-    const eventEnd = parseISO(event.end_date);
+    const eventStart = parseDate(event.start_date);
+    const eventEnd = parseDate(event.end_date);
 
-    return isWithinInterval(eventStart, dateRange) ||
-           isWithinInterval(eventEnd, dateRange) ||
+    // 날짜 범위 내에 있는지 확인
+    return (eventStart >= dateRange.start && eventStart <= dateRange.end) ||
+           (eventEnd >= dateRange.start && eventEnd <= dateRange.end) ||
            (eventStart <= dateRange.start && eventEnd >= dateRange.end);
   });
 };
 
 export const sortEventsByDateTime = (events: CalendarEvent[]): CalendarEvent[] => {
   return [...events].sort((a, b) => {
-    const startA = parseISO(a.start_date);
-    const startB = parseISO(b.start_date);
+    const startA = parseDate(a.start_date);
+    const startB = parseDate(b.start_date);
 
     if (startA.getTime() === startB.getTime()) {
       // 시작 시간이 같으면 종료 시간으로 정렬
-      const endA = parseISO(a.end_date);
-      const endB = parseISO(b.end_date);
+      const endA = parseDate(a.end_date);
+      const endB = parseDate(b.end_date);
       return endA.getTime() - endB.getTime();
     }
 
@@ -160,18 +232,27 @@ export const groupEventsByDate = (events: CalendarEvent[]): Record<string, Calen
   const grouped: Record<string, CalendarEvent[]> = {};
 
   events.forEach(event => {
-    const dateKey = format(parseISO(event.start_date), 'yyyy-MM-dd');
-    if (!grouped[dateKey]) {
-      grouped[dateKey] = [];
+    const dateKey = formatDate(parseDate(event.start_date), 'date');
+
+    if (dateKey && dateKey !== undefined) {
+      const _grouped = grouped[dateKey];
+
+      if (!_grouped || _grouped === undefined) {
+        grouped[dateKey] = [];
+      }
+
+      if (grouped[dateKey])
+        grouped[dateKey].push(event);
     }
-    grouped[dateKey].push(event);
   });
 
   // 각 날짜의 이벤트들을 시간순으로 정렬
   Object.keys(grouped).forEach(date => {
-    if (Array.isArray(grouped[date])) {
-      grouped[date] = sortEventsByDateTime(grouped[date]);
+    const eventsForDate = grouped[date];
+    if (eventsForDate) {
+      grouped[date] = sortEventsByDateTime(eventsForDate);
     }
+    // If eventsForDate is undefined, no sorting is needed for that date.
   });
 
   return grouped;
@@ -326,8 +407,8 @@ export const generateRecurrenceText = (rule: RecurrenceRule): string => {
   if (count) {
     text += ` (${count}회)`;
   } else if (until) {
-    const untilDate = parseISO(until);
-    text += ` (${format(untilDate, 'yyyy년 M월 d일')}까지)`;
+    const untilDate = parseDate(until);
+    text += ` (${formatDate(untilDate, 'custom', 'yyyy년 M월 d일')}까지)`;
   }
 
   return text;
@@ -376,20 +457,18 @@ export const getEventStatusIcon = (status: CalendarEvent['status']): string => {
 // ============================================================================
 
 export const convertToTimezone = (date: string | Date, timezone: string): Date => {
-  // 실제 구현에서는 date-fns-tz 등의 라이브러리 사용 권장
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-
-  // 간단한 UTC 변환 (실제로는 더 복잡한 로직 필요)
-  return dateObj;
+  const dateObj = parseDate(date);
+  // 간단한 시간대 변환 (실제 프로덕션에서는 더 정교한 로직 필요)
+  return new Date(dateObj.toLocaleString("en-US", { timeZone: timezone }));
 };
 
 export const formatTimeInTimezone = (
   date: string | Date,
   timezone: string,
-  formatStr: string = 'PPP HH:mm'
+  formatStr: string = 'yyyy-MM-dd HH:mm'
 ): string => {
   const convertedDate = convertToTimezone(date, timezone);
-  return format(convertedDate, formatStr, { locale: ko });
+  return formatDate(convertedDate, 'custom', formatStr);
 };
 
 // ============================================================================
@@ -406,21 +485,26 @@ export const exportToICS = (events: CalendarEvent[]): string => {
   ];
 
   events.forEach(event => {
-    const startDate = parseISO(event.start_date);
-    const endDate = parseISO(event.end_date);
+    const startDate = parseDate(event.start_date);
+    const endDate = parseDate(event.end_date);
+
+    // ICS 포맷으로 변환 (YYYYMMDDTHHMMSSZ)
+    const formatForICS = (date: Date): string => {
+      return formatDate(date, 'custom', 'yyyyMMddTHHmmssZ');
+    };
 
     icsContent = icsContent.concat([
       'BEGIN:VEVENT',
       `UID:${event.id}@pms.local`,
-      `DTSTART:${format(startDate, "yyyyMMdd'T'HHmmss'Z'")}`,
-      `DTEND:${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`,
+      `DTSTART:${formatForICS(startDate)}`,
+      `DTEND:${formatForICS(endDate)}`,
       `SUMMARY:${event.title}`,
       `DESCRIPTION:${event.description || ''}`,
       `LOCATION:${event.location || ''}`,
       `STATUS:${event.status.toUpperCase()}`,
       `PRIORITY:${getPriorityNumber(event.priority)}`,
-      `CREATED:${format(parseISO(event.created_at), "yyyyMMdd'T'HHmmss'Z'")}`,
-      `LAST-MODIFIED:${format(parseISO(event.updated_at), "yyyyMMdd'T'HHmmss'Z'")}`,
+      `CREATED:${formatForICS(parseDate(event.created_at))}`,
+      `LAST-MODIFIED:${formatForICS(parseDate(event.updated_at))}`,
       'END:VEVENT'
     ]);
   });
@@ -470,10 +554,10 @@ export const getUpcomingEvents = (
 
   return events
     .filter(event => {
-      const eventStart = parseISO(event.start_date);
+      const eventStart = parseDate(event.start_date);
       return eventStart >= now && eventStart <= endDate;
     })
-    .sort((a, b) => parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime());
+    .sort((a, b) => parseDate(a.start_date).getTime() - parseDate(b.start_date).getTime());
 };
 
 export const getOverdueEvents = (events: CalendarEvent[]): CalendarEvent[] => {
@@ -481,8 +565,8 @@ export const getOverdueEvents = (events: CalendarEvent[]): CalendarEvent[] => {
 
   return events
     .filter(event => {
-      const eventEnd = parseISO(event.end_date);
+      const eventEnd = parseDate(event.end_date);
       return eventEnd < now && event.status !== 'cancelled';
     })
-    .sort((a, b) => parseISO(b.end_date).getTime() - parseISO(a.end_date).getTime());
+    .sort((a, b) => parseDate(b.end_date).getTime() - parseDate(a.end_date).getTime());
 };

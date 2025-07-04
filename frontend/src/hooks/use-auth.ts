@@ -1,21 +1,21 @@
-import { authService } from '@/services/auth-service';
-import type {
-    AuthActions,
-    AuthState,
-    ChangePasswordRequest,
-    LoginRequest,
-    LoginResponse,
-    RegisterRequest,
-    RegisterResponse,
-    ResetPasswordRequest,
-    UpdateProfileRequest,
-    User
-} from '@/types/auth';
-import { tokenStorage } from '@/utils/token-storage';
 import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authService } from '../services/auth-service';
+import type {
+  AuthActions,
+  AuthState,
+  ChangePasswordRequest,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  ResetPasswordRequest,
+  UpdateProfileRequest,
+  User
+} from '../types/auth';
+import { tokenStorage } from '../utils/token-storage';
 
 // Zustand store 타입 (AuthState + AuthActions 결합)
 type AuthStore = AuthState & AuthActions;
@@ -135,11 +135,11 @@ const useAuthStore = create<AuthStore>()(
       },
 
       // 토큰 갱신
-      refreshToken: async (token?: string): Promise<boolean> => {
+      refreshToken: async (): Promise<void> => {
         try {
-          const refreshToken = token || tokenStorage.getRefreshToken();
+          const refreshToken = tokenStorage.getRefreshToken();
           if (!refreshToken) {
-            return false;
+            throw new Error('리프레시 토큰이 없습니다.');
           }
 
           const response = await authService.refreshToken(refreshToken);
@@ -147,16 +147,11 @@ const useAuthStore = create<AuthStore>()(
           // 새 토큰 저장
           tokenStorage.setTokens(response.access_token, response.refresh_token);
 
-          // 사용자 정보 업데이트 (필요한 경우)
-          if (response.user) {
-            set({ user: response.user });
-          }
-
-          return true;
+          set({
+            error: null
+          });
         } catch (error) {
-          console.error('Token refresh failed:', error);
-
-          // 토큰 갱신 실패 시 로그아웃 처리
+          // 토큰 갱신 실패 시 로그아웃
           tokenStorage.clearTokens();
           set({
             user: null,
@@ -165,7 +160,9 @@ const useAuthStore = create<AuthStore>()(
             error: null
           });
 
-          return false;
+          const errorMessage = error instanceof Error ? error.message : '토큰 갱신에 실패했습니다.';
+          toast.error(errorMessage);
+          throw error;
         }
       },
 
@@ -242,6 +239,30 @@ const useAuthStore = create<AuthStore>()(
           toast.success('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '비밀번호 재설정 요청에 실패했습니다.';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+      // 비밀번호 찾기 (forgotPassword)
+      forgotPassword: async (email: string): Promise<void> => {
+        try {
+          set({ isLoading: true, error: null });
+
+          await authService.forgotPassword(email);
+
+          set({
+            isLoading: false,
+            error: null
+          });
+
+          toast.success('비밀번호 찾기 이메일이 전송되었습니다.');
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : '비밀번호 찾기에 실패했습니다.';
           set({
             error: errorMessage,
             isLoading: false
@@ -469,28 +490,17 @@ const useAuthStore = create<AuthStore>()(
           }
 
           // 토큰 유효성 검사 및 사용자 정보 가져오기
-          try {
-            const user = await authService.getCurrentUser();
-            set({
-              user,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null
-            });
-          } catch (error) {
-            // 토큰이 만료된 경우 갱신 시도
-            const refreshSuccess = await get().refreshToken();
-            if (!refreshSuccess) {
-              set({
-                user: null,
-                isAuthenticated: false,
-                isLoading: false,
-                error: null
-              });
-            }
-          }
+          const user = await authService.getCurrentUser();
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+
         } catch (error) {
           console.error('Auth status check failed:', error);
+          tokenStorage.clearTokens();
           set({
             isAuthenticated: false,
             isLoading: false,

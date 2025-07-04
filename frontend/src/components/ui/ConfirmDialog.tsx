@@ -1,9 +1,9 @@
 import {
-    CheckCircleIcon,
-    ExclamationTriangleIcon,
-    InformationCircleIcon,
-    QuestionMarkCircleIcon,
-    XMarkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useRef } from 'react';
 import Button from './Button';

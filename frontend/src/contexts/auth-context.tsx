@@ -14,7 +14,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check authentication status on mount
   useEffect(() => {
-    auth.checkAuth();
+    auth.checkAuthStatus();
   }, []);
 
   // Set up automatic token refresh
@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [auth.isAuthenticated, auth.refreshToken, auth.logout]);
 
   // Show loading state while checking authentication
-  if (auth.loading) {
+  if (auth.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>

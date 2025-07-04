@@ -1,4 +1,4 @@
-import type { User } from '@/types/user';
+import type { User } from '@/types/auth';
 import { useCallback, useState } from 'react';
 
 interface UserState {

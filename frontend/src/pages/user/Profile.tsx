@@ -23,34 +23,42 @@ import Input from '../../components/ui/Input';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Modal from '../../components/ui/Modal';
 import Textarea from '../../components/ui/Textarea';
-import { useAuth } from '../../hooks/useAuth';
-import { useUser } from '../../hooks/useUser';
-import { ChangePasswordRequest, UpdateProfileRequest } from '../../types/user';
+import { useAuth } from '../../hooks/use-auth';
+import { authService } from '../../services/auth-service';
+import type {
+  ChangePasswordRequest,
+  UpdateProfileRequest,
+  UserRole
+} from '../../types/auth';
 
 /**
  * 사용자 프로필 페이지 컴포넌트
- * 현재 로그인한 사용자의 프로필 정보를 보여주고 편집할 수 있는 페이지
+ * - 현재 로그인한 사용자의 프로필 정보 표시
+ * - 프로필 정보 편집 기능
+ * - 프로필 이미지 업로드 기능
+ * - 비밀번호 변경 기능
+ * - 활동 통계 표시
  */
 const Profile: React.FC = () => {
-  const { user } = useAuth();
-  const { updateProfile, changePassword, uploadAvatar, isLoading } = useUser();
+  const { user, updateProfile, changePassword, isLoading } = useAuth();
 
   // 편집 모드 상태 관리
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // 프로필 편집 폼 상태
   const [profileForm, setProfileForm] = useState<UpdateProfileRequest>({
     full_name: user?.full_name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
     bio: user?.bio || '',
+    phone: user?.phone || '',
     location: user?.location || '',
     website: user?.website || '',
+    timezone: user?.timezone || '',
   });
 
-  // 비밀번호 변경 폼 상태
-  const [passwordForm, setPasswordForm] = useState<ChangePasswordRequest>({
+  // 비밀번호 변경 폼 상태 (confirm_password 제거)
+  const [passwordForm, setPasswordForm] = useState<ChangePasswordRequest & { confirm_password: string }>({
     current_password: '',
     new_password: '',
     confirm_password: '',
@@ -58,6 +66,37 @@ const Profile: React.FC = () => {
 
   // 파일 업로드 참조
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * 사용자 역할 한글 변환 함수
+   */
+  const getRoleDisplayName = (role: UserRole): string => {
+    const roleNames: Record<UserRole, string> = {
+      admin: '관리자',
+      manager: '매니저',
+      developer: '개발자',
+      viewer: '뷰어',
+    };
+    return roleNames[role] || '사용자';
+  };
+
+  /**
+   * 역할별 배지 색상 결정 함수
+   */
+  const getRoleBadgeVariant = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return 'danger';
+      case 'manager':
+        return 'warning';
+      case 'developer':
+        return 'primary';
+      case 'viewer':
+        return 'default';
+      default:
+        return 'primary';
+    }
+  };
 
   /**
    * 프로필 업데이트 처리
@@ -71,7 +110,7 @@ const Profile: React.FC = () => {
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
     } catch (error) {
       toast.error('프로필 업데이트에 실패했습니다.');
-      console.error('Profile update error:', error);
+      console.error('프로필 업데이트 오류:', error);
     }
   };
 
@@ -87,8 +126,18 @@ const Profile: React.FC = () => {
       return;
     }
 
+    // 비밀번호 강도 검증
+    if (passwordForm.new_password.length < 8) {
+      toast.error('비밀번호는 최소 8자 이상이어야 합니다.');
+      return;
+    }
+
     try {
-      await changePassword(passwordForm);
+      await changePassword({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+      });
+
       setIsChangePasswordModalOpen(false);
       setPasswordForm({
         current_password: '',
@@ -98,7 +147,7 @@ const Profile: React.FC = () => {
       toast.success('비밀번호가 성공적으로 변경되었습니다.');
     } catch (error) {
       toast.error('비밀번호 변경에 실패했습니다.');
-      console.error('Password change error:', error);
+      console.error('비밀번호 변경 오류:', error);
     }
   };
 
@@ -122,11 +171,18 @@ const Profile: React.FC = () => {
     }
 
     try {
-      await uploadAvatar(file);
+      setIsUploadingAvatar(true);
+      await authService.uploadAvatar(file);
+
+      // 사용자 정보 새로고침
+      await authService.getCurrentUser();
+
       toast.success('프로필 이미지가 성공적으로 업데이트되었습니다.');
     } catch (error) {
       toast.error('프로필 이미지 업로드에 실패했습니다.');
-      console.error('Avatar upload error:', error);
+      console.error('아바타 업로드 오류:', error);
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -140,10 +196,38 @@ const Profile: React.FC = () => {
   /**
    * 비밀번호 폼 필드 업데이트
    */
-  const updatePasswordField = (field: keyof ChangePasswordRequest, value: string) => {
+  const updatePasswordField = (field: keyof (ChangePasswordRequest & { confirm_password: string }), value: string) => {
     setPasswordForm(prev => ({ ...prev, [field]: value }));
   };
 
+  /**
+   * 편집 취소 처리
+   */
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    // 원래 사용자 정보로 복원
+    setProfileForm({
+      full_name: user?.full_name || '',
+      bio: user?.bio || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      website: user?.website || '',
+      timezone: user?.timezone || '',
+    });
+  };
+
+  /**
+   * 날짜 포맷팅 함수
+   */
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // 사용자 정보가 없으면 로딩 스피너 표시
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -190,37 +274,37 @@ const Profile: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="이름"
-                    value={profileForm.full_name}
+                    value={profileForm.full_name || ''}
                     onChange={(e) => updateProfileField('full_name', e.target.value)}
-                    icon={<UserIcon className="w-5 h-5" />}
                     required
-                  />
-                  <Input
-                    label="이메일"
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(e) => updateProfileField('email', e.target.value)}
-                    icon={<EnvelopeIcon className="w-5 h-5" />}
-                    required
+                    placeholder="이름을 입력하세요"
                   />
                   <Input
                     label="전화번호"
                     value={profileForm.phone || ''}
                     onChange={(e) => updateProfileField('phone', e.target.value)}
-                    icon={<PhoneIcon className="w-5 h-5" />}
+                    placeholder="전화번호를 입력하세요"
                   />
                   <Input
                     label="위치"
                     value={profileForm.location || ''}
                     onChange={(e) => updateProfileField('location', e.target.value)}
-                    icon={<MapPinIcon className="w-5 h-5" />}
+                    placeholder="거주 지역을 입력하세요"
+                  />
+                  <Input
+                    label="시간대"
+                    value={profileForm.timezone || ''}
+                    onChange={(e) => updateProfileField('timezone', e.target.value)}
+                    placeholder="시간대를 입력하세요 (예: Asia/Seoul)"
                   />
                 </div>
 
                 <Input
                   label="웹사이트"
+                  type="url"
                   value={profileForm.website || ''}
                   onChange={(e) => updateProfileField('website', e.target.value)}
+                  placeholder="웹사이트 URL을 입력하세요"
                 />
 
                 <Textarea
@@ -235,17 +319,7 @@ const Profile: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      setIsEditingProfile(false);
-                      setProfileForm({
-                        full_name: user.full_name || '',
-                        email: user.email || '',
-                        phone: user.phone || '',
-                        bio: user.bio || '',
-                        location: user.location || '',
-                        website: user.website || '',
-                      });
-                    }}
+                    onClick={handleCancelEdit}
                   >
                     취소
                   </Button>
@@ -279,6 +353,11 @@ const Profile: React.FC = () => {
                         <p className="font-medium text-gray-900 dark:text-white">
                           {user.email}
                         </p>
+                        {user.is_email_verified && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
+                            인증됨
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -309,22 +388,47 @@ const Profile: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">가입일</p>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                          {formatDate(user.created_at)}
                         </p>
                       </div>
                     </div>
 
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">역할</p>
-                      <Badge variant="primary">{user.role}</Badge>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {getRoleDisplayName(user.role)}
+                      </Badge>
                     </div>
+
+                    {user.timezone && (
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">시간대</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {user.timezone}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {user.bio && (
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">소개</p>
-                    <p className="text-gray-900 dark:text-white">{user.bio}</p>
+                    <p className="text-gray-900 dark:text-white leading-relaxed">{user.bio}</p>
+                  </div>
+                )}
+
+                {user.website && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">웹사이트</p>
+                    <a
+                      href={user.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                    >
+                      {user.website}
+                    </a>
                   </div>
                 )}
               </div>
@@ -338,15 +442,21 @@ const Profile: React.FC = () => {
           <Card className="p-6 text-center">
             <div className="relative inline-block mb-4">
               <Avatar
-                src={user.avatar_url}
+                src={user.avatar_url ?? null}
                 alt={user.full_name || user.email}
                 size="xl"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 shadow-lg transition-colors"
+                disabled={isUploadingAvatar}
+                className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-full p-2 shadow-lg transition-colors"
+                title="프로필 이미지 변경"
               >
-                <CameraIcon className="w-4 h-4" />
+                {isUploadingAvatar ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CameraIcon className="w-4 h-4" />
+                )}
               </button>
               <input
                 ref={fileInputRef}
@@ -354,6 +464,7 @@ const Profile: React.FC = () => {
                 accept="image/*"
                 onChange={handleAvatarUpload}
                 className="hidden"
+                title="프로필 이미지 파일"
               />
             </div>
 
@@ -388,7 +499,7 @@ const Profile: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">참여 프로젝트</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.project_count || 0}
+                  {user.project_count || 0}개
                 </span>
               </div>
 
@@ -398,7 +509,7 @@ const Profile: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">완료한 작업</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.completed_tasks_count || 0}
+                  {user.completed_tasks_count || 0}개
                 </span>
               </div>
 
@@ -408,7 +519,7 @@ const Profile: React.FC = () => {
                   <span className="text-gray-700 dark:text-gray-300">진행 중인 작업</span>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {user.active_tasks_count || 0}
+                  {user.active_tasks_count || 0}개
                 </span>
               </div>
 
@@ -419,6 +530,41 @@ const Profile: React.FC = () => {
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {user.contribution_score || 0}%
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* 계정 보안 카드 */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              계정 보안
+            </h3>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">이메일 인증</span>
+                <span className={`font-medium ${user.is_email_verified ? 'text-green-600' : 'text-red-600'}`}>
+                  {user.is_email_verified ? '완료' : '미완료'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">계정 상태</span>
+                <span className={`font-medium ${user.is_active ? 'text-green-600' : 'text-red-600'}`}>
+                  {user.is_active ? '활성' : '비활성'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">2단계 인증</span>
+                <span className="font-medium text-red-600">비활성화</span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">마지막 로그인</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {user.last_login_at ? formatDate(user.last_login_at) : '정보 없음'}
                 </span>
               </div>
             </div>
@@ -439,6 +585,7 @@ const Profile: React.FC = () => {
             value={passwordForm.current_password}
             onChange={(e) => updatePasswordField('current_password', e.target.value)}
             required
+            placeholder="현재 비밀번호를 입력하세요"
           />
 
           <Input
@@ -448,6 +595,7 @@ const Profile: React.FC = () => {
             onChange={(e) => updatePasswordField('new_password', e.target.value)}
             required
             minLength={8}
+            placeholder="새 비밀번호를 입력하세요 (최소 8자)"
           />
 
           <Input
@@ -457,13 +605,29 @@ const Profile: React.FC = () => {
             onChange={(e) => updatePasswordField('confirm_password', e.target.value)}
             required
             minLength={8}
+            placeholder="새 비밀번호를 다시 입력하세요"
           />
+
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            <p>비밀번호 요구사항:</p>
+            <ul className="list-disc list-inside mt-1 space-y-1">
+              <li>최소 8자 이상</li>
+              <li>대문자, 소문자, 숫자, 특수문자 포함 권장</li>
+            </ul>
+          </div>
 
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsChangePasswordModalOpen(false)}
+              onClick={() => {
+                setIsChangePasswordModalOpen(false);
+                setPasswordForm({
+                  current_password: '',
+                  new_password: '',
+                  confirm_password: '',
+                });
+              }}
             >
               취소
             </Button>

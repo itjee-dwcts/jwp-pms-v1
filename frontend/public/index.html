@@ -1,63 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#3b82f6" />
-    <script>
-      // Dynamically set theme-color for dark/light mode
-      (function() {
-        var light = "#3b82f6";
-        var dark = "#1f2937";
-        var themeColor = window.matchMedia('(prefers-color-scheme: dark)').matches ? dark : light;
-        var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', themeColor);
-      })();
-    </script>
-    <meta name="description" content="Project Management System - Efficient project and task management solution" />
 
-    <!-- Open Graph / Facebook -->
+    <!--
+      theme-color 메타 태그는 주로 모바일 브라우저(Chrome, Safari)에서
+      주소창/상태바 색상을 변경하는 데 사용됩니다.
+      Firefox, Opera에서는 지원하지 않으므로 제거하거나 조건부로 적용할 수 있습니다.
+    -->
+
+    <meta name="description" content="프로젝트 관리 시스템 - 효율적인 프로젝트 및 작업 관리 솔루션" />
+
+    <!-- Open Graph / Facebook 메타 태그 -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="%PUBLIC_URL%" />
-    <meta property="og:title" content="PMS - Project Management System" />
-    <meta property="og:description" content="Efficient project and task management solution" />
+    <meta property="og:title" content="PMS - 프로젝트 관리 시스템" />
+    <meta property="og:description" content="효율적인 프로젝트 및 작업 관리 솔루션" />
     <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
 
-    <!-- Twitter -->
+    <!-- Twitter 카드 메타 태그 -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="%PUBLIC_URL%" />
-    <meta property="twitter:title" content="PMS - Project Management System" />
-    <meta property="twitter:description" content="Efficient project and task management solution" />
+    <meta property="twitter:title" content="PMS - 프로젝트 관리 시스템" />
+    <meta property="twitter:description" content="효율적인 프로젝트 및 작업 관리 솔루션" />
     <meta property="twitter:image" content="%PUBLIC_URL%/og-image.png" />
 
-    <!-- Apple Touch Icon -->
+    <!-- Apple 터치 아이콘 -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
 
-    <!-- Manifest -->
+    <!-- 매니페스트 파일 -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Preconnect to external domains -->
+    <!-- 외부 도메인에 미리 연결 (성능 최적화) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Google Fonts -->
+    <!-- Google 폰트 -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- Security Headers -->
+    <!-- 보안 헤더 -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <!-- CSP 헤더 추가 (보안 강화) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';" />
 
-    <title>PMS - Project Management System</title>
+    <title>PMS - 프로젝트 관리 시스템</title>
 
-    <!-- Favicon variations -->
+    <!-- 다양한 크기의 파비콘 -->
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
 
     <style>
-      /* Loading screen styles */
+      /* 로딩 화면 스타일 */
       #loading-screen {
         position: fixed;
         top: 0;
@@ -71,8 +69,10 @@
         align-items: center;
         z-index: 9999;
         color: white;
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
       }
 
+      /* 로딩 스피너 애니메이션 */
       .loading-spinner {
         width: 50px;
         height: 50px;
@@ -83,57 +83,146 @@
         margin-bottom: 20px;
       }
 
+      /* 스피너 회전 애니메이션 */
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
 
+      /* 로딩 텍스트 스타일 */
       .loading-text {
         font-family: 'Inter', sans-serif;
         font-size: 18px;
         font-weight: 500;
         margin-bottom: 10px;
+        text-align: center;
       }
 
+      /* 로딩 부제목 스타일 */
       .loading-subtitle {
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         opacity: 0.8;
+        text-align: center;
       }
 
-      /* Hide loading screen when app is ready */
+      /* 앱이 로드되면 로딩 화면 숨기기 */
       .app-loaded #loading-screen {
-        display: none;
-      }
-
-      /* Prevent flash of unstyled content */
-      #root {
+        opacity: 0;
         visibility: hidden;
       }
 
+      /* 스타일링되지 않은 콘텐츠의 깜빡임 방지 */
+      #root {
+        visibility: hidden;
+        min-height: 100vh;
+      }
+
+      /* 앱이 로드되면 루트 요소 표시 */
       .app-loaded #root {
         visibility: visible;
+      }
+
+      /* 기본 body 스타일 */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* 다크 모드 지원 */
+      @media (prefers-color-scheme: dark) {
+        #loading-screen {
+          background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+      }
+
+      /* 접근성 개선: 애니메이션 줄이기 옵션 */
+      @media (prefers-reduced-motion: reduce) {
+        .loading-spinner {
+          animation: none;
+        }
+
+        #loading-screen {
+          transition: none;
+        }
       }
     </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <!-- JavaScript가 비활성화된 경우 표시될 메시지 -->
+    <noscript>
+      <div style="text-align: center; padding: 50px; font-family: 'Inter', sans-serif;">
+        <h2>JavaScript가 필요합니다</h2>
+        <p>이 애플리케이션을 실행하려면 JavaScript를 활성화해야 합니다.</p>
+        <p>브라우저 설정에서 JavaScript를 활성화한 후 페이지를 새로고침해주세요.</p>
+      </div>
+    </noscript>
 
-    <!-- Loading Screen -->
+    <!-- 로딩 화면 -->
     <div id="loading-screen">
       <div class="loading-spinner"></div>
-      <div class="loading-text">Loading PMS</div>
-      <div class="loading-subtitle">Project Management System</div>
+      <div class="loading-text">PMS 로딩 중...</div>
+      <div class="loading-subtitle">프로젝트 관리 시스템</div>
     </div>
 
-    <!-- App Root -->
+    <!-- 앱 루트 요소 -->
     <div id="root"></div>
 
-    <!-- Hide loading screen when app loads -->
+    <!-- 앱 로드 완료 시 로딩 화면 숨기기 -->
     <script>
-      window.addEventListener('load', function() {
-        document.body.classList.add('app-loaded');
-      });
+      (function() {
+        // DOM이 완전히 로드되고 모든 리소스가 준비되면 실행
+        function hideLoadingScreen() {
+          document.body.classList.add('app-loaded');
+
+          // 접근성: 스크린 리더에 로딩 완료 알림
+          var announcement = document.createElement('div');
+          announcement.setAttribute('aria-live', 'polite');
+          announcement.setAttribute('aria-atomic', 'true');
+          announcement.className = 'sr-only';
+          announcement.textContent = '프로젝트 관리 시스템이 로드되었습니다.';
+          document.body.appendChild(announcement);
+
+          // 공지 제거
+          setTimeout(function() {
+            if (announcement.parentNode) {
+              announcement.parentNode.removeChild(announcement);
+            }
+          }, 1000);
+        }
+
+        // React 앱이 준비될 때까지 최소 대기 시간 설정
+        var minLoadTime = 500; // 최소 500ms 로딩 화면 표시
+        var startTime = Date.now();
+
+        // 페이지 로드 완료 이벤트
+        if (document.readyState === 'complete') {
+          setTimeout(hideLoadingScreen, Math.max(0, minLoadTime - (Date.now() - startTime)));
+        } else {
+          window.addEventListener('load', function() {
+            setTimeout(hideLoadingScreen, Math.max(0, minLoadTime - (Date.now() - startTime)));
+          });
+        }
+
+        // React 앱에서 수동으로 로딩 완료를 알릴 수 있도록 전역 함수 제공
+        window.hideLoadingScreen = hideLoadingScreen;
+
+        // 오류 발생 시 로딩 화면 숨기기 (무한 로딩 방지)
+        window.addEventListener('error', function() {
+          setTimeout(hideLoadingScreen, 2000);
+        });
+
+        // 타임아웃 설정 (최대 10초 후 강제로 로딩 화면 숨기기)
+        setTimeout(function() {
+          if (!document.body.classList.contains('app-loaded')) {
+            console.warn('로딩 시간이 초과되었습니다. 강제로 앱을 표시합니다.');
+            hideLoadingScreen();
+          }
+        }, 10000);
+      })();
     </script>
   </body>
 </html>

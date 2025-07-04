@@ -3,10 +3,11 @@ import {
   AdjustmentsHorizontalIcon,
   CalendarIcon,
   CheckCircleIcon,
+  ClockIcon,
   EnvelopeIcon,
   EyeIcon,
+  FolderIcon,
   FunnelIcon,
-  MagnifyingGlassIcon,
   PencilIcon,
   PhoneIcon,
   PlusIcon,
@@ -29,64 +30,255 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Pagination from '../../components/ui/Pagination';
 import Select from '../../components/ui/Select';
 import { useAuth } from '../../hooks/use-auth';
-import { useUsers } from '../../hooks/use-users';
-import { User, UserFilters } from '../../types/user';
+import type { User, UserRole, UserStatus } from '../../types/auth';
+
+/**
+ * 사용자 필터 타입 (로컬)
+ */
+interface UserFilters {
+  role?: UserRole | undefined;
+  status?: UserStatus | undefined;
+  is_active?: boolean | undefined;
+  created_after?: string | undefined;
+  created_before?: string | undefined;
+}
+
+/**
+ * 페이지네이션 정보 타입
+ */
+interface PaginationInfo {
+  page_no: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+}
 
 /**
  * 사용자 목록 페이지 컴포넌트
- * 전체 사용자 목록을 보여주고 관리할 수 있는 페이지
+ * - 전체 사용자 목록 표시 및 관리
+ * - 검색, 필터링, 정렬 기능
+ * - 관리자 권한으로 사용자 편집/삭제
+ * - 대량 작업 지원
+ * - 통계 정보 표시
  */
 const Users: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const {
-    users,
-    getUsers,
-    deleteUser,
-    updateUser,
-    isLoading,
-    pagination
-  } = useUsers();
 
   // 상태 관리
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page_no: 1,
+    page_size: 20,
+    total_items: 0,
+    total_pages: 0,
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<UserFilters>({
     role: undefined,
+    status: undefined,
     is_active: undefined,
     created_after: undefined,
     created_before: undefined,
   });
-  const [sortBy, setSortBy] = useState<'name' | 'email' | 'created_at'>('created_at');
+  const [sortBy, setSortBy] = useState<'full_name' | 'email' | 'created_at'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
   /**
+   * 사용자 역할 한글 변환 함수
+   */
+  const getRoleDisplayName = (role: UserRole): string => {
+    const roleNames: Record<UserRole, string> = {
+      admin: '관리자',
+      manager: '매니저',
+      developer: '개발자',
+      viewer: '뷰어',
+    };
+    return roleNames[role] || '사용자';
+  };
+
+  /**
+   * 사용자 상태 한글 변환 함수
+   */
+  const getStatusDisplayName = (status: UserStatus): string => {
+    const statusNames: Record<UserStatus, string> = {
+      active: '활성',
+      inactive: '비활성',
+      pending: '대기 중',
+      suspended: '정지됨',
+    };
+    return statusNames[status] || '알 수 없음';
+  };
+
+  /**
+   * 역할별 배지 색상 결정 함수
+   */
+  const getRoleBadgeVariant = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return 'danger';
+      case 'manager':
+        return 'warning';
+      case 'developer':
+        return 'primary';
+      case 'viewer':
+        return 'default';
+      default:
+        return 'primary';
+    }
+  };
+
+  /**
+   * 상태별 배지 색상 결정 함수
+   */
+  const getStatusBadgeVariant = (status: UserStatus) => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'inactive':
+        return 'default';
+      case 'pending':
+        return 'warning';
+      case 'suspended':
+        return 'danger';
+      default:
+        return 'default';
+    }
+  };
+
+  /**
+   * 사용자 목록 로드 (더미 데이터)
+   */
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+
+      // TODO: 실제 API 호출로 대체
+      // const response = await userService.getUsers({...params});
+
+      // 임시 더미 데이터
+      const dummyUsers: User[] = [
+        {
+          id: 1,
+          username: 'admin',
+          email: 'admin@example.com',
+          full_name: '시스템 관리자',
+          role: 'admin',
+          status: 'active',
+          is_active: true,
+          is_verified: true,
+          avatar_url: '',
+          bio: '시스템 전체를 관리하는 관리자입니다.',
+          phone: '010-1234-5678',
+          location: '서울, 대한민국',
+          website: 'https://admin.example.com',
+          timezone: 'Asia/Seoul',
+          last_login: '2024-01-20T09:30:00Z',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-20T09:30:00Z',
+          project_count: 12,
+          completed_tasks_count: 45,
+          active_tasks_count: 8,
+          contribution_score: 95,
+        },
+        {
+          id: 2,
+          username: 'manager1',
+          email: 'manager@example.com',
+          full_name: '프로젝트 매니저',
+          role: 'manager',
+          status: 'active',
+          is_active: true,
+          is_verified: true,
+          avatar_url: '',
+          bio: '여러 프로젝트를 관리하는 매니저입니다.',
+          phone: '010-2345-6789',
+          location: '부산, 대한민국',
+          timezone: 'Asia/Seoul',
+          last_login: '2024-01-19T16:45:00Z',
+          created_at: '2024-01-05T00:00:00Z',
+          updated_at: '2024-01-19T16:45:00Z',
+          project_count: 8,
+          completed_tasks_count: 32,
+          active_tasks_count: 12,
+          contribution_score: 88,
+        },
+        {
+          id: 3,
+          username: 'dev1',
+          email: 'developer@example.com',
+          full_name: '개발자 김철수',
+          role: 'developer',
+          status: 'active',
+          is_active: true,
+          is_verified: true,
+          avatar_url: '',
+          bio: '풀스택 개발자입니다.',
+          phone: '010-3456-7890',
+          location: '대구, 대한민국',
+          timezone: 'Asia/Seoul',
+          last_login: '2024-01-20T14:20:00Z',
+          created_at: '2024-01-10T00:00:00Z',
+          updated_at: '2024-01-20T14:20:00Z',
+          project_count: 5,
+          completed_tasks_count: 28,
+          active_tasks_count: 7,
+          contribution_score: 82,
+        },
+        {
+          id: 4,
+          username: 'viewer1',
+          email: 'viewer@example.com',
+          full_name: '뷰어 사용자',
+          role: 'viewer',
+          status: 'pending',
+          is_active: false,
+          is_verified: false,
+          avatar_url: '',
+          bio: '읽기 전용 사용자입니다.',
+          phone: '',
+          location: '인천, 대한민국',
+          timezone: 'Asia/Seoul',
+          last_login: '',
+          created_at: '2024-01-18T00:00:00Z',
+          updated_at: '2024-01-18T00:00:00Z',
+          project_count: 0,
+          completed_tasks_count: 0,
+          active_tasks_count: 0,
+          contribution_score: 0,
+        },
+      ];
+
+      setUsers(dummyUsers);
+      setPagination({
+        page_no: currentPage,
+        page_size: pageSize,
+        total_items: dummyUsers.length,
+        total_pages: Math.ceil(dummyUsers.length / pageSize),
+      });
+
+    } catch (error) {
+      toast.error('사용자 목록을 불러오는데 실패했습니다.');
+      console.error('사용자 목록 로딩 오류:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
    * 사용자 목록 로드
    */
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        await getUsers({
-          page: currentPage,
-          size: pageSize,
-          search: searchQuery,
-          ...filters,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-        });
-      } catch (error) {
-        toast.error('사용자 목록을 불러오는데 실패했습니다.');
-        console.error('Users loading error:', error);
-      }
-    };
-
     loadUsers();
-  }, [currentPage, pageSize, searchQuery, filters, sortBy, sortOrder, getUsers]);
+  }, [currentPage, pageSize, searchQuery, filters, sortBy, sortOrder]);
 
   /**
    * 검색 처리
@@ -100,14 +292,14 @@ const Users: React.FC = () => {
    * 필터 업데이트
    */
   const updateFilter = (key: keyof UserFilters, value: any) => {
-    setFilters((prev: UserFilters): UserFilters => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
   };
 
   /**
    * 정렬 처리
    */
-  const handleSort = (field: 'name' | 'email' | 'created_at') => {
+  const handleSort = (field: 'full_name' | 'email' | 'created_at') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -120,7 +312,7 @@ const Users: React.FC = () => {
   /**
    * 사용자 선택 처리
    */
-  const toggleUserSelection = (userId: string) => {
+  const toggleUserSelection = (userId: number) => {
     setSelectedUsers(prev =>
       prev.includes(userId)
         ? prev.filter(id => id !== userId)
@@ -132,10 +324,10 @@ const Users: React.FC = () => {
    * 전체 선택/해제
    */
   const toggleSelectAll = () => {
-    if (selectedUsers.length === users.length) {
+    if (selectedUsers.length === filteredUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(users.map(user => user.id));
+      setSelectedUsers(filteredUsers.map(user => user.id));
     }
   };
 
@@ -144,13 +336,16 @@ const Users: React.FC = () => {
    */
   const handleDeleteUser = async (user: User) => {
     try {
-      await deleteUser(user.id);
+      // TODO: 실제 API 호출로 대체
+      // await userService.deleteUser(user.id);
+
+      setUsers(prev => prev.filter(u => u.id !== user.id));
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       toast.success('사용자가 성공적으로 삭제되었습니다.');
     } catch (error) {
       toast.error('사용자 삭제에 실패했습니다.');
-      console.error('User delete error:', error);
+      console.error('사용자 삭제 오류:', error);
     }
   };
 
@@ -159,11 +354,20 @@ const Users: React.FC = () => {
    */
   const handleToggleUserStatus = async (user: User) => {
     try {
-      await updateUser(user.id, { is_active: !user.is_active });
+      // TODO: 실제 API 호출로 대체
+      // await userService.updateUser(user.id, { is_active: !user.is_active });
+
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      setUsers(prev => prev.map(u =>
+        u.id === user.id
+          ? { ...u, is_active: !u.is_active, status: newStatus as UserStatus }
+          : u
+      ));
+
       toast.success(`사용자가 ${user.is_active ? '비활성화' : '활성화'}되었습니다.`);
     } catch (error) {
       toast.error('사용자 상태 변경에 실패했습니다.');
-      console.error('User status toggle error:', error);
+      console.error('사용자 상태 토글 오류:', error);
     }
   };
 
@@ -173,6 +377,7 @@ const Users: React.FC = () => {
   const resetFilters = () => {
     setFilters({
       role: undefined,
+      status: undefined,
       is_active: undefined,
       created_after: undefined,
       created_before: undefined,
@@ -185,7 +390,14 @@ const Users: React.FC = () => {
    * 권한 확인
    */
   const canManageUsers = () => {
-    return currentUser?.role === 'ADMIN';
+    return currentUser?.role === 'admin';
+  };
+
+  /**
+   * 날짜 포맷팅 함수
+   */
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR');
   };
 
   /**
@@ -197,9 +409,19 @@ const Users: React.FC = () => {
         user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesSearch;
+      const matchesRole = !filters.role || user.role === filters.role;
+      const matchesStatus = !filters.status || user.status === filters.status;
+      const matchesActive = filters.is_active === undefined || user.is_active === filters.is_active;
+
+      const matchesCreatedAfter = !filters.created_after ||
+        new Date(user.created_at) >= new Date(filters.created_after);
+      const matchesCreatedBefore = !filters.created_before ||
+        new Date(user.created_at) <= new Date(filters.created_before);
+
+      return matchesSearch && matchesRole && matchesStatus &&
+             matchesActive && matchesCreatedAfter && matchesCreatedBefore;
     });
-  }, [users, searchQuery]);
+  }, [users, searchQuery, filters]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -231,7 +453,7 @@ const Users: React.FC = () => {
             <div className="flex-1">
               <p className="text-sm text-gray-500 dark:text-gray-400">전체 사용자</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {pagination?.total || 0}
+                {pagination.total_items}
               </p>
             </div>
             <UsersIcon className="w-8 h-8 text-blue-500" />
@@ -255,7 +477,7 @@ const Users: React.FC = () => {
             <div className="flex-1">
               <p className="text-sm text-gray-500 dark:text-gray-400">관리자</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {users.filter(user => user.role === 'ADMIN').length}
+                {users.filter(user => user.role === 'admin').length}
               </p>
             </div>
             <UserIcon className="w-8 h-8 text-purple-500" />
@@ -289,7 +511,6 @@ const Users: React.FC = () => {
               placeholder="사용자 이름 또는 이메일로 검색..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              icon={<MagnifyingGlassIcon className="w-5 h-5" />}
             />
           </div>
 
@@ -308,14 +529,14 @@ const Users: React.FC = () => {
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
                 const [field, order] = e.target.value.split('-');
-                setSortBy(field as 'name' | 'email' | 'created_at');
+                setSortBy(field as 'full_name' | 'email' | 'created_at');
                 setSortOrder(order as 'asc' | 'desc');
               }}
               options={[
                 { value: 'created_at-desc', label: '최신순' },
                 { value: 'created_at-asc', label: '오래된순' },
-                { value: 'name-asc', label: '이름순' },
-                { value: 'name-desc', label: '이름 역순' },
+                { value: 'full_name-asc', label: '이름순' },
+                { value: 'full_name-desc', label: '이름 역순' },
                 { value: 'email-asc', label: '이메일순' },
                 { value: 'email-desc', label: '이메일 역순' },
               ]}
@@ -343,21 +564,34 @@ const Users: React.FC = () => {
                 onChange={(e) => updateFilter('role', e.target.value || undefined)}
                 options={[
                   { value: '', label: '모든 권한' },
-                  { value: 'ADMIN', label: '관리자' },
-                  { value: 'PROJECT_MANAGER', label: '프로젝트 매니저' },
-                  { value: 'DEVELOPER', label: '개발자' },
-                  { value: 'VIEWER', label: '뷰어' },
+                  { value: 'admin', label: '관리자' },
+                  { value: 'manager', label: '매니저' },
+                  { value: 'developer', label: '개발자' },
+                  { value: 'viewer', label: '뷰어' },
                 ]}
               />
 
               <Select
                 label="상태"
+                value={filters.status || ''}
+                onChange={(e) => updateFilter('status', e.target.value || undefined)}
+                options={[
+                  { value: '', label: '모든 상태' },
+                  { value: 'active', label: '활성' },
+                  { value: 'inactive', label: '비활성' },
+                  { value: 'pending', label: '대기 중' },
+                  { value: 'suspended', label: '정지됨' },
+                ]}
+              />
+
+              <Select
+                label="계정 활성화"
                 value={filters.is_active !== undefined ? String(filters.is_active) : ''}
                 onChange={(e) => updateFilter('is_active', e.target.value === '' ? undefined : e.target.value === 'true')}
                 options={[
-                  { value: '', label: '모든 상태' },
-                  { value: 'true', label: '활성' },
-                  { value: 'false', label: '비활성' },
+                  { value: '', label: '전체' },
+                  { value: 'true', label: '활성화' },
+                  { value: 'false', label: '비활성화' },
                 ]}
               />
 
@@ -374,16 +608,16 @@ const Users: React.FC = () => {
                 value={filters.created_before || ''}
                 onChange={(e) => updateFilter('created_before', e.target.value || undefined)}
               />
+            </div>
 
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={resetFilters}
-                  className="w-full"
-                >
-                  필터 초기화
-                </Button>
-              </div>
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                icon={<XCircleIcon className="w-4 h-4" />}
+              >
+                필터 초기화
+              </Button>
             </div>
           </div>
         )}
@@ -424,6 +658,7 @@ const Users: React.FC = () => {
                       checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
                       onChange={toggleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      title="전체 사용자 선택"
                     />
                   )}
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -462,11 +697,12 @@ const Users: React.FC = () => {
                           checked={selectedUsers.includes(user.id)}
                           onChange={() => toggleUserSelection(user.id)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          title="사용자 선택"
                         />
                       )}
 
                       <Avatar
-                        src={user.avatar_url}
+                        src={user.avatar_url ?? null}
                         alt={user.full_name || user.email}
                         size="md"
                       />
@@ -476,16 +712,17 @@ const Users: React.FC = () => {
                           <h3 className="font-medium text-gray-900 dark:text-white truncate">
                             {user.full_name || user.email}
                           </h3>
-                          <Badge
-                            variant={user.role === 'ADMIN' ? 'success' : 'primary'}
-                          >
-                            {user.role}
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
+                            {getRoleDisplayName(user.role)}
                           </Badge>
-                          <Badge
-                            variant={user.is_active ? 'success' : 'danger'}
-                          >
-                            {user.is_active ? '활성' : '비활성'}
+                          <Badge variant={getStatusBadgeVariant(user.status)}>
+                            {getStatusDisplayName(user.status)}
                           </Badge>
+                          {user.is_verified && (
+                            <Badge variant="success" size="sm">
+                              인증됨
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -503,14 +740,14 @@ const Users: React.FC = () => {
 
                           <div className="flex items-center space-x-1">
                             <CalendarIcon className="w-4 h-4" />
-                            <span>가입: {new Date(user.created_at).toLocaleDateString('ko-KR')}</span>
+                            <span>가입: {formatDate(user.created_at)}</span>
                           </div>
 
                           {user.last_login && (
                             <div className="flex items-center space-x-1">
                               <ClockIcon className="w-4 h-4" />
                               <span>
-                                마지막 로그인: {new Date(user.last_login).toLocaleDateString('ko-KR')}
+                                마지막 로그인: {formatDate(user.last_login)}
                               </span>
                             </div>
                           )}
@@ -544,6 +781,7 @@ const Users: React.FC = () => {
                             size="sm"
                             variant={user.is_active ? "outline" : "primary"}
                             onClick={() => handleToggleUserStatus(user)}
+                            title={user.is_active ? '비활성화' : '활성화'}
                           >
                             {user.is_active ? (
                               <XCircleIcon className="w-4 h-4" />
@@ -584,20 +822,25 @@ const Users: React.FC = () => {
                       <ClockIcon className="w-3 h-3" />
                       <span>진행 작업 {user.active_tasks_count || 0}개</span>
                     </div>
+                    {user.contribution_score !== undefined && (
+                      <div className="flex items-center space-x-1">
+                        <span>기여도 {user.contribution_score}%</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
 
             {/* 페이지네이션 */}
-            {pagination && pagination.pages > 1 && (
+            {pagination.total_pages > 1 && (
               <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={pagination.pages}
+                  totalPages={pagination.total_pages}
                   onPageChange={setCurrentPage}
                   itemsPerPage={pageSize}
-                  totalItems={pagination.total}
+                  totalItems={pagination.total_items}
                 />
               </div>
             )}
@@ -606,6 +849,7 @@ const Users: React.FC = () => {
       </Card>
 
       {/* 사용자 삭제 확인 모달 */}
+      {/* description="이 작업은 되돌릴 수 없으며, 사용자와 관련된 모든 데이터가 삭제됩니다." */}
       <ConfirmDialog
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -615,10 +859,9 @@ const Users: React.FC = () => {
         onConfirm={() => userToDelete && handleDeleteUser(userToDelete)}
         title="사용자 삭제"
         message={`정말로 "${userToDelete?.full_name || userToDelete?.email}" 사용자를 삭제하시겠습니까?`}
-        description="이 작업은 되돌릴 수 없으며, 사용자와 관련된 모든 데이터가 삭제됩니다."
         confirmText="삭제"
         confirmVariant="danger"
-        isLoading={isLoading}
+        loading={isLoading}
       />
     </div>
   );

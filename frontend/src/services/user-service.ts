@@ -1,26 +1,28 @@
 import { apiClient } from '@/services/api-client';
+import {
+  PasswordChangeRequest,
+  User,
+  UserActivityLog,
+  UserPreferences,
+  UserSession,
+  UserStats
+} from '@/types/auth';
 import type {
-    AvatarUploadResponse,
-    BulkDeleteRequest,
-    BulkUpdateRequest,
-    ExportFormat,
-    PasswordChangeRequest,
-    User,
-    UserActivityLog,
-    UserActivityParams,
-    UserCreateRequest,
-    UserInviteRequest,
-    UserInviteResponse,
-    UserListResponse,
-    UserNotificationParams,
-    UserPreferences,
-    UserProjectParams,
-    UserSearchParams,
-    UserSession,
-    UserStats,
-    UserStatsResponse,
-    UserTaskParams,
-    UserUpdateRequest,
+  AvatarUploadResponse,
+  BulkDeleteRequest,
+  BulkUpdateRequest,
+  ExportFormat,
+  UserActivityParams,
+  UserCreateRequest,
+  UserInviteRequest,
+  UserInviteResponse,
+  UserListResponse,
+  UserNotificationParams,
+  UserProjectParams,
+  UserSearchParams,
+  UserStatsResponse,
+  UserTaskParams,
+  UserUpdateRequest
 } from '@/types/user';
 import { buildQueryParams } from '@/utils/query-params';
 

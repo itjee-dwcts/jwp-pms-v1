@@ -131,6 +131,14 @@ export class AuthService {
   }
 
   /**
+   * 비밀번호 찾기 (이메일로 재설정 링크 전송)
+   * @deprecated Use requestPasswordReset instead
+   */
+  async forgotPassword(email: string): Promise<void> {
+    await this.requestPasswordReset(email);
+  }
+
+  /**
    * 비밀번호 재설정 확인
    */
   async resetPassword(data: ResetPasswordRequest): Promise<void> {
