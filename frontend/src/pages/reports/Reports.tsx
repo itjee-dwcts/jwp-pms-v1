@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useReports } from '@/hooks/useReports';
+import { useReports } from '@/hooks/use-reports';
 import {
   ChartBarIcon,
   ClockIcon,
@@ -33,11 +33,11 @@ import {
 } from 'recharts';
 
 interface ReportFilters {
-  dateRange: 'week' | 'month' | 'quarter' | 'year';
+  dateRange: string;  //'week' | 'month' | 'quarter' | 'year';
   startDate?: string;
   endDate?: string;
-  projectIds?: number[];
-  userIds?: number[];
+  projectIds?: string[];
+  userIds?: string[];
 }
 
 interface ReportData {

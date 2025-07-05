@@ -31,7 +31,7 @@ interface NavigationItem {
   href: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   show: boolean;
-  badge?: string | number;
+  badge?: string;
 }
 
 /**

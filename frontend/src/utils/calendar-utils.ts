@@ -234,25 +234,15 @@ export const groupEventsByDate = (events: CalendarEvent[]): Record<string, Calen
   events.forEach(event => {
     const dateKey = formatDate(parseDate(event.start_date), 'date');
 
-    if (dateKey && dateKey !== undefined) {
-      const _grouped = grouped[dateKey];
-
-      if (!_grouped || _grouped === undefined) {
-        grouped[dateKey] = [];
-      }
-
-      if (grouped[dateKey])
-        grouped[dateKey].push(event);
+    if (dateKey) {
+      // 존재하지 않으면 빈 배열로 초기화하고 이벤트 추가
+      (grouped[dateKey] ??= []).push(event);
     }
   });
 
   // 각 날짜의 이벤트들을 시간순으로 정렬
-  Object.keys(grouped).forEach(date => {
-    const eventsForDate = grouped[date];
-    if (eventsForDate) {
-      grouped[date] = sortEventsByDateTime(eventsForDate);
-    }
-    // If eventsForDate is undefined, no sorting is needed for that date.
+  Object.entries(grouped).forEach(([date, eventsForDate]) => {
+    grouped[date] = sortEventsByDateTime(eventsForDate);
   });
 
   return grouped;
@@ -428,7 +418,7 @@ export const getEventTypeColor = (type: CalendarEvent['type']): string => {
     personal: '#6B7280',    // gray
   };
 
-  return colors[type] || colors.personal;
+  return colors[type as keyof typeof colors] || colors.personal;
 };
 
 export const getEventPriorityColor = (priority: CalendarEvent['priority']): string => {
@@ -439,17 +429,17 @@ export const getEventPriorityColor = (priority: CalendarEvent['priority']): stri
     urgent: '#DC2626',   // dark red
   };
 
-  return colors[priority] || colors.medium;
+  return colors[priority as keyof typeof colors] || colors.medium;
 };
 
 export const getEventStatusIcon = (status: CalendarEvent['status']): string => {
-  const icons = {
+  const icons: Record<CalendarEvent['status'], string> = {
     tentative: '❓',
     confirmed: '✅',
     cancelled: '❌',
   };
 
-  return icons[status] || icons.tentative;
+  return icons[status] !== undefined ? icons[status] : '❓';
 };
 
 // ============================================================================
@@ -515,14 +505,14 @@ export const exportToICS = (events: CalendarEvent[]): string => {
 };
 
 const getPriorityNumber = (priority: CalendarEvent['priority']): number => {
-  const priorities = {
+  const priorities: Record<CalendarEvent['priority'], number> = {
     low: 9,
     medium: 5,
     high: 3,
     urgent: 1
   };
 
-  return priorities[priority] || 5;
+  return priorities[priority] ?? 5;
 };
 
 // ============================================================================

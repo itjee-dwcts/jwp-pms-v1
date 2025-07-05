@@ -23,13 +23,11 @@ import Card from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
 import { useCalendar } from '@/hooks/use-calendar';
 
 const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { useEvent, deleteEvent, isDeleting } = useCalendar();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

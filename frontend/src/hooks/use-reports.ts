@@ -1,15 +1,15 @@
 import { reportService } from '@/services/report-service';
 import type {
-    ExportOptions,
-    ProjectReport,
-    ReportData,
-    ReportFilters,
-    ReportMetrics,
-    ReportTemplate,
-    ScheduledReport,
-    TaskReport,
-    TimeTrackingReport,
-    UserReport,
+  ExportOptions,
+  ProjectReport,
+  ReportData,
+  ReportFilters,
+  ReportMetrics,
+  ReportTemplate,
+  ScheduledReport,
+  TaskReport,
+  TimeTrackingReport,
+  UserReport,
 } from '@/types/report';
 import { useCallback } from 'react';
 import { useReportState } from './use-report-state';
@@ -52,7 +52,7 @@ export const useReports = () => {
   }, [handleRequest, reportState]);
 
   // Specific Report Types
-  const getProjectReport = useCallback(async (projectId: number, filters: Partial<ReportFilters> = {}): Promise<ProjectReport> => {
+  const getProjectReport = useCallback(async (projectId: string, filters: Partial<ReportFilters> = {}): Promise<ProjectReport> => {
     return handleRequest(async () => {
       const report = await reportService.getProjectReport(projectId, filters);
       reportState.setProjectReport(report);
@@ -60,7 +60,7 @@ export const useReports = () => {
     });
   }, [handleRequest, reportState]);
 
-  const getUserReport = useCallback(async (userId: number, filters: Partial<ReportFilters> = {}): Promise<UserReport> => {
+  const getUserReport = useCallback(async (userId: string, filters: Partial<ReportFilters> = {}): Promise<UserReport> => {
     return handleRequest(async () => {
       const report = await reportService.getUserReport(userId, filters);
       reportState.setUserReport(report);
@@ -116,7 +116,7 @@ export const useReports = () => {
     });
   }, [handleRequest, reportState]);
 
-  const updateReportTemplate = useCallback(async (id: number, template: Partial<ReportTemplate>): Promise<ReportTemplate> => {
+  const updateReportTemplate = useCallback(async (id: string, template: Partial<ReportTemplate>): Promise<ReportTemplate> => {
     return handleRequest(async () => {
       const updatedTemplate = await reportService.updateReportTemplate(id, template);
       reportState.updateTemplate(id, updatedTemplate);
@@ -124,7 +124,7 @@ export const useReports = () => {
     });
   }, [handleRequest, reportState]);
 
-  const deleteReportTemplate = useCallback(async (id: number): Promise<void> => {
+  const deleteReportTemplate = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await reportService.deleteReportTemplate(id);
       reportState.removeTemplate(id);
@@ -148,7 +148,7 @@ export const useReports = () => {
     });
   }, [handleRequest, reportState]);
 
-  const updateScheduledReport = useCallback(async (id: number, report: Partial<ScheduledReport>): Promise<ScheduledReport> => {
+  const updateScheduledReport = useCallback(async (id: string, report: Partial<ScheduledReport>): Promise<ScheduledReport> => {
     return handleRequest(async () => {
       const updatedReport = await reportService.updateScheduledReport(id, report);
       reportState.updateScheduledReport(id, updatedReport);
@@ -156,7 +156,7 @@ export const useReports = () => {
     });
   }, [handleRequest, reportState]);
 
-  const deleteScheduledReport = useCallback(async (id: number): Promise<void> => {
+  const deleteScheduledReport = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await reportService.deleteScheduledReport(id);
       reportState.removeScheduledReport(id);

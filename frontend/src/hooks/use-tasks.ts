@@ -17,10 +17,9 @@ import type {
   TaskDuplicateOptions,
   TaskGanttChart,
   TaskKanbanBoard,
-  TaskPriority,
+  TaskListResponse,
   TaskSearchParams,
   TaskStatsResponse,
-  TaskStatus,
   TaskTag,
   TaskTimeLog,
   TimeLogCreateRequest
@@ -49,15 +48,15 @@ export const useTasks = () => {
   }, [taskState]);
 
   // CRUD Operations
-  const getTasks = useCallback(async (params?: TaskSearchParams): Promise<Task[]> => {
+  const getTasks = useCallback(async (params?: TaskSearchParams): Promise<TaskListResponse> => {
     return handleRequest(async () => {
-      const tasks = await taskService.getTasks(params);
-      taskState.setTasks(tasks);
-      return tasks;
+      const response = await taskService.getTasks(params);
+      taskState.setTasks(response.tasks);
+      return response;
     });
   }, [handleRequest, taskState]);
 
-  const getTask = useCallback(async (id: number): Promise<Task> => {
+  const getTask = useCallback(async (id: string): Promise<Task> => {
     return handleRequest(async () => {
       const task = await taskService.getTask(id);
       taskState.setCurrentTask(task);
@@ -73,7 +72,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const updateTask = useCallback(async (id: number, data: Partial<TaskCreateRequest>): Promise<Task> => {
+  const updateTask = useCallback(async (id: string, data: Partial<TaskCreateRequest>): Promise<Task> => {
     return handleRequest(async () => {
       const task = await taskService.updateTask(id, data);
       taskState.updateTaskInList(id, task);
@@ -84,7 +83,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const deleteTask = useCallback(async (id: number): Promise<void> => {
+  const deleteTask = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.deleteTask(id);
       taskState.removeTask(id);
@@ -94,13 +93,25 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
+  // 프로젝트별 작업 가져오기 함수 추가
+  const getTasksByProject = useCallback(async (
+    projectId: number,
+    params?: Omit<TaskSearchParams, 'project_id'>
+  ): Promise<TaskListResponse> => {
+    return handleRequest(async () => {
+      const response = await taskService.getTasksByProject(projectId, params);
+      taskState.setTasks(response.tasks);
+      return response;
+    });
+  }, [handleRequest, taskState]);
+
   // Statistics
   const getTaskStats = useCallback(async (params?: TaskSearchParams): Promise<TaskStatsResponse> => {
     return handleRequest(() => taskService.getTaskStats(params));
   }, [handleRequest]);
 
   // Kanban Board
-  const getKanbanBoard = useCallback(async (projectId?: number): Promise<TaskKanbanBoard> => {
+  const getKanbanBoard = useCallback(async (projectId?: string): Promise<TaskKanbanBoard> => {
     return handleRequest(async () => {
       const board = await taskService.getKanbanBoard(projectId);
       taskState.setKanbanBoard(board);
@@ -108,7 +119,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const updateTaskStatus = useCallback(async (id: number, status: TaskStatus): Promise<Task> => {
+  const updateTaskStatus = useCallback(async (id: string, status: string): Promise<Task> => {
     return handleRequest(async () => {
       const task = await taskService.updateTaskStatus(id, status);
       taskState.updateTaskInList(id, task);
@@ -117,12 +128,12 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Gantt Chart
-  const getGanttChart = useCallback(async (projectId?: number): Promise<TaskGanttChart> => {
+  const getGanttChart = useCallback(async (projectId?: string): Promise<TaskGanttChart> => {
     return handleRequest(() => taskService.getGanttChart(projectId));
   }, [handleRequest]);
 
   // Task Assignments
-  const getTaskAssignees = useCallback(async (taskId: number): Promise<TaskAssignee[]> => {
+  const getTaskAssignees = useCallback(async (taskId: string): Promise<TaskAssignee[]> => {
     return handleRequest(async () => {
       const assignees = await taskService.getTaskAssignees(taskId);
       taskState.setTaskAssignees(assignees);
@@ -130,7 +141,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const assignTask = useCallback(async (taskId: number, data: AssignTaskRequest): Promise<TaskAssignee[]> => {
+  const assignTask = useCallback(async (taskId: string, data: AssignTaskRequest): Promise<TaskAssignee[]> => {
     return handleRequest(async () => {
       const assignees = await taskService.assignTask(taskId, data);
       taskState.setTaskAssignees(assignees);
@@ -138,7 +149,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const unassignTask = useCallback(async (taskId: number, userId: number): Promise<void> => {
+  const unassignTask = useCallback(async (taskId: string, userId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.unassignTask(taskId, userId);
       taskState.removeAssignee(userId);
@@ -146,7 +157,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Task Comments
-  const getTaskComments = useCallback(async (taskId: number): Promise<TaskComment[]> => {
+  const getTaskComments = useCallback(async (taskId: string): Promise<TaskComment[]> => {
     return handleRequest(async () => {
       const comments = await taskService.getTaskComments(taskId);
       taskState.setTaskComments(comments);
@@ -155,7 +166,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   const addTaskComment = useCallback(async (
-    taskId: number,
+    taskId: string,
     data: CommentCreateRequest
   ): Promise<TaskComment> => {
     return handleRequest(async () => {
@@ -166,8 +177,8 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   const updateTaskComment = useCallback(async (
-    taskId: number,
-    commentId: number,
+    taskId: string,
+    commentId: string,
     data: CommentUpdateRequest
   ): Promise<TaskComment> => {
     return handleRequest(async () => {
@@ -177,7 +188,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const deleteTaskComment = useCallback(async (taskId: number, commentId: number): Promise<void> => {
+  const deleteTaskComment = useCallback(async (taskId: string, commentId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.deleteTaskComment(taskId, commentId);
       taskState.removeComment(commentId);
@@ -185,7 +196,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Task Attachments
-  const getTaskAttachments = useCallback(async (taskId: number): Promise<TaskAttachment[]> => {
+  const getTaskAttachments = useCallback(async (taskId: string): Promise<TaskAttachment[]> => {
     return handleRequest(async () => {
       const attachments = await taskService.getTaskAttachments(taskId);
       taskState.setTaskAttachments(attachments);
@@ -193,7 +204,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const uploadTaskFile = useCallback(async (taskId: number, file: File): Promise<TaskAttachment> => {
+  const uploadTaskFile = useCallback(async (taskId: string, file: File): Promise<TaskAttachment> => {
     return handleRequest(async () => {
       const attachment = await taskService.uploadTaskFile(taskId, file);
       taskState.addAttachment(attachment);
@@ -201,7 +212,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const deleteTaskAttachment = useCallback(async (taskId: number, attachmentId: number): Promise<void> => {
+  const deleteTaskAttachment = useCallback(async (taskId: string, attachmentId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.deleteTaskAttachment(taskId, attachmentId);
       taskState.removeAttachment(attachmentId);
@@ -209,7 +220,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Task Time Logs
-  const getTaskTimeLogs = useCallback(async (taskId: number): Promise<TaskTimeLog[]> => {
+  const getTaskTimeLogs = useCallback(async (taskId: string): Promise<TaskTimeLog[]> => {
     return handleRequest(async () => {
       const timeLogs = await taskService.getTaskTimeLogs(taskId);
       taskState.setTaskTimeLogs(timeLogs);
@@ -218,7 +229,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   const addTimeLog = useCallback(async (
-    taskId: number,
+    taskId: string,
     data: TimeLogCreateRequest
   ): Promise<TaskTimeLog> => {
     return handleRequest(async () => {
@@ -229,8 +240,8 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   const updateTimeLog = useCallback(async (
-    taskId: number,
-    timeLogId: number,
+    taskId: string,
+    timeLogId: string,
     data: Partial<TimeLogCreateRequest>
   ): Promise<TaskTimeLog> => {
     return handleRequest(async () => {
@@ -240,7 +251,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const deleteTimeLog = useCallback(async (taskId: number, timeLogId: number): Promise<void> => {
+  const deleteTimeLog = useCallback(async (taskId: string, timeLogId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.deleteTimeLog(taskId, timeLogId);
       taskState.removeTimeLog(timeLogId);
@@ -264,11 +275,11 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const addTaskTags = useCallback(async (taskId: number, tagIds: number[]): Promise<TaskTag[]> => {
+  const addTaskTags = useCallback(async (taskId: string, tagIds: string[]): Promise<TaskTag[]> => {
     return handleRequest(() => taskService.addTaskTags(taskId, tagIds));
   }, [handleRequest]);
 
-  const removeTaskTag = useCallback(async (taskId: number, tagId: number): Promise<void> => {
+  const removeTaskTag = useCallback(async (taskId: string, tagId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.removeTaskTag(taskId, tagId);
       taskState.removeTag(tagId);
@@ -276,7 +287,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Task Dependencies
-  const getTaskDependencies = useCallback(async (taskId: number): Promise<TaskDependency[]> => {
+  const getTaskDependencies = useCallback(async (taskId: string): Promise<TaskDependency[]> => {
     return handleRequest(async () => {
       const dependencies = await taskService.getTaskDependencies(taskId);
       taskState.setTaskDependencies(dependencies);
@@ -285,7 +296,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   const addTaskDependency = useCallback(async (
-    taskId: number,
+    taskId: string,
     data: DependencyCreateRequest
   ): Promise<TaskDependency> => {
     return handleRequest(async () => {
@@ -295,7 +306,7 @@ export const useTasks = () => {
     });
   }, [handleRequest, taskState]);
 
-  const removeTaskDependency = useCallback(async (taskId: number, dependencyId: number): Promise<void> => {
+  const removeTaskDependency = useCallback(async (taskId: string, dependencyId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.removeTaskDependency(taskId, dependencyId);
       taskState.removeDependency(dependencyId);
@@ -303,7 +314,7 @@ export const useTasks = () => {
   }, [handleRequest, taskState]);
 
   // Advanced Operations
-  const duplicateTask = useCallback(async (id: number, options?: TaskDuplicateOptions): Promise<Task> => {
+  const duplicateTask = useCallback(async (id: string, options?: TaskDuplicateOptions): Promise<Task> => {
     return handleRequest(async () => {
       const task = await taskService.duplicateTask(id, options);
       taskState.addTask(task);
@@ -337,10 +348,10 @@ export const useTasks = () => {
 
   // Search
   const searchTasks = useCallback(async (query: string, filters?: {
-    project_id?: number;
-    status?: TaskStatus;
-    priority?: TaskPriority;
-    assignee_id?: number;
+    project_id?: string;
+    status?: string;
+    priority?: string;
+    assignee_id?: string;
     page_size?: number;
   }): Promise<Task[]> => {
     return handleRequest(async () => {
@@ -368,6 +379,8 @@ export const useTasks = () => {
     createTask,
     updateTask,
     deleteTask,
+
+    getTasksByProject,
 
     // Statistics
     getTaskStats,

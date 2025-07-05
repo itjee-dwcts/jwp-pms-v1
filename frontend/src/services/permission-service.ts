@@ -1,22 +1,22 @@
 import { DEFAULT_ROLE_CONFIGS, PERMISSION_GROUPS } from '@/constants/permissions';
 import { apiClient } from '@/services/api-client';
 import type {
-    Permission,
-    PermissionCheckResult,
-    PermissionGroup,
-    Role,
-    RoleConfig,
-    UserPermissions,
+  Permission,
+  PermissionCheckResult,
+  PermissionGroup,
+  Role,
+  RoleConfig,
+  UserPermissions,
 } from '@/types/permission';
 
 export class PermissionService {
-  async getUserPermissions(userId: number): Promise<UserPermissions> {
+  async getUserPermissions(userId: string): Promise<UserPermissions> {
     return apiClient.request<UserPermissions>(`/users/${userId}/permissions`);
   }
 
   async checkResourcePermission(
     resourceType: string,
-    resourceId: number,
+    resourceId: string,
     permission: Permission
   ): Promise<PermissionCheckResult> {
     return apiClient.request<PermissionCheckResult>(
@@ -29,7 +29,7 @@ export class PermissionService {
   }
 
   async updateUserPermissions(
-    userId: number,
+    userId: string,
     permissions: Permission[]
   ): Promise<UserPermissions> {
     return apiClient.request<UserPermissions>(`/users/${userId}/permissions`, {
@@ -38,7 +38,7 @@ export class PermissionService {
     });
   }
 
-  async assignRole(userId: number, role: Role): Promise<UserPermissions> {
+  async assignRole(userId: string, role: Role): Promise<UserPermissions> {
     return apiClient.request<UserPermissions>(`/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role }),

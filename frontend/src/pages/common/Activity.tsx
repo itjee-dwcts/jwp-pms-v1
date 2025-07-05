@@ -28,15 +28,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 type ActivityAction =
   | 'create' | 'update' | 'delete' | 'view' | 'assign' | 'unassign'
   | 'login' | 'logout' | 'upload' | 'download' | 'comment' | 'invite'
-  | 'archive' | 'restore' | 'complete' | 'reopen' | 'approve' | 'reject';
+  | 'archive' | 'restore' | 'complete' | 'reopen' | 'approve' | 'reject'
+  | 'none';
 
 type ResourceType =
   | 'project' | 'task' | 'user' | 'calendar' | 'event' | 'comment'
-  | 'attachment' | 'team' | 'role' | 'setting' | 'report';
+  | 'attachment' | 'team' | 'role' | 'setting' | 'report' | 'none';
 
 interface ActivityLog {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   action: ActivityAction;
   resource_type: ResourceType;
   resource_id?: number;
@@ -50,29 +51,29 @@ interface ActivityLog {
     additional_info?: Record<string, any>;
   };
   user: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
     avatar_url?: string;
   };
   resource?: {
-    id: number;
+    id: string;
     name?: string;
     title?: string;
   };
 }
 
 interface ActivityFilters {
-  user_id?: number | undefined;
-  action?: ActivityAction | undefined;
-  resource_type?: ResourceType | undefined;
+  user_id?: string;
+  action?: ActivityAction;
+  resource_type?: ResourceType;
   start_date?: string;
   end_date?: string;
   search?: string;
 }
 
 interface User {
-  id: number;
+  id: string;
   username: string;
   full_name: string;
   avatar_url?: string;
@@ -93,9 +94,9 @@ const Activity: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<ActivityFilters>({
-    user_id: undefined,
-    action: undefined,
-    resource_type: undefined,
+    user_id: '',
+    action: 'none',
+    resource_type: 'none',
     start_date: '',
     end_date: '',
     search: '',
@@ -110,9 +111,9 @@ const Activity: React.FC = () => {
     if (userIdParam || actionParam || resourceTypeParam) {
       setFilters(prev => ({
         ...prev,
-        user_id: userIdParam ? parseInt(userIdParam) : undefined,
-        action: (actionParam as ActivityAction) || undefined,
-        resource_type: (resourceTypeParam as ResourceType) || undefined,
+        user_id: userIdParam || '',
+        action: (actionParam as ActivityAction) || 'none',
+        resource_type: (resourceTypeParam as ResourceType) || 'none',
       }));
       setShowFilters(true);
     }
@@ -200,9 +201,9 @@ const Activity: React.FC = () => {
 
   const handleClearFilters = () => {
     setFilters({
-      user_id: undefined,
-      action: undefined,
-      resource_type: undefined,
+      user_id: '',
+      action: 'none',
+      resource_type: 'none',
       start_date: '',
       end_date: '',
       search: '',

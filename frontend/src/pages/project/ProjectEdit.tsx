@@ -6,13 +6,11 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/use-auth';
 import { useProjects } from '@/hooks/use-projects';
 import { useUsers } from '@/hooks/use-users';
+import { User } from '@/types/auth';
 import {
   Project,
-  ProjectPriority,
-  ProjectStatus,
   ProjectUpdateRequest
 } from '@/types/project';
-import { User } from '@/types/user';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -34,9 +32,9 @@ interface ProjectFormData {
   priority: string;
   start_date: string;
   end_date: string;
-  budget: string;
+  budget: number;
   tags: string[];
-  member_ids: number[];
+  member_ids: string[];
 }
 
 /**
@@ -58,7 +56,7 @@ const ProjectEdit: React.FC = () => {
     priority: 'medium',
     start_date: '',
     end_date: '',
-    budget: '',
+    budget: 0,
     tags: [],
     member_ids: [],
   });
@@ -93,9 +91,9 @@ const ProjectEdit: React.FC = () => {
         formData.priority !== project.priority ||
         formData.start_date !== project.start_date ||
         formData.end_date !== (project.end_date || '') ||
-        formData.budget !== (project.budget?.toString() || '') ||
+        formData.budget !== (project.budget || 0) ||
         JSON.stringify(formData.tags) !== JSON.stringify(project.tags) ||
-        JSON.stringify(formData.member_ids.sort()) !== JSON.stringify(project.members.map(m => m.id).sort());
+        JSON.stringify(formData.member_ids.sort()) !== JSON.stringify((project.members?.map(m => m.id) ?? []).sort());
 
       setHasUnsavedChanges(hasChanges);
     }
@@ -109,7 +107,7 @@ const ProjectEdit: React.FC = () => {
 
     try {
       setLoading(true);
-      const projectData = await getProject(parseInt(id));
+      const projectData = await getProject(id);
       setProject(projectData);
 
       // 폼 데이터 초기화
@@ -120,9 +118,9 @@ const ProjectEdit: React.FC = () => {
         priority: projectData.priority,
         start_date: projectData.start_date,
         end_date: projectData.end_date || '',
-        budget: projectData.budget?.toString() || '',
-        tags: [...projectData.tags],
-        member_ids: projectData.members.map(member => member.id),
+        budget: projectData.budget || 0,
+        tags: [...(projectData.tags ?? [])],
+        member_ids: (projectData.members ?? []).map(member => member.id),
       });
     } catch (error) {
       console.error('프로젝트 로드 실패:', error);
@@ -209,10 +207,6 @@ const ProjectEdit: React.FC = () => {
       const updateData: ProjectUpdateRequest = {
         id: project.id,
         ...formData,
-        status: formData.status as ProjectStatus,
-        priority: formData.priority as ProjectPriority,
-        ...(formData.budget !== '' && { budget: parseFloat(formData.budget) }),
-        ...(formData.end_date !== '' && { end_date: formData.end_date }),
       };
 
       await updateProject(project.id, updateData);
@@ -275,7 +269,7 @@ const ProjectEdit: React.FC = () => {
   /**
    * 팀원 추가
    */
-  const addMember = (userId: number) => {
+  const addMember = (userId: string) => {
     if (!formData.member_ids.includes(userId)) {
       setFormData(prev => ({
         ...prev,
@@ -289,7 +283,7 @@ const ProjectEdit: React.FC = () => {
   /**
    * 팀원 제거
    */
-  const removeMember = (userId: number) => {
+  const removeMember = (userId: string) => {
     setFormData(prev => ({
       ...prev,
       member_ids: prev.member_ids.filter(id => id !== userId)
@@ -324,8 +318,10 @@ const ProjectEdit: React.FC = () => {
   /**
    * 상태별 색상 반환
    */
+  type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
+
   const getStatusColor = (status: ProjectStatus) => {
-    const colors = {
+    const colors: Record<ProjectStatus, string> = {
       planning: 'bg-gray-100 text-gray-800',
       active: 'bg-blue-100 text-blue-800',
       on_hold: 'bg-yellow-100 text-yellow-800',
@@ -338,8 +334,10 @@ const ProjectEdit: React.FC = () => {
   /**
    * 우선순위별 색상 반환
    */
+  type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
+
   const getPriorityColor = (priority: ProjectPriority) => {
-    const colors = {
+    const colors: Record<ProjectPriority, string> = {
       low: 'bg-green-100 text-green-800',
       medium: 'bg-yellow-100 text-yellow-800',
       high: 'bg-orange-100 text-orange-800',
@@ -457,10 +455,11 @@ const ProjectEdit: React.FC = () => {
             {/* 상태 및 우선순위 */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   상태
                 </label>
                 <select
+                  id="status-select"
                   value={formData.status}
                   onChange={handleInputChange('status')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -475,10 +474,11 @@ const ProjectEdit: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   우선순위
                 </label>
                 <select
+                  id="priority-select"
                   value={formData.priority}
                   onChange={handleInputChange('priority')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -603,6 +603,7 @@ const ProjectEdit: React.FC = () => {
                       onClick={() => removeTag(tag)}
                       className="ml-2 text-blue-600 hover:text-blue-800"
                       disabled={saveLoading}
+                      title={tag}
                     >
                       <XMarkIcon className="h-3 w-3" />
                     </button>
@@ -688,6 +689,7 @@ const ProjectEdit: React.FC = () => {
                         onClick={() => removeMember(member.id)}
                         className="ml-2 text-green-600 hover:text-green-800"
                         disabled={saveLoading}
+                        title={member.full_name}
                       >
                         <XMarkIcon className="h-3 w-3" />
                       </button>

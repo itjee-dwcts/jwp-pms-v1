@@ -56,7 +56,7 @@ export const usePermissions = () => {
   // Check resource-specific permission
   const checkResourcePermission = useCallback(async (
     resourceType: string,
-    resourceId: number,
+    resourceId: string,
     permission: Permission
   ): Promise<boolean> => {
     try {

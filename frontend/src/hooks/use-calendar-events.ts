@@ -1,18 +1,32 @@
 import { calendarService } from '@/services/calendar-service';
 import type {
-    CalendarConflict,
-    CalendarEvent,
-    CalendarEventDisplay,
-    DateRange,
-    EventFilters
+  CalendarConflict,
+  CalendarEvent,
+  CalendarEventDisplay,
+  DateRange,
+  EventFilters
 } from '@/types/calendar';
 import { useQuery } from '@tanstack/react-query';
-import { format, isWithinInterval, parseISO } from 'date-fns';
 import { useCallback, useMemo, useState } from 'react';
 
-/**
- * 캘린더 이벤트 데이터 관리 및 필터링을 위한 커스텀 훅
- */
+// 유틸리티 함수들
+const formatDate = (date: Date): string => {
+  return date.toISOString().split('T')[0] ?? ''; // YYYY-MM-DD 형식
+};
+
+const parseISOString = (dateString: string): Date => {
+  return new Date(dateString);
+};
+
+const isDateWithinInterval = (date: Date, start: Date, end: Date): boolean => {
+  const dateTime = date.getTime();
+  return dateTime >= start.getTime() && dateTime <= end.getTime();
+};
+
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return formatDate(date1) === formatDate(date2);
+};
+
 export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventFilters) => {
   const [filters, setFilters] = useState<EventFilters>(initialFilters || {});
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
@@ -28,8 +42,8 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
     queryFn: () => {
       if (dateRange) {
         return calendarService.getEventsInRange(
-          format(dateRange.start, 'yyyy-MM-dd'),
-          format(dateRange.end, 'yyyy-MM-dd')
+          formatDate(dateRange.start),
+          formatDate(dateRange.end)
         );
       }
       return calendarService.getEvents(filters);
@@ -100,15 +114,15 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
   // 표시용 이벤트 데이터 (추가 메타데이터 포함)
   const displayEvents = useMemo((): CalendarEventDisplay[] => {
     return filteredEvents.map(event => {
-      const startDate = parseISO(event.start_date);
-      const endDate = parseISO(event.end_date);
+      const startDate = parseISOString(event.start_date);
+      const endDate = parseISOString(event.end_date);
       const duration = endDate.getTime() - startDate.getTime();
 
       return {
         ...event,
         display_start: startDate,
         display_end: endDate,
-        is_multiday: !event.all_day && format(startDate, 'yyyy-MM-dd') !== format(endDate, 'yyyy-MM-dd'),
+        is_multiday: !event.all_day && !isSameDay(startDate, endDate),
         duration_minutes: Math.round(duration / (1000 * 60)),
       };
     });
@@ -119,7 +133,7 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
     const grouped: { [date: string]: CalendarEventDisplay[] } = {};
 
     displayEvents.forEach(event => {
-      const dateKey = format(event.display_start, 'yyyy-MM-dd');
+      const dateKey = formatDate(event.display_start);
       if (!Array.isArray(grouped[dateKey])) {
         grouped[dateKey] = [];
       }
@@ -141,14 +155,14 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
   // 이벤트 충돌 감지
   const detectConflicts = useCallback((targetEvent: CalendarEvent): CalendarConflict[] => {
     const conflicts: CalendarConflict[] = [];
-    const targetStart = parseISO(targetEvent.start_date);
-    const targetEnd = parseISO(targetEvent.end_date);
+    const targetStart = parseISOString(targetEvent.start_date);
+    const targetEnd = parseISOString(targetEvent.end_date);
 
     filteredEvents.forEach(event => {
       if (event.id === targetEvent.id) return;
 
-      const eventStart = parseISO(event.start_date);
-      const eventEnd = parseISO(event.end_date);
+      const eventStart = parseISOString(event.start_date);
+      const eventEnd = parseISOString(event.end_date);
 
       // 시간 겹침 확인
       const hasOverlap = (
@@ -176,20 +190,20 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
 
   // 특정 날짜의 이벤트 조회
   const getEventsForDate = useCallback((date: Date): CalendarEventDisplay[] => {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = formatDate(date);
     return eventsByDate[dateKey] || [];
   }, [eventsByDate]);
 
   // 특정 시간 범위의 이벤트 조회
   const getEventsInTimeRange = useCallback((start: Date, end: Date): CalendarEventDisplay[] => {
     return displayEvents.filter(event =>
-      isWithinInterval(event.display_start, { start, end }) ||
-      isWithinInterval(event.display_end, { start, end }) ||
+      isDateWithinInterval(event.display_start, start, end) ||
+      isDateWithinInterval(event.display_end, start, end) ||
       (event.display_start <= start && event.display_end >= end)
     );
   }, [displayEvents]);
 
-  // 필터 업데이트
+  // 나머지 코드는 동일...
   const updateFilters = useCallback((newFilters: Partial<EventFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
@@ -198,7 +212,6 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
     setFilters({});
   }, []);
 
-  // 이벤트 선택 관리
   const selectEvent = useCallback((eventId: string) => {
     setSelectedEventIds(prev => [...prev, eventId]);
   }, []);

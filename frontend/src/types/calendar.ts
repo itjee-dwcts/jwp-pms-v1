@@ -1,13 +1,3 @@
-// ============================================================================
-// Calendar Types
-// ============================================================================
-
-export type EventType = 'meeting' | 'task' | 'reminder' | 'deadline' | 'holiday' | 'personal';
-export type EventStatus = 'tentative' | 'confirmed' | 'cancelled';
-export type EventPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type CalendarView = 'month' | 'week' | 'day' | 'agenda' | 'year';
-export type AttendeeStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
-
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -15,9 +5,9 @@ export interface CalendarEvent {
   start_date: string;
   end_date: string;
   all_day: boolean;
-  type: EventType;
-  status: EventStatus;
-  priority: EventPriority;
+  type: string;
+  status: string;
+  priority: string;
   color?: string;
   location?: string;
   url?: string;
@@ -44,7 +34,7 @@ export interface CalendarEvent {
 
   // 메타데이터
   timezone?: string;
-  visibility: 'public' | 'private' | 'confidential';
+  visibility: string;   // 'public' | 'private' | 'confidential';
   metadata?: Record<string, any>;
 }
 
@@ -52,7 +42,7 @@ export interface EventAttendee {
   id: string;
   event_id: string;
   user_id: string;
-  status: AttendeeStatus;
+  status: string;
   is_organizer: boolean;
   added_at: string;
   responded_at?: string;
@@ -81,7 +71,7 @@ export interface EventAttachment {
 export interface EventReminder {
   id: string;
   event_id: string;
-  type: 'email' | 'notification' | 'sms';
+  type: string; // 'email' | 'notification' | 'sms';
   minutes_before: number;
   sent_at?: string;
   created_at: string;
@@ -97,8 +87,8 @@ export interface CreateEventRequest {
   start_date: string;
   end_date: string;
   all_day?: boolean;
-  type: EventType;
-  priority?: EventPriority;
+  type: string;
+  priority?: string;
   color?: string;
   location?: string;
   url?: string;
@@ -107,7 +97,7 @@ export interface CreateEventRequest {
   attendee_ids?: string[];
   reminder_minutes?: number[];
   timezone?: string;
-  visibility?: 'public' | 'private' | 'confidential';
+  visibility?: string;  // 'public' | 'private' | 'confidential';
   metadata?: Record<string, any>;
 }
 
@@ -117,31 +107,31 @@ export interface UpdateEventRequest {
   start_date?: string;
   end_date?: string;
   all_day?: boolean;
-  type?: EventType;
-  status?: EventStatus;
-  priority?: EventPriority;
+  type?: string;
+  status?: string;
+  priority?: string;
   color?: string;
   location?: string;
   url?: string;
   project_id?: string;
   task_id?: string;
   timezone?: string;
-  visibility?: 'public' | 'private' | 'confidential';
+  visibility?: string;  // 'public' | 'private' | 'confidential';
   metadata?: Record<string, any>;
 }
 
 export interface EventFilters {
   start_date?: string;
   end_date?: string;
-  type?: EventType[];
-  status?: EventStatus[];
-  priority?: EventPriority[];
+  type?: string[];
+  status?: string[];
+  priority?: string[];
   project_id?: string;
   task_id?: string;
   attendee_id?: string;
   created_by?: string;
   search?: string;
-  visibility?: 'public' | 'private' | 'confidential';
+  visibility?: string;  //  'public' | 'private' | 'confidential';
   include_recurring?: boolean;
 }
 
@@ -150,11 +140,11 @@ export interface EventFilters {
 // ============================================================================
 
 export interface CalendarViewConfig {
-  view: CalendarView;
+  view: string;
   date: Date;
   showWeekends: boolean;
   showAllDay: boolean;
-  timeFormat: '12h' | '24h';
+  timeFormat: string; // '12h' | '24h';
   firstDayOfWeek: 0 | 1; // 0 = Sunday, 1 = Monday
   workingHours: {
     start: string; // HH:mm format
@@ -177,7 +167,7 @@ export interface CalendarEventDisplay extends CalendarEvent {
 // ============================================================================
 
 export interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  frequency: string;  // 'daily' | 'weekly' | 'monthly' | 'yearly';
   interval: number;
   count?: number;
   until?: string;
@@ -200,20 +190,20 @@ export interface RecurringEventInfo {
 export interface ExternalCalendar {
   id: string;
   name: string;
-  provider: 'google' | 'outlook' | 'apple' | 'caldav';
+  provider: string; // 'google' | 'outlook' | 'apple' | 'caldav';
   url?: string;
   username?: string;
   is_active: boolean;
   last_sync?: string;
   sync_frequency: number; // minutes
-  default_event_type: EventType;
+  default_event_type: string;
   color: string;
 }
 
 export interface CalendarSyncStatus {
   calendar_id: string;
   last_sync: string;
-  status: 'success' | 'error' | 'in_progress';
+  status: string; // 'success' | 'error' | 'in_progress';
   events_synced: number;
   errors?: string[];
 }
@@ -223,8 +213,8 @@ export interface CalendarSyncStatus {
 // ============================================================================
 
 export interface CalendarSettings {
-  default_view: CalendarView;
-  default_event_type: EventType;
+  default_view: string;
+  default_event_type: string;
   default_event_duration: number; // minutes
   default_reminder_minutes: number[];
   timezone: string;
@@ -256,8 +246,8 @@ export interface CalendarAnalytics {
   };
   stats: {
     total_events: number;
-    events_by_type: { [key in EventType]: number };
-    events_by_priority: { [key in EventPriority]: number };
+    events_by_type: { [key in string]: number };
+    events_by_priority: { [key in string]: number };
     average_event_duration: number;
     busiest_day: string;
     busiest_hour: number;
@@ -281,18 +271,18 @@ export interface CalendarAnalytics {
 
 export interface CalendarProps {
   events: CalendarEvent[];
-  view?: CalendarView;
+  view?: string;
   date?: Date;
   onEventClick?: (event: CalendarEvent) => void;
   onDateClick?: (date: Date) => void;
   onEventDrop?: (event: CalendarEvent, newDate: Date) => void;
   onEventResize?: (event: CalendarEvent, newStart: Date, newEnd: Date) => void;
-  onViewChange?: (view: CalendarView) => void;
+  onViewChange?: (view: string) => void;
   onDateChange?: (date: Date) => void;
   editable?: boolean;
   selectable?: boolean;
-  eventDisplay?: 'auto' | 'block' | 'list-item' | 'background' | 'inverse-background';
-  height?: number | 'auto';
+  eventDisplay?: string;  // 'auto' | 'block' | 'list-item' | 'background' | 'inverse-background';
+  height?: string;  // | 'auto';
   className?: string;
 }
 

@@ -58,7 +58,7 @@ const ProjectDetail: React.FC = () => {
 
     try {
       setLoading(true);
-      const projectData = await getProject(parseInt(id));
+      const projectData = await getProject(id);
       setProject(projectData);
     } catch (error) {
       console.error('프로젝트 로드 실패:', error);
@@ -78,7 +78,7 @@ const ProjectDetail: React.FC = () => {
     try {
       setTasksLoading(true);
       const tasksData = await getTasksByProject(parseInt(id));
-      setTasks(tasksData.slice(0, 5)); // 최근 5개 작업만 표시
+      setTasks(tasksData.tasks.slice(0, 5)); // 최근 5개 작업만 표시
     } catch (error) {
       console.error('작업 목록 로드 실패:', error);
     } finally {
@@ -193,7 +193,7 @@ const ProjectDetail: React.FC = () => {
    */
   const getProgressPercentage = () => {
     if (!project?.task_count) return 0;
-    return Math.round((project.completed_tasks_count / project.task_count) * 100);
+    return Math.round((project.completed_task_count??0 / project.task_count) * 100);
   };
 
   /**
@@ -333,7 +333,7 @@ const ProjectDetail: React.FC = () => {
               <div>
                 <span className="text-gray-500 dark:text-gray-400">완료 작업:</span>
                 <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                  {project.completed_tasks_count}개
+                  {project.completed_task_count ?? 0}개
                 </span>
               </div>
             </div>
@@ -386,23 +386,23 @@ const ProjectDetail: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-3">
-                      {task.assigned_to && (
+                      {task.assignees[0]?.user && (
                         <div className="flex items-center space-x-2">
-                          {task.assigned_to.avatar_url ? (
+                          {task.assignees[0]?.user.avatar_url ? (
                             <img
-                              src={task.assigned_to.avatar_url}
-                              alt={task.assigned_to.full_name}
+                              src={task.assignees[0]?.user.avatar_url}
+                              alt={task.assignees[0]?.user.full_name}
                               className="h-6 w-6 rounded-full"
                             />
                           ) : (
                             <div className="h-6 w-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                {task.assigned_to.full_name.charAt(0).toUpperCase()}
+                                {task.assignees[0]?.user.full_name.charAt(0).toUpperCase()}
                               </span>
                             </div>
                           )}
                           <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {task.assigned_to.full_name}
+                            {task.assignees[0]?.user.full_name}
                           </span>
                         </div>
                       )}

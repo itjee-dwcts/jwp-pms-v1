@@ -1,16 +1,16 @@
 import { apiClient } from '@/services/api-client';
 import type {
-    ExportOptions,
-    ExportStatus,
-    ProjectReport,
-    ReportData,
-    ReportFilters,
-    ReportMetrics,
-    ReportTemplate,
-    ScheduledReport,
-    TaskReport,
-    TimeTrackingReport,
-    UserReport,
+  ExportOptions,
+  ExportStatus,
+  ProjectReport,
+  ReportData,
+  ReportFilters,
+  ReportMetrics,
+  ReportTemplate,
+  ScheduledReport,
+  TaskReport,
+  TimeTrackingReport,
+  UserReport,
 } from '@/types/report';
 import { buildQueryParams } from '@/utils/query-params';
 
@@ -27,12 +27,12 @@ export class ReportService {
   }
 
   // Specific Report Types
-  async getProjectReport(projectId: number, filters: Partial<ReportFilters> = {}): Promise<ProjectReport> {
+  async getProjectReport(projectId: string, filters: Partial<ReportFilters> = {}): Promise<ProjectReport> {
     const queryString = buildQueryParams(filters);
     return apiClient.request<ProjectReport>(`/api/v1/projects/${projectId}/reports?${queryString}`);
   }
 
-  async getUserReport(userId: number, filters: Partial<ReportFilters> = {}): Promise<UserReport> {
+  async getUserReport(userId: string, filters: Partial<ReportFilters> = {}): Promise<UserReport> {
     const queryString = buildQueryParams(filters);
     return apiClient.request<UserReport>(`/api/v1/users/${userId}/reports?${queryString}`);
   }
@@ -107,15 +107,15 @@ export class ReportService {
   }
 
   async getExportHistory(params?: {
-    page?: number;
-    limit?: number;
+    page_no?: number;
+    page_size?: number;
     format?: string;
     status?: string;
   }): Promise<{
     exports: ExportStatus[];
-    total: number;
-    page: number;
-    limit: number;
+    total_items: number;
+    page_no: number;
+    page_size: number;
   }> {
     const queryString = buildQueryParams(params || {});
     return apiClient.request(`/api/v1/reports/export/history?${queryString}`);
@@ -144,14 +144,14 @@ export class ReportService {
     });
   }
 
-  async updateReportTemplate(id: number, template: Partial<ReportTemplate>): Promise<ReportTemplate> {
+  async updateReportTemplate(id: string, template: Partial<ReportTemplate>): Promise<ReportTemplate> {
     return apiClient.request<ReportTemplate>(`/api/v1/reports/templates/${id}`, {
       method: 'PUT',
       body: JSON.stringify(template),
     });
   }
 
-  async deleteReportTemplate(id: number): Promise<void> {
+  async deleteReportTemplate(id: string): Promise<void> {
     await apiClient.request(`/api/v1/reports/templates/${id}`, {
       method: 'DELETE',
     });
@@ -169,14 +169,14 @@ export class ReportService {
     });
   }
 
-  async updateScheduledReport(id: number, report: Partial<ScheduledReport>): Promise<ScheduledReport> {
+  async updateScheduledReport(id: string, report: Partial<ScheduledReport>): Promise<ScheduledReport> {
     return apiClient.request<ScheduledReport>(`/api/v1/reports/scheduled/${id}`, {
       method: 'PUT',
       body: JSON.stringify(report),
     });
   }
 
-  async deleteScheduledReport(id: number): Promise<void> {
+  async deleteScheduledReport(id: string): Promise<void> {
     await apiClient.request(`/api/v1/reports/scheduled/${id}`, {
       method: 'DELETE',
     });

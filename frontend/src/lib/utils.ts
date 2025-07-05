@@ -1,5 +1,4 @@
 import { clsx, type ClassValue } from 'clsx';
-import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
 /**
  * Utility function to combine class names
@@ -42,12 +41,98 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
+ * Parse ISO string to Date object (대신 사용할 네이티브 함수)
+ */
+function parseDate(date: string | Date): Date {
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return date;
+}
+
+/**
+ * Check if date is today
+ */
+function isToday(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
+
+/**
+ * Check if date is yesterday
+ */
+function isYesterday(date: Date): boolean {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  );
+}
+
+/**
+ * Format date using native JavaScript (date-fns 대신 사용)
+ */
+function formatNativeDate(date: Date, formatStr: string = 'yyyy-MM-dd'): string {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+
+  // 숫자를 2자리로 패딩
+  const pad = (num: number): string => num.toString().padStart(2, '0');
+
+  return formatStr
+    .replace('yyyy', year.toString())
+    .replace('MM', pad(month))
+    .replace('M', month.toString())
+    .replace('dd', pad(day))
+    .replace('d', day.toString())
+    .replace('HH', pad(hours))
+    .replace('H', hours.toString())
+    .replace('mm', pad(minutes))
+    .replace('m', minutes.toString())
+    .replace('ss', pad(seconds))
+    .replace('s', seconds.toString())
+    .replace('PPP', `${year}년 ${month}월 ${day}일`);
+}
+
+/**
+ * Get relative time string (formatDistanceToNow 대신 사용)
+ */
+function getRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  const diffInMonths = Math.floor(diffInDays / 30);
+  const diffInYears = Math.floor(diffInDays / 365);
+
+  if (diffInMinutes < 1) return '방금 전';
+  if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+  if (diffInHours < 24) return `${diffInHours}시간 전`;
+  if (diffInDays < 7) return `${diffInDays}일 전`;
+  if (diffInWeeks < 4) return `${diffInWeeks}주 전`;
+  if (diffInMonths < 12) return `${diffInMonths}개월 전`;
+  return `${diffInYears}년 전`;
+}
+
+/**
  * Format date for display
  */
 export function formatDate(date: string | Date, formatStr = 'PPP'): string {
   try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    return format(dateObj, formatStr);
+    const dateObj = parseDate(date);
+    return formatNativeDate(dateObj, formatStr);
   } catch {
     return 'Invalid date';
   }
@@ -58,17 +143,17 @@ export function formatDate(date: string | Date, formatStr = 'PPP'): string {
  */
 export function formatRelativeDate(date: string | Date): string {
   try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    const dateObj = parseDate(date);
 
     if (isToday(dateObj)) {
-      return `Today at ${format(dateObj, 'HH:mm')}`;
+      return `오늘 ${formatNativeDate(dateObj, 'HH:mm')}`;
     }
 
     if (isYesterday(dateObj)) {
-      return `Yesterday at ${format(dateObj, 'HH:mm')}`;
+      return `어제 ${formatNativeDate(dateObj, 'HH:mm')}`;
     }
 
-    return formatDistanceToNow(dateObj, { addSuffix: true });
+    return getRelativeTime(dateObj);
   } catch {
     return 'Invalid date';
   }
@@ -149,31 +234,31 @@ export function validatePassword(password: string): {
   let score = 0;
 
   if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long');
+    errors.push('비밀번호는 최소 8자 이상이어야 합니다');
   } else {
     score++;
   }
 
   if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
+    errors.push('소문자를 최소 1개 포함해야 합니다');
   } else {
     score++;
   }
 
   if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
+    errors.push('대문자를 최소 1개 포함해야 합니다');
   } else {
     score++;
   }
 
   if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
+    errors.push('숫자를 최소 1개 포함해야 합니다');
   } else {
     score++;
   }
 
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push('Password must contain at least one special character');
+    errors.push('특수문자를 최소 1개 포함해야 합니다');
   } else {
     score++;
   }
@@ -472,7 +557,7 @@ export function formatNumber(
   num: number,
   options: Intl.NumberFormatOptions = {}
 ): string {
-  return new Intl.NumberFormat('en-US', options).format(num);
+  return new Intl.NumberFormat('ko-KR', options).format(num);
 }
 
 /**
@@ -480,8 +565,8 @@ export function formatNumber(
  */
 export function formatCurrency(
   amount: number,
-  currency = 'USD',
-  locale = 'en-US'
+  currency = 'KRW',
+  locale = 'ko-KR'
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -573,7 +658,7 @@ export const localStorage = {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error('Failed to save to localStorage:', error);
+      console.error('localStorage 저장 실패:', error);
     }
   },
 
@@ -581,7 +666,7 @@ export const localStorage = {
     try {
       window.localStorage.removeItem(key);
     } catch (error) {
-      console.error('Failed to remove from localStorage:', error);
+      console.error('localStorage 삭제 실패:', error);
     }
   },
 
@@ -589,7 +674,7 @@ export const localStorage = {
     try {
       window.localStorage.clear();
     } catch (error) {
-      console.error('Failed to clear localStorage:', error);
+      console.error('localStorage 초기화 실패:', error);
     }
   },
 };

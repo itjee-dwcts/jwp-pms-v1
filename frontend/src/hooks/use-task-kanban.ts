@@ -1,13 +1,13 @@
 import { taskService } from '@/services/task-service';
-import type { Task, TaskKanbanBoard, TaskStatus } from '@/types/task';
+import type { Task, TaskKanbanBoard } from '@/types/task';
 import { useCallback, useState } from 'react';
 
 interface UseTaskKanbanReturn {
   kanbanBoard: TaskKanbanBoard | null;
   loading: boolean;
   error: string | null;
-  getKanbanBoard: (projectId?: number) => Promise<TaskKanbanBoard>;
-  moveTask: (taskId: number, newStatus: TaskStatus) => Promise<Task>;
+  getKanbanBoard: (projectId?: string) => Promise<TaskKanbanBoard>;
+  moveTask: (taskId: string, newStatus: string) => Promise<Task>;
   clearError: () => void;
 }
 
@@ -37,7 +37,7 @@ export const useTaskKanban = (): UseTaskKanbanReturn => {
     }
   }, []);
 
-  const getKanbanBoard = useCallback(async (projectId?: number): Promise<TaskKanbanBoard> => {
+  const getKanbanBoard = useCallback(async (projectId?: string): Promise<TaskKanbanBoard> => {
     return handleRequest(async () => {
       const board = await taskService.getKanbanBoard(projectId);
       setKanbanBoard(board);
@@ -45,7 +45,7 @@ export const useTaskKanban = (): UseTaskKanbanReturn => {
     });
   }, [handleRequest]);
 
-  const moveTask = useCallback(async (taskId: number, newStatus: TaskStatus): Promise<Task> => {
+  const moveTask = useCallback(async (taskId: string, newStatus: string): Promise<Task> => {
     return handleRequest(async () => {
       const task = await taskService.updateTaskStatus(taskId, newStatus);
 

@@ -23,15 +23,15 @@ import { buildQueryParams } from '@/utils/query-params';
 
 export class ProjectService {
   // CRUD Operations
-  async getProjects(params?: ProjectSearchParams): Promise<Project[]> {
+  async getProjects(params?: ProjectSearchParams): Promise<ProjectListResponse> {
     const queryString = params ? buildQueryParams(params) : '';
     const response = await apiClient.request<ProjectListResponse>(
       `/projects${queryString ? `?${queryString}` : ''}`
     );
-    return response.projects;
+    return response;
   }
 
-  async getProject(id: number): Promise<Project> {
+  async getProject(id: string): Promise<Project> {
     return apiClient.request<Project>(`/projects/${id}`);
   }
 
@@ -42,14 +42,14 @@ export class ProjectService {
     });
   }
 
-  async updateProject(id: number, data: Partial<ProjectCreateRequest>): Promise<Project> {
+  async updateProject(id: string, data: Partial<ProjectCreateRequest>): Promise<Project> {
     return apiClient.request<Project>(`/projects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteProject(id: number): Promise<void> {
+  async deleteProject(id: string): Promise<void> {
     await apiClient.request(`/projects/${id}`, {
       method: 'DELETE',
     });
@@ -64,11 +64,11 @@ export class ProjectService {
   }
 
   // Members Management
-  async getProjectMembers(projectId: number): Promise<ProjectMember[]> {
+  async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
     return apiClient.request<ProjectMember[]>(`/projects/${projectId}/members`);
   }
 
-  async addProjectMember(projectId: number, data: MemberAddRequest): Promise<ProjectMember> {
+  async addProjectMember(projectId: string, data: MemberAddRequest): Promise<ProjectMember> {
     return apiClient.request<ProjectMember>(`/projects/${projectId}/members`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -76,8 +76,8 @@ export class ProjectService {
   }
 
   async updateProjectMember(
-    projectId: number,
-    memberId: number,
+    projectId: string,
+    memberId: string,
     data: MemberUpdateRequest
   ): Promise<ProjectMember> {
     return apiClient.request<ProjectMember>(`/projects/${projectId}/members/${memberId}`, {
@@ -86,19 +86,19 @@ export class ProjectService {
     });
   }
 
-  async removeProjectMember(projectId: number, memberId: number): Promise<void> {
+  async removeProjectMember(projectId: string, memberId: string): Promise<void> {
     await apiClient.request(`/projects/${projectId}/members/${memberId}`, {
       method: 'DELETE',
     });
   }
 
   // Comments Management
-  async getProjectComments(projectId: number): Promise<ProjectComment[]> {
+  async getProjectComments(projectId: string): Promise<ProjectComment[]> {
     return apiClient.request<ProjectComment[]>(`/projects/${projectId}/comments`);
   }
 
   async addProjectComment(
-    projectId: number,
+    projectId: string,
     data: CommentCreateRequest
   ): Promise<ProjectComment> {
     return apiClient.request<ProjectComment>(`/projects/${projectId}/comments`, {
@@ -108,8 +108,8 @@ export class ProjectService {
   }
 
   async updateProjectComment(
-    projectId: number,
-    commentId: number,
+    projectId: string,
+    commentId: string,
     data: CommentUpdateRequest
   ): Promise<ProjectComment> {
     return apiClient.request<ProjectComment>(`/projects/${projectId}/comments/${commentId}`, {
@@ -118,18 +118,18 @@ export class ProjectService {
     });
   }
 
-  async deleteProjectComment(projectId: number, commentId: number): Promise<void> {
+  async deleteProjectComment(projectId: string, commentId: string): Promise<void> {
     await apiClient.request(`/projects/${projectId}/comments/${commentId}`, {
       method: 'DELETE',
     });
   }
 
   // Attachments Management
-  async getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
+  async getProjectAttachments(projectId: string): Promise<ProjectAttachment[]> {
     return apiClient.request<ProjectAttachment[]>(`/projects/${projectId}/attachments`);
   }
 
-  async uploadProjectFile(projectId: number, file: File): Promise<FileUploadResponse> {
+  async uploadProjectFile(projectId: string, file: File): Promise<FileUploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -149,27 +149,27 @@ export class ProjectService {
     return response.json();
   }
 
-  async deleteProjectAttachment(projectId: number, attachmentId: number): Promise<void> {
+  async deleteProjectAttachment(projectId: string, attachmentId: string): Promise<void> {
     await apiClient.request(`/projects/${projectId}/attachments/${attachmentId}`, {
       method: 'DELETE',
     });
   }
 
   // Advanced Operations
-  async duplicateProject(id: number, options?: ProjectDuplicateOptions): Promise<Project> {
+  async duplicateProject(id: string, options?: ProjectDuplicateOptions): Promise<Project> {
     return apiClient.request<Project>(`/projects/${id}/duplicate`, {
       method: 'POST',
       body: JSON.stringify(options || {}),
     });
   }
 
-  async archiveProject(id: number): Promise<Project> {
+  async archiveProject(id: string): Promise<Project> {
     return apiClient.request<Project>(`/projects/${id}/archive`, {
       method: 'POST',
     });
   }
 
-  async unarchiveProject(id: number): Promise<Project> {
+  async unarchiveProject(id: string): Promise<Project> {
     return apiClient.request<Project>(`/projects/${id}/unarchive`, {
       method: 'POST',
     });
@@ -191,7 +191,7 @@ export class ProjectService {
   }
 
   // Activity & History
-  async getProjectActivity(projectId: number): Promise<ProjectActivityLog[]> {
+  async getProjectActivity(projectId: string): Promise<ProjectActivityLog[]> {
     return apiClient.request<ProjectActivityLog[]>(`/projects/${projectId}/activity`);
   }
 
@@ -200,7 +200,7 @@ export class ProjectService {
     return apiClient.request<ProjectTemplate[]>('/projects/templates');
   }
 
-  async createProjectFromTemplate(templateId: number, data: Partial<ProjectCreateRequest>): Promise<Project> {
+  async createProjectFromTemplate(templateId: string, data: Partial<ProjectCreateRequest>): Promise<Project> {
     return apiClient.request<Project>(`/projects/templates/${templateId}/create`, {
       method: 'POST',
       body: JSON.stringify(data),

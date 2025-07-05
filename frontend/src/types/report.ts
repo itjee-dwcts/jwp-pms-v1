@@ -1,17 +1,12 @@
-export type DateRangeType = 'week' | 'month' | 'quarter' | 'year' | 'custom';
-export type ReportType = 'overview' | 'projects' | 'tasks' | 'users' | 'time-tracking';
-export type ExportFormat = 'pdf' | 'csv' | 'excel' | 'json';
-export type ReportStatus = 'draft' | 'generating' | 'completed' | 'failed';
-
 export interface ReportFilters {
-  dateRange: DateRangeType;
+  dateRange: string;
   startDate?: string;
   endDate?: string;
-  projectIds?: number[];
-  userIds?: number[];
-  taskIds?: number[];
-  teamIds?: number[];
-  tagIds?: number[];
+  projectIds?: string[];
+  userIds?: string[];
+  taskIds?: string[];
+  teamIds?: string[];
+  tagIds?: string[];
   statusFilter?: string[];
   priorityFilter?: string[];
 }
@@ -30,7 +25,7 @@ export interface ReportSummary {
 }
 
 export interface ProjectStats {
-  project_id: number;
+  project_id: string;
   project_name: string;
   total_tasks: number;
   completed_tasks: number;
@@ -51,7 +46,7 @@ export interface TaskStatusDistribution {
 }
 
 export interface UserProductivity {
-  user_id: number;
+  user_id: string;
   user_name: string;
   completed_tasks: number;
   hours_logged: number;
@@ -78,7 +73,7 @@ export interface PriorityDistribution {
 }
 
 export interface TeamPerformance {
-  team_id: number;
+  team_id: string;
   team_name: string;
   member_count: number;
   total_tasks: number;
@@ -101,8 +96,8 @@ export interface ReportData {
 }
 
 export interface ExportOptions {
-  type: ReportType;
-  format: ExportFormat;
+  type: string;
+  format: string;
   filters: ReportFilters;
   template?: string;
   include_charts?: boolean;
@@ -148,7 +143,7 @@ export interface ReportMetrics {
 
 export interface ProjectReport {
   project: {
-    id: number;
+    id: string;
     name: string;
     description: string;
     status: string;
@@ -171,7 +166,7 @@ export interface ProjectReport {
 
 export interface UserReport {
   user: {
-    id: number;
+    id: string;
     name: string;
     email: string;
     role: string;
@@ -233,7 +228,7 @@ export interface TimeTrackingReport {
 }
 
 export interface TaskStats {
-  task_id: number;
+  task_id: string;
   title: string;
   status: string;
   priority: string;
@@ -252,7 +247,7 @@ export interface TimeLogStats {
 }
 
 export interface Milestone {
-  id: number;
+  id: string;
   name: string;
   due_date: string;
   completion_rate: number;
@@ -278,23 +273,23 @@ export interface PeakPeriod {
 }
 
 export interface ReportTemplate {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  type: ReportType;
+  type: string;
   default_filters: ReportFilters;
   layout_config: Record<string, any>;
-  created_by: number;
+  created_by: string;
   is_public: boolean;
 }
 
 export interface ScheduledReport {
-  id: number;
+  id: string;
   name: string;
-  type: ReportType;
+  type: string;
   schedule: 'daily' | 'weekly' | 'monthly' | 'quarterly';
   filters: ReportFilters;
-  export_format: ExportFormat;
+  export_format: string;
   recipients: string[];
   next_run: string;
   is_active: boolean;
@@ -318,15 +313,15 @@ export interface ExportStatus {
   expires_at?: string;
   error_message?: string;
   created_by: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
   };
 }
 
 export interface ExportOptions {
-  type: ReportType; // 'overview' | 'projects' | 'tasks' | 'users' | 'productivity' | 'timeline'
-  format: ExportFormat;
+  type: string; // 'overview' | 'projects' | 'tasks' | 'users' | 'productivity' | 'timeline'
+  format: string;
   filters: ReportFilters;
   template?: string;
   include_charts?: boolean;
@@ -338,19 +333,20 @@ export interface ExportOptions {
 // Export History 응답 타입
 export interface ExportHistoryResponse {
   exports: ExportStatus[];
-  total: number;
-  page: number;
-  limit: number;
+  page_no: number;
+  page_size: number;
+  total_pages: number;
+  total_items: number;
   has_next: boolean;
   has_prev: boolean;
 }
 
 // Export 요청 옵션
 export interface ExportRequestOptions {
-  page?: number;
-  limit?: number;
-  format?: ExportFormat;
-  status?: ExportStatusType;
+  page_no?: number;
+  page_size?: number;
+  format?: string;
+  status?: string;
   created_after?: string;
   created_before?: string;
   order_by?: 'created_at' | 'completed_at' | 'status';

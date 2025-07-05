@@ -5,8 +5,8 @@ import { useCallback, useState } from 'react';
 interface UseUserAvatarReturn {
   uploading: boolean;
   error: string | null;
-  uploadAvatar: (userId: number, file: File) => Promise<AvatarUploadResponse>;
-  deleteAvatar: (userId: number) => Promise<void>;
+  uploadAvatar: (userId: string, file: File) => Promise<AvatarUploadResponse>;
+  deleteAvatar: (userId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -18,7 +18,7 @@ export const useUserAvatar = (): UseUserAvatarReturn => {
     setError(null);
   }, []);
 
-  const uploadAvatar = useCallback(async (userId: number, file: File): Promise<AvatarUploadResponse> => {
+  const uploadAvatar = useCallback(async (userId: string, file: File): Promise<AvatarUploadResponse> => {
     setUploading(true);
     setError(null);
     try {
@@ -33,7 +33,7 @@ export const useUserAvatar = (): UseUserAvatarReturn => {
     }
   }, []);
 
-  const deleteAvatar = useCallback(async (userId: number): Promise<void> => {
+  const deleteAvatar = useCallback(async (userId: string): Promise<void> => {
     setUploading(true);
     setError(null);
     try {

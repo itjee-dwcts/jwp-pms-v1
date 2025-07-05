@@ -1,23 +1,16 @@
-export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
-export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
-export type ProjectMemberRole = 'owner' | 'admin' | 'member' | 'viewer';
-export type SortOrder = 'asc' | 'desc';
-
 export interface Project {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  status: ProjectStatus;
-  priority: ProjectPriority;
+  status: string;
+  priority: string;
   start_date: string;
   end_date?: string;
   budget?: number;
   created_at: string;
   updated_at: string;
   owner: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
     avatar_url?: string;
@@ -35,46 +28,46 @@ export interface Project {
 }
 
 export interface ProjectMember {
-  id: number;
+  id: string;
   user: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
     email: string;
     avatar_url?: string;
   };
-  role: ProjectMemberRole;
+  role: string;
   joined_at: string;
   is_active: boolean;
   permissions?: string[];
 }
 
 export interface ProjectComment {
-  id: number;
+  id: string;
   content: string;
   created_at: string;
   updated_at: string;
   user: {
-    id: number;
+    id: string;
     full_name: string;
     avatar_url?: string;
   };
   is_edited?: boolean;
   mentions?: Array<{
-    id: number;
+    id: string;
     username: string;
   }>;
 }
 
 export interface ProjectAttachment {
-  id: number;
+  id: string;
   file_name: string;
   file_size: number;
   file_path: string;
   mime_type: string;
   uploaded_at: string;
   uploader: {
-    id: number;
+    id: string;
     full_name: string;
   };
   download_url?: string;
@@ -82,16 +75,16 @@ export interface ProjectAttachment {
 }
 
 export interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: string;
+  priority: string;
   due_date?: string;
   created_at: string;
   updated_at: string;
   assignees: Array<{
-    id: number;
+    id: string;
     full_name: string;
     avatar_url?: string;
   }>;
@@ -104,26 +97,26 @@ export interface Task {
 export interface ProjectCreateRequest {
   name: string;
   description: string;
-  status: ProjectStatus;
-  priority: ProjectPriority;
+  status: string;
+  priority: string;
   start_date: string;
   end_date?: string;
   budget?: number;
   tags?: string[];
-  member_ids?: number[];
-  template_id?: number;
+  member_ids?: string[];
+  template_id?: string;
 }
 
 export interface ProjectUpdateRequest extends Partial<ProjectCreateRequest> {
-  id: number;
+  id: string;
 }
 
 export interface ProjectSearchParams {
   search?: string;
-  status?: ProjectStatus;
-  priority?: ProjectPriority;
-  owner_id?: number;
-  member_id?: number;
+  status?: string;
+  priority?: string;
+  owner_id?: string;
+  member_id?: string;
   tags?: string[];
   start_date?: string;
   end_date?: string;
@@ -131,21 +124,21 @@ export interface ProjectSearchParams {
   page_no?: number;
   page_size?: number;
   sort_by?: string;
-  sort_order?: SortOrder;
+  sort_order?: string;
 }
 
 export interface ProjectListResponse {
   projects: Project[];
-  total_items: number;
   page_no: number;
   page_size: number;
   total_pages: number;
+  total_items: number;
 }
 
 export interface ProjectStatsResponse {
   total_projects: number;
-  by_status: Record<ProjectStatus, number>;
-  by_priority: Record<ProjectPriority, number>;
+  by_status: Record<string, number>;
+  by_priority: Record<string, number>;
   completion_rate: number;
   average_duration: number;
   budget_utilization?: number;
@@ -154,25 +147,25 @@ export interface ProjectStatsResponse {
 
 export interface CommentCreateRequest {
   content: string;
-  mentions?: number[];
+  mentions?: string[];
 }
 
 export interface CommentUpdateRequest {
   content: string;
-  mentions?: number[];
+  mentions?: string[];
 }
 
 export interface MemberAddRequest {
-  user_id: number;
-  role: ProjectMemberRole;
+  user_id: string;
+  role: string;
 }
 
 export interface MemberUpdateRequest {
-  role: ProjectMemberRole;
+  role: string;
 }
 
 export interface FileUploadResponse {
-  id: number;
+  id: string;
   file_name: string;
   file_size: number;
   file_path: string;
@@ -189,33 +182,33 @@ export interface ProjectDuplicateOptions {
 }
 
 export interface BulkProjectUpdateRequest {
-  ids: number[];
+  ids: string[];
   updates: Partial<ProjectCreateRequest>;
 }
 
 export interface BulkProjectDeleteRequest {
-  ids: number[];
+  ids: string[];
 }
 
 export interface ProjectActivityLog {
-  id: number;
+  id: string;
   action: string;
   description: string;
   user: {
-    id: number;
+    id: string;
     full_name: string;
   };
   created_at: string;
-  metadata?: Record<string, any>;
+  extra_data?: Record<string, any>;
 }
 
 export interface ProjectTemplate {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  default_status: ProjectStatus;
-  default_priority: ProjectPriority;
-  default_members?: ProjectMemberRole[];
+  default_status: string;
+  default_priority: string;
+  default_members?: string[];
   default_tasks?: Partial<Task>[];
   created_at: string;
 }

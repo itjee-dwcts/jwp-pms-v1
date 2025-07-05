@@ -3,7 +3,7 @@
 // 기본 User 타입은 auth.ts에서 import하여 사용
 // ============================================================================
 
-import type { User, UserRole, UserStatus } from './auth';
+import type { User } from './auth';
 
 // ============================================================================
 // 사용자 관리 요청/응답 타입
@@ -14,7 +14,7 @@ export interface UserCreateRequest {
   email: string;
   password: string;
   full_name: string;
-  role: UserRole;
+  role: string;
   bio?: string;
   phone?: string;
   location?: string;
@@ -26,8 +26,8 @@ export interface UserUpdateRequest {
   username?: string;
   email?: string;
   full_name?: string;
-  role?: UserRole;
-  status?: UserStatus;
+  role?: string;
+  status?: string;
   bio?: string;
   phone?: string;
   location?: string;
@@ -39,8 +39,8 @@ export interface UserUpdateRequest {
 
 export interface UserSearchParams {
   search?: string;
-  role?: UserRole;
-  status?: UserStatus;
+  role?: string;
+  status?: string;
   is_verified?: boolean;
   created_after?: string;
   created_before?: string;
@@ -54,18 +54,18 @@ export interface UserSearchParams {
 
 export interface UserListResponse {
   users: User[];
-  total_items: number;
   page_no: number;
   page_size: number;
   total_pages: number;
+  total_items: number;
 }
 
 export interface UserStatsResponse {
   total_users: number;
   active_users: number;
   new_users_this_month: number;
-  by_role: Record<UserRole, number>;
-  by_status: Record<UserStatus, number>;
+  by_role: Record<string, number>;
+  by_status: Record<string, number>;
   average_projects_per_user: number;
   average_tasks_per_user: number;
 }
@@ -76,26 +76,26 @@ export interface UserStatsResponse {
 
 export interface UserInviteRequest {
   email: string;
-  role: UserRole;
+  role: string;
   full_name?: string;
   message?: string;
 }
 
 export interface UserInviteResponse {
-  id: number;
+  id: string;
   email: string;
-  role: UserRole;
+  role: string;
   invite_token: string;
   expires_at: string;
   created_at: string;
 }
 
 export interface UserInvitation {
-  id: number;
+  id: string;
   email: string;
-  role: UserRole;
+  role: string;
   full_name?: string;
-  invited_by: number;
+  invited_by: string;
   invite_token: string;
   expires_at: string;
   created_at: string;
@@ -137,7 +137,7 @@ export interface UserProjectParams {
 export interface UserTaskParams {
   status?: string;
   priority?: string;
-  project_id?: number;
+  project_id?: string;
   page_no?: number;
   page_size?: number;
 }
@@ -154,12 +154,12 @@ export interface UserNotificationParams {
 // ============================================================================
 
 export interface BulkUpdateRequest {
-  user_ids: number[];
+  user_ids: string[];
   updates: Partial<UserUpdateRequest>;
 }
 
 export interface BulkDeleteRequest {
-  user_ids: number[];
+  user_ids: string[];
   force?: boolean;  // 강제 삭제 여부
 }
 
@@ -167,7 +167,7 @@ export interface BulkActionResponse {
   success_count: number;
   failed_count: number;
   errors: Array<{
-    user_id: number;
+    user_id: string;
     error: string;
   }>;
 }
@@ -177,8 +177,8 @@ export interface BulkActionResponse {
 // ============================================================================
 
 export interface UserFilter {
-  roles?: UserRole[];
-  statuses?: UserStatus[];
+  roles?: string[];
+  statuses?: string[];
   is_active?: boolean;
   is_verified?: boolean;
   has_avatar?: boolean;
@@ -198,20 +198,20 @@ export interface UserSort {
 // ============================================================================
 
 export interface UserPermission {
-  id: number;
+  id: string;
   name: string;
   description: string;
   category: string;
 }
 
 export interface UserRolePermissions {
-  role: UserRole;
+  role: string;
   permissions: UserPermission[];
 }
 
 export interface AssignPermissionRequest {
-  user_id: number;
-  permission_ids: number[];
+  user_id: string;
+  permission_ids: string[];
 }
 
 // ============================================================================
@@ -219,9 +219,9 @@ export interface AssignPermissionRequest {
 // ============================================================================
 
 export interface UserAuditLog {
-  id: number;
-  user_id: number;
-  admin_id: number;  // 작업을 수행한 관리자 ID
+  id: string;
+  user_id: string;
+  admin_id: string;  // 작업을 수행한 관리자 ID
   action: 'create' | 'update' | 'delete' | 'activate' | 'deactivate' | 'invite' | 'role_change';
   old_values?: Record<string, any>;
   new_values?: Record<string, any>;
@@ -232,8 +232,8 @@ export interface UserAuditLog {
 }
 
 export interface UserAuditParams {
-  user_id?: number;
-  admin_id?: number;
+  user_id?: string;
+  admin_id?: string;
   action?: string;
   start_date?: string;
   end_date?: string;
@@ -266,7 +266,7 @@ export interface UserImportRequest {
   options: {
     update_existing?: boolean;
     send_invitations?: boolean;
-    default_role?: UserRole;
+    default_role?: string;
     skip_invalid?: boolean;
   };
 }
@@ -295,8 +295,8 @@ export interface UserDashboardStats {
   new_users_today: number;
   new_users_this_week: number;
   new_users_this_month: number;
-  users_by_role: Record<UserRole, number>;
-  users_by_status: Record<UserStatus, number>;
+  users_by_role: Record<string, number>;
+  users_by_status: Record<string, number>;
   recent_registrations: User[];
   recent_logins: Array<{
     user: User;
@@ -316,7 +316,7 @@ export interface ExtendedUser extends User {
   failed_login_attempts: number;
   account_locked_until?: string;
   email_verified_at?: string;
-  created_by?: number;  // 초대한 관리자 ID
+  created_by?: string;  // 초대한 관리자 ID
 
   // 통계 정보
   total_login_count: number;
@@ -332,20 +332,20 @@ export interface ExtendedUser extends User {
 // ============================================================================
 
 export interface UserSearchResult {
-  id: number;
+  id: string;
   username: string;
   email: string;
   full_name: string;
   avatar_url?: string;
-  role: UserRole;
-  status: UserStatus;
+  role: string;
+  status: string;
 }
 
 export interface UserAutocompleteParams {
   query: string;
   limit?: number;
   exclude_ids?: number[];
-  roles?: UserRole[];
+  roles?: string[];
   active_only?: boolean;
 }
 
@@ -373,8 +373,8 @@ export interface UseUserManagementReturn {
   // 액션
   loadUsers: () => Promise<void>;
   createUser: (data: UserCreateRequest) => Promise<User>;
-  updateUser: (id: number, data: UserUpdateRequest) => Promise<User>;
-  deleteUser: (id: number) => Promise<void>;
+  updateUser: (id: string, data: UserUpdateRequest) => Promise<User>;
+  deleteUser: (id: string) => Promise<void>;
   bulkUpdate: (data: BulkUpdateRequest) => Promise<BulkActionResponse>;
   bulkDelete: (data: BulkDeleteRequest) => Promise<BulkActionResponse>;
 

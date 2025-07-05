@@ -18,7 +18,6 @@ import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
 import { useCalendar } from '@/hooks/use-calendar';
 import { useUsers } from '@/hooks/use-users';
 import type { UpdateEventRequest } from '@/types/calendar';
@@ -29,14 +28,14 @@ interface EventFormData {
   start_date: string;
   end_date: string;
   all_day: boolean;
-  type: 'meeting' | 'deadline' | 'milestone' | 'reminder' | 'personal';
-  status: 'confirmed' | 'tentative' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
+  type: string; //'meeting' | 'deadline' | 'milestone' | 'reminder' | 'personal';
+  status: string; //'confirmed' | 'tentative' | 'cancelled';
+  priority: string; //'low' | 'medium' | 'high';
   location: string;
   url: string;
   attendee_ids: string[];
   reminder_minutes: number[];
-  visibility: 'public' | 'private' | 'confidential';
+  visibility: string; //'public' | 'private' | 'confidential';
 }
 
 /**
@@ -51,7 +50,6 @@ const formatDateForInput = (isoDateString: string): string => {
 const EventEdit: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { useEvent, updateEvent, isUpdating } = useCalendar();
   const { users } = useUsers();
 
@@ -89,9 +87,7 @@ const EventEdit: React.FC = () => {
         start_date: formatDateForInput(event.start_date),
         end_date: formatDateForInput(event.end_date),
         all_day: event.all_day || false,
-        type: ['meeting', 'deadline', 'milestone', 'reminder', 'personal'].includes(event.type)
-          ? event.type
-          : 'meeting',
+        type: event.type || 'meeting',
         status: event.status || 'confirmed',
         priority: event.priority || 'medium',
         location: event.location || '',
@@ -301,10 +297,11 @@ const EventEdit: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="event-type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       유형
                     </label>
                     <select
+                      id="event-type-select"
                       value={formData.type}
                       onChange={(e) => handleInputChange('type', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
@@ -318,10 +315,11 @@ const EventEdit: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="event-priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       우선순위
                     </label>
                     <select
+                      id="event-priority-select"
                       value={formData.priority}
                       onChange={(e) => handleInputChange('priority', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
@@ -475,6 +473,7 @@ const EventEdit: React.FC = () => {
                       value={minutes}
                       onChange={(e) => updateReminder(index, parseInt(e.target.value))}
                       className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                      id={`reminder-select-${index}`}
                     >
                       <option value={5}>5분 전</option>
                       <option value={10}>10분 전</option>
@@ -514,10 +513,11 @@ const EventEdit: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="event-status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     상태
                   </label>
                   <select
+                    id="event-status-select"
                     value={formData.status}
                     onChange={(e) => handleInputChange('status', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
@@ -529,10 +529,11 @@ const EventEdit: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="event-visibility-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     공개 범위
                   </label>
-                  <select
+                <select
+                    id="event-visibility-select"
                     value={formData.visibility}
                     onChange={(e) => handleInputChange('visibility', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"

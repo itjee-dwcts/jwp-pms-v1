@@ -1,13 +1,4 @@
 // ============================================================================
-// 기본 타입 정의
-// ============================================================================
-
-export type UserRole = 'admin' | 'manager' | 'developer' | 'viewer';
-export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
-export type ThemeType = 'light' | 'dark' | 'system';
-export type TimeFormat = '12h' | '24h';
-
-// ============================================================================
 // 사용자 관련 타입
 // ============================================================================
 
@@ -18,10 +9,10 @@ export interface UserPreferences {
   project_updates: boolean;
   calendar_reminders: boolean;
   weekly_digest: boolean;
-  theme: ThemeType;
+  theme: string;
   language: string;
   date_format: string;
-  time_format: TimeFormat;
+  time_format: string;
 }
 
 export interface UserStats {
@@ -36,12 +27,12 @@ export interface UserStats {
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
   full_name: string;
-  role: UserRole;
-  status: UserStatus;
+  role: string;
+  status: string;
   avatar_url?: string;
   bio?: string;
   phone?: string;
@@ -171,7 +162,7 @@ export interface TwoFactorVerificationRequest {
 
 export interface UserSession {
   id: string;
-  user_id: number;
+  user_id: string;
   device_info?: string;
   ip_address?: string;
   user_agent?: string;
@@ -198,7 +189,7 @@ export interface AccountSettings {
   session_timeout: number;
   timezone: string;
   language: string;
-  theme: ThemeType;
+  theme: string;
 }
 
 export interface AccountSecurityInfo {
@@ -272,7 +263,7 @@ export type AuthContextType = AuthState & AuthActions;
 // ============================================================================
 
 export interface TokenPayload {
-  sub: string | number;  // 사용자 ID
+  sub: string;  // 사용자 ID
   email: string;
   role?: string;
   name?: string;
@@ -361,8 +352,8 @@ export interface PasswordFormData {
 // ============================================================================
 
 export interface UserActivityLog {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   action: string;
   resource_type: string;
   resource_id?: number;
@@ -370,7 +361,7 @@ export interface UserActivityLog {
   ip_address?: string;
   user_agent?: string;
   created_at: string;
-  metadata?: Record<string, any>;
+  extra_data?: Record<string, any>;
 }
 
 // ============================================================================
@@ -381,8 +372,8 @@ export interface UseAuthReturn extends AuthState {
   actions: AuthActions;
   utils: {
     isLoggedIn: boolean;
-    hasRole: (role: UserRole) => boolean;
-    hasAnyRole: (roles: UserRole[]) => boolean;
+    hasRole: (role: string) => boolean;
+    hasAnyRole: (roles: string[]) => boolean;
     isTokenValid: () => boolean;
     getTokenExpiration: () => number | null;
   };
@@ -396,7 +387,7 @@ export interface AuthRoute {
   path: string;
   component: React.ComponentType;
   requiresAuth: boolean;
-  requiredRole?: UserRole;
+  requiredRole?: string;
   redirect?: string;
 }
 

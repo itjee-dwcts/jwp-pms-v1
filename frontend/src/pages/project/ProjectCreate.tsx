@@ -2,15 +2,14 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { PROJECT_PRIORITY, PROJECT_STATUS } from '@/constants/project';
 import { useAuth } from '@/hooks/use-auth';
 import { useProjects } from '@/hooks/use-projects';
 import { useUsers } from '@/hooks/use-users';
+import { User } from '@/types/auth';
 import {
   ProjectCreateRequest,
-  ProjectPriority,
-  ProjectStatus
 } from '@/types/project';
-import { User } from '@/types/user';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -28,13 +27,13 @@ import { useNavigate } from 'react-router-dom';
 interface ProjectFormData {
   name: string;
   description: string;
-  status: ProjectStatus;
-  priority: ProjectPriority;
+  status: string;
+  priority: string;
   start_date: string;
   end_date: string;
-  budget: string;
+  budget: number;
   tags: string[];
-  member_ids: number[];
+  member_ids: string[];
 }
 
 /**
@@ -51,11 +50,11 @@ const ProjectCreate: React.FC = () => {
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: '',
-    status: 'planning',
-    priority: 'medium',
+    status: PROJECT_STATUS.PLANNING,
+    priority: PROJECT_PRIORITY.MEDIUM,
     start_date: new Date().toISOString().split('T')[0] || '',
     end_date: '',
-    budget: '',
+    budget: 0,
     tags: [],
     member_ids: [],
   });
@@ -149,10 +148,6 @@ const ProjectCreate: React.FC = () => {
 
       const projectData: ProjectCreateRequest = {
         ...formData,
-        status: formData.status as ProjectStatus,
-        priority: formData.priority as ProjectPriority,
-        ...(formData.budget !== '' && { budget: parseFloat(formData.budget) }),
-        ...(formData.end_date !== '' && { end_date: formData.end_date }),
       };
 
       const newProject = await createProject(projectData);
@@ -214,7 +209,7 @@ const ProjectCreate: React.FC = () => {
   /**
    * 팀원 추가
    */
-  const addMember = (userId: number) => {
+  const addMember = (userId: string) => {
     if (!formData.member_ids.includes(userId)) {
       setFormData(prev => ({
         ...prev,
@@ -228,7 +223,7 @@ const ProjectCreate: React.FC = () => {
   /**
    * 팀원 제거
    */
-  const removeMember = (userId: number) => {
+  const removeMember = (userId: string) => {
     setFormData(prev => ({
       ...prev,
       member_ids: prev.member_ids.filter(id => id !== userId)
@@ -247,32 +242,8 @@ const ProjectCreate: React.FC = () => {
     formData.member_ids.includes(user.id)
   );
 
-  /**
-   * 상태별 색상 반환
-   */
-  const getStatusColor = (status: ProjectStatus) => {
-    const colors = {
-      planning: 'bg-gray-100 text-gray-800',
-      active: 'bg-blue-100 text-blue-800',
-      on_hold: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    };
-    return colors[status];
-  };
 
-  /**
-   * 우선순위별 색상 반환
-   */
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      "low": 'bg-green-100 text-green-800',
-      "medium": 'bg-yellow-100 text-yellow-800',
-      "high": 'bg-orange-100 text-orange-800',
-      "critical": 'bg-red-100 text-red-800',
-    };
-    return colors[priority];
-  };
+  // (우선순위별 색상 반환 함수는 사용되지 않아 제거됨)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-6">
@@ -357,10 +328,11 @@ const ProjectCreate: React.FC = () => {
             {/* 상태 및 우선순위 */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   상태
                 </label>
                 <select
+                  id="status-select"
                   value={formData.status}
                   onChange={handleInputChange('status')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -375,10 +347,11 @@ const ProjectCreate: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   우선순위
                 </label>
                 <select
+                  id="priority-select"
                   value={formData.priority}
                   onChange={handleInputChange('priority')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -503,6 +476,7 @@ const ProjectCreate: React.FC = () => {
                       onClick={() => removeTag(tag)}
                       className="ml-2 text-blue-600 hover:text-blue-800"
                       disabled={loading}
+                      title={tag}
                     >
                       <XMarkIcon className="h-3 w-3" />
                     </button>
@@ -588,6 +562,7 @@ const ProjectCreate: React.FC = () => {
                         onClick={() => removeMember(member.id)}
                         className="ml-2 text-green-600 hover:text-green-800"
                         disabled={loading}
+                        title={member.full_name}
                       >
                         <XMarkIcon className="h-3 w-3" />
                       </button>

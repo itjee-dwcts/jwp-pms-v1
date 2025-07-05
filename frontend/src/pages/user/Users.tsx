@@ -30,17 +30,17 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Pagination from '../../components/ui/Pagination';
 import Select from '../../components/ui/Select';
 import { useAuth } from '../../hooks/use-auth';
-import type { User, UserRole, UserStatus } from '../../types/auth';
+import type { User } from '../../types/auth';
 
 /**
  * 사용자 필터 타입 (로컬)
  */
 interface UserFilters {
-  role?: UserRole | undefined;
-  status?: UserStatus | undefined;
-  is_active?: boolean | undefined;
-  created_after?: string | undefined;
-  created_before?: string | undefined;
+  role?: string;
+  status?: string;
+  is_active?: boolean;
+  created_after?: string;
+  created_before?: string;
 }
 
 /**
@@ -77,16 +77,16 @@ const Users: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<UserFilters>({
-    role: undefined,
-    status: undefined,
-    is_active: undefined,
-    created_after: undefined,
-    created_before: undefined,
+    role: '',
+    status: '',
+    is_active: false,
+    created_after: '',
+    created_before: '',
   });
   const [sortBy, setSortBy] = useState<'full_name' | 'email' | 'created_at'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,8 +95,8 @@ const Users: React.FC = () => {
   /**
    * 사용자 역할 한글 변환 함수
    */
-  const getRoleDisplayName = (role: UserRole): string => {
-    const roleNames: Record<UserRole, string> = {
+  const getRoleDisplayName = (role: string): string => {
+    const roleNames: Record<string, string> = {
       admin: '관리자',
       manager: '매니저',
       developer: '개발자',
@@ -108,8 +108,8 @@ const Users: React.FC = () => {
   /**
    * 사용자 상태 한글 변환 함수
    */
-  const getStatusDisplayName = (status: UserStatus): string => {
-    const statusNames: Record<UserStatus, string> = {
+  const getStatusDisplayName = (status: string): string => {
+    const statusNames: Record<string, string> = {
       active: '활성',
       inactive: '비활성',
       pending: '대기 중',
@@ -121,7 +121,7 @@ const Users: React.FC = () => {
   /**
    * 역할별 배지 색상 결정 함수
    */
-  const getRoleBadgeVariant = (role: UserRole) => {
+  const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin':
         return 'danger';
@@ -139,7 +139,7 @@ const Users: React.FC = () => {
   /**
    * 상태별 배지 색상 결정 함수
    */
-  const getStatusBadgeVariant = (status: UserStatus) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
         return 'success';
@@ -167,7 +167,7 @@ const Users: React.FC = () => {
       // 임시 더미 데이터
       const dummyUsers: User[] = [
         {
-          id: 1,
+          id: "1",
           username: 'admin',
           email: 'admin@example.com',
           full_name: '시스템 관리자',
@@ -190,7 +190,7 @@ const Users: React.FC = () => {
           contribution_score: 95,
         },
         {
-          id: 2,
+          id: "2",
           username: 'manager1',
           email: 'manager@example.com',
           full_name: '프로젝트 매니저',
@@ -212,7 +212,7 @@ const Users: React.FC = () => {
           contribution_score: 88,
         },
         {
-          id: 3,
+          id: "3",
           username: 'dev1',
           email: 'developer@example.com',
           full_name: '개발자 김철수',
@@ -234,7 +234,7 @@ const Users: React.FC = () => {
           contribution_score: 82,
         },
         {
-          id: 4,
+          id: "4",
           username: 'viewer1',
           email: 'viewer@example.com',
           full_name: '뷰어 사용자',
@@ -296,23 +296,11 @@ const Users: React.FC = () => {
     setCurrentPage(1);
   };
 
-  /**
-   * 정렬 처리
-   */
-  const handleSort = (field: 'full_name' | 'email' | 'created_at') => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-    setCurrentPage(1);
-  };
 
   /**
    * 사용자 선택 처리
    */
-  const toggleUserSelection = (userId: number) => {
+  const toggleUserSelection = (userId: string) => {
     setSelectedUsers(prev =>
       prev.includes(userId)
         ? prev.filter(id => id !== userId)
@@ -360,7 +348,7 @@ const Users: React.FC = () => {
       const newStatus = user.status === 'active' ? 'inactive' : 'active';
       setUsers(prev => prev.map(u =>
         u.id === user.id
-          ? { ...u, is_active: !u.is_active, status: newStatus as UserStatus }
+          ? { ...u, is_active: !u.is_active, status: newStatus }
           : u
       ));
 
@@ -376,11 +364,11 @@ const Users: React.FC = () => {
    */
   const resetFilters = () => {
     setFilters({
-      role: undefined,
-      status: undefined,
-      is_active: undefined,
-      created_after: undefined,
-      created_before: undefined,
+      role: '',
+      status: '',
+      is_active: false,
+      created_after: '',
+      created_before: '',
     });
     setSearchQuery('');
     setCurrentPage(1);

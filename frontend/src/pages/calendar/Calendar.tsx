@@ -13,7 +13,7 @@ import {
   ViewColumnsIcon
 } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -21,7 +21,6 @@ import Card from '@/components/ui/Card';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
 import { useCalendar } from '@/hooks/use-calendar';
 import type { CalendarEvent } from '@/types/calendar';
 
@@ -35,10 +34,7 @@ interface CalendarFilters {
 
 const Calendar: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
   const {
-    events,
     isLoadingEvents,
     eventsError,
     useEventsInRange,
@@ -48,7 +44,7 @@ const Calendar: React.FC = () => {
   // 상태 관리
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
+  // const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<CalendarFilters>({
     search: '',
@@ -186,7 +182,6 @@ const Calendar: React.FC = () => {
   // 월 뷰 렌더링
   const renderMonthView = () => {
     const startDate = new Date(getViewStartDate());
-    const endDate = new Date(getViewEndDate());
     const days = [];
 
     // 요일 헤더

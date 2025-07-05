@@ -126,10 +126,6 @@ const Tasks: React.FC = () => {
         ...filters,
         page_no: currentPage,
         page_size: pageSize,
-        ...(filters.project_id && { project_id: parseInt(filters.project_id) }),
-        ...(filters.assignee_id && { assignee_id: parseInt(filters.assignee_id) }),
-        ...(filters.has_due_date && { has_due_date: filters.has_due_date === 'true' }),
-        ...(filters.is_overdue && { is_overdue: filters.is_overdue === 'true' }),
       };
 
       const response: TaskListResponse = await getTasks(queryParams);
@@ -441,10 +437,12 @@ const Tasks: React.FC = () => {
             <div className="grid md:grid-cols-5 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               {/* 프로젝트 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="project-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   프로젝트
                 </label>
                 <select
+                  id="project-select"
+                  aria-label="프로젝트"
                   value={filters.project_id}
                   onChange={(e) => handleFilterChange('project_id', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -461,10 +459,12 @@ const Tasks: React.FC = () => {
 
               {/* 상태 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   상태
                 </label>
                 <select
+                  id="status-select"
+                  aria-label="상태"
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -479,10 +479,12 @@ const Tasks: React.FC = () => {
 
               {/* 우선순위 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   우선순위
                 </label>
                 <select
+                  id="priority-select"
+                  aria-label="우선순위"
                   value={filters.priority}
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -501,6 +503,8 @@ const Tasks: React.FC = () => {
                   타입
                 </label>
                 <select
+                  id="type-select"
+                  aria-label="타입"
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -516,15 +520,16 @@ const Tasks: React.FC = () => {
 
               {/* 정렬 기준 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="sort-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   정렬 기준
                 </label>
                 <select
+                  id="sort-select"
                   value={`${filters.sort_by}_${filters.sort_order}`}
                   onChange={(e) => {
                     const [sort_by, sort_order] = e.target.value.split('_');
-                    handleFilterChange('sort_by', sort_by);
-                    handleFilterChange('sort_order', sort_order);
+                    handleFilterChange('sort_by', sort_by || '');
+                    handleFilterChange('sort_order', sort_order || '');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
                 >
@@ -563,9 +568,18 @@ const Tasks: React.FC = () => {
             <Card
               key={task.id}
               className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/tasks/${task.id}`)}
             >
-              <div className="flex items-center justify-between">
+              <div
+                className="flex items-center justify-between"
+                onClick={() => navigate(`/tasks/${task.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    navigate(`/tasks/${task.id}`);
+                  }
+                }}
+              >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h3 className="font-medium text-gray-900 dark:text-white">
@@ -603,8 +617,8 @@ const Tasks: React.FC = () => {
                         <UserIcon className="h-3 w-3" />
                         <span>
                           {task.assignees.length === 1
-                            ? task.assignees[0].user.full_name
-                            : `${task.assignees[0].user.full_name} 외 ${task.assignees.length - 1}명`
+                            ? task.assignees[0]?.user?.full_name ?? ''
+                            : `${task.assignees[0]?.user?.full_name ?? ''} 외 ${task.assignees.length - 1}명`
                           }
                         </span>
                       </span>
@@ -683,7 +697,7 @@ const Tasks: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       navigate(`/tasks/${task.id}`);
                     }}
@@ -696,7 +710,7 @@ const Tasks: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         navigate(`/tasks/${task.id}/edit`);
                       }}
@@ -753,26 +767,26 @@ const Tasks: React.FC = () => {
             {/* 페이지 번호 */}
             <div className="flex items-center space-x-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
+                let pageNo: number = 1;
                 if (totalPages <= 5) {
-                  pageNum = i + 1;
+                  pageNo = i + 1;
                 } else if (currentPage <= 3) {
-                  pageNum = i + 1;
+                  pageNo = i + 1;
                 } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
+                  pageNo = totalPages - 4 + i;
                 } else {
-                  pageNum = currentPage - 2 + i;
+                  pageNo = currentPage - 2 + i;
                 }
 
                 return (
                   <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
+                    key={pageNo}
+                    variant={currentPage === pageNo ? "default" : "outline"}
                     size="sm"
-                    onClick={() => handlePageChange(pageNum)}
+                    onClick={() => handlePageChange(pageNo)}
                     className="w-10"
                   >
-                    {pageNum}
+                    {pageNo}
                   </Button>
                 );
               })}

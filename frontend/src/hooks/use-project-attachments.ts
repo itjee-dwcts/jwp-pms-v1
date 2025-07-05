@@ -7,9 +7,9 @@ interface UseProjectAttachmentsReturn {
   uploading: boolean;
   loading: boolean;
   error: string | null;
-  getAttachments: (projectId: number) => Promise<ProjectAttachment[]>;
-  uploadFile: (projectId: number, file: File) => Promise<FileUploadResponse>;
-  deleteAttachment: (projectId: number, attachmentId: number) => Promise<void>;
+  getAttachments: (projectId: string) => Promise<ProjectAttachment[]>;
+  uploadFile: (projectId: string, file: File) => Promise<FileUploadResponse>;
+  deleteAttachment: (projectId: string, attachmentId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -49,7 +49,7 @@ export const useProjectAttachments = (): UseProjectAttachmentsReturn => {
     }
   }, []);
 
-  const getAttachments = useCallback(async (projectId: number): Promise<ProjectAttachment[]> => {
+  const getAttachments = useCallback(async (projectId: string): Promise<ProjectAttachment[]> => {
     return handleRequest(async () => {
       const result = await projectService.getProjectAttachments(projectId);
       setAttachments(result);
@@ -57,7 +57,7 @@ export const useProjectAttachments = (): UseProjectAttachmentsReturn => {
     });
   }, [handleRequest]);
 
-  const uploadFile = useCallback(async (projectId: number, file: File): Promise<FileUploadResponse> => {
+  const uploadFile = useCallback(async (projectId: string, file: File): Promise<FileUploadResponse> => {
     return handleRequest(async () => {
       const response = await projectService.uploadProjectFile(projectId, file);
       // Refresh attachments list
@@ -66,7 +66,7 @@ export const useProjectAttachments = (): UseProjectAttachmentsReturn => {
     }, true);
   }, [handleRequest, getAttachments]);
 
-  const deleteAttachment = useCallback(async (projectId: number, attachmentId: number): Promise<void> => {
+  const deleteAttachment = useCallback(async (projectId: string, attachmentId: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.deleteProjectAttachment(projectId, attachmentId);
       setAttachments(prev => prev.filter(a => a.id !== attachmentId));

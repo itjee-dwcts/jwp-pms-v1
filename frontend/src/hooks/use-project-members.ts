@@ -6,10 +6,10 @@ interface UseProjectMembersReturn {
   members: ProjectMember[];
   loading: boolean;
   error: string | null;
-  getMembers: (projectId: number) => Promise<ProjectMember[]>;
-  addMember: (projectId: number, data: MemberAddRequest) => Promise<ProjectMember>;
-  updateMember: (projectId: number, memberId: number, data: MemberUpdateRequest) => Promise<ProjectMember>;
-  removeMember: (projectId: number, memberId: number) => Promise<void>;
+  getMembers: (projectId: string) => Promise<ProjectMember[]>;
+  addMember: (projectId: string, data: MemberAddRequest) => Promise<ProjectMember>;
+  updateMember: (projectId: string, memberId: string, data: MemberUpdateRequest) => Promise<ProjectMember>;
+  removeMember: (projectId: string, memberId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -39,7 +39,7 @@ export const useProjectMembers = (): UseProjectMembersReturn => {
     }
   }, []);
 
-  const getMembers = useCallback(async (projectId: number): Promise<ProjectMember[]> => {
+  const getMembers = useCallback(async (projectId: string): Promise<ProjectMember[]> => {
     return handleRequest(async () => {
       const result = await projectService.getProjectMembers(projectId);
       setMembers(result);
@@ -47,7 +47,7 @@ export const useProjectMembers = (): UseProjectMembersReturn => {
     });
   }, [handleRequest]);
 
-  const addMember = useCallback(async (projectId: number, data: MemberAddRequest): Promise<ProjectMember> => {
+  const addMember = useCallback(async (projectId: string, data: MemberAddRequest): Promise<ProjectMember> => {
     return handleRequest(async () => {
       const member = await projectService.addProjectMember(projectId, data);
       setMembers(prev => [...prev, member]);
@@ -56,8 +56,8 @@ export const useProjectMembers = (): UseProjectMembersReturn => {
   }, [handleRequest]);
 
   const updateMember = useCallback(async (
-    projectId: number,
-    memberId: number,
+    projectId: string,
+    memberId: string,
     data: MemberUpdateRequest
   ): Promise<ProjectMember> => {
     return handleRequest(async () => {
@@ -67,7 +67,7 @@ export const useProjectMembers = (): UseProjectMembersReturn => {
     });
   }, [handleRequest]);
 
-  const removeMember = useCallback(async (projectId: number, memberId: number): Promise<void> => {
+  const removeMember = useCallback(async (projectId: string, memberId: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.removeProjectMember(projectId, memberId);
       setMembers(prev => prev.filter(m => m.id !== memberId));

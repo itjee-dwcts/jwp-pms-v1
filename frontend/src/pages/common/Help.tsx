@@ -26,7 +26,7 @@ import { toast } from 'react-hot-toast';
 
 // 자주 묻는 질문 인터페이스
 interface FAQItem {
-  id: number;
+  id: string;
   question: string;
   answer: string;
   category: string;
@@ -37,7 +37,7 @@ interface FAQItem {
 
 // 지원 티켓 인터페이스
 interface SupportTicket {
-  id: number;
+  id: string;
   subject: string;
   description: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -48,7 +48,7 @@ interface SupportTicket {
 
 // 도움말 문서 인터페이스
 interface HelpArticle {
-  id: number;
+  id: string;
   title: string;
   content: string;
   category: string;
@@ -62,7 +62,7 @@ const Help: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'faq' | 'articles' | 'support' | 'contact'>('faq');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [supportForm, setSupportForm] = useState({
     subject: '',
@@ -74,7 +74,7 @@ const Help: React.FC = () => {
   // 목업 데이터 - 실제 앱에서는 API에서 가져옴
   const faqItems: FAQItem[] = [
     {
-      id: 1,
+      id: "1",
       question: "새 프로젝트를 어떻게 생성하나요?",
       answer: "새 프로젝트를 생성하려면 프로젝트 페이지로 이동하여 '새 프로젝트' 버튼을 클릭하세요. 프로젝트 이름, 설명, 일정, 팀원을 포함한 프로젝트 세부 정보를 입력하세요. 프로젝트 우선순위와 상태도 설정할 수 있습니다.",
       category: "프로젝트",
@@ -83,7 +83,7 @@ const Help: React.FC = () => {
       views: 150,
     },
     {
-      id: 2,
+      id: "2",
       question: "팀원에게 작업을 어떻게 할당하나요?",
       answer: "작업을 생성하거나 편집할 때 '할당자' 섹션을 사용하여 팀원을 검색하고 선택하세요. 한 작업에 여러 명을 할당할 수 있습니다. 할당된 구성원은 해당 작업에 대한 알림을 받게 됩니다.",
       category: "작업",
@@ -92,7 +92,7 @@ const Help: React.FC = () => {
       views: 120,
     },
     {
-      id: 3,
+      id: "3",
       question: "비밀번호를 어떻게 변경하나요?",
       answer: "오른쪽 상단의 아바타를 클릭하여 프로필 설정으로 이동하세요. '비밀번호' 탭으로 이동하여 현재 비밀번호와 새 비밀번호를 입력하세요. '비밀번호 변경'을 클릭하여 변경사항을 저장하세요.",
       category: "계정",
@@ -101,7 +101,7 @@ const Help: React.FC = () => {
       views: 200,
     },
     {
-      id: 4,
+      id: "4",
       question: "프로젝트 데이터를 내보낼 수 있나요?",
       answer: "네, 보고서 섹션에서 프로젝트 데이터를 내보낼 수 있습니다. 내보낼 형식(CSV, Excel, PDF)을 선택하고 포함할 데이터 범위와 필드를 선택하세요. 관리자 사용자는 더 포괄적인 내보내기 옵션에 액세스할 수 있습니다.",
       category: "보고서",
@@ -110,7 +110,7 @@ const Help: React.FC = () => {
       views: 85,
     },
     {
-      id: 5,
+      id: "5",
       question: "새 팀원을 어떻게 초대하나요?",
       answer: "관리자 및 매니저 역할은 사용자 섹션으로 이동하여 '사용자 초대'를 클릭하여 새 팀원을 초대할 수 있습니다. 이메일 주소를 입력하고 역할을 선택하면 작업공간에 참여할 수 있는 초대 이메일을 받게 됩니다.",
       category: "사용자",
@@ -122,7 +122,7 @@ const Help: React.FC = () => {
 
   const helpArticles: HelpArticle[] = [
     {
-      id: 1,
+      id: "1",
       title: "시작하기 가이드",
       content: "새 사용자를 위한 완전한 설명서...",
       category: "시작하기",
@@ -132,7 +132,7 @@ const Help: React.FC = () => {
       rating: 4.8,
     },
     {
-      id: 2,
+      id: "2",
       title: "프로젝트 관리 모범 사례",
       content: "효과적인 프로젝트 관리 전략 학습하기...",
       category: "모범 사례",
@@ -142,7 +142,7 @@ const Help: React.FC = () => {
       rating: 4.6,
     },
     {
-      id: 3,
+      id: "3",
       title: "고급 보고서 기능",
       content: "고급 보고서 기능 알아보기...",
       category: "보고서",
@@ -198,7 +198,7 @@ const Help: React.FC = () => {
   };
 
   // FAQ 토글 핸들러
-  const toggleFAQ = (id: number) => {
+  const toggleFAQ = (id: string) => {
     setExpandedFAQ(expandedFAQ === id ? null : id);
   };
 

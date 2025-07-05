@@ -48,7 +48,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const getUser = useCallback(async (id: number): Promise<User> => {
+  const getUser = useCallback(async (id: string): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.getUser(id);
       userState.setCurrentUser(user);
@@ -64,7 +64,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const updateUser = useCallback(async (id: number, data: UserUpdateRequest): Promise<User> => {
+  const updateUser = useCallback(async (id: string, data: UserUpdateRequest): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.updateUser(id, data);
       userState.updateUserInList(id, user);
@@ -75,7 +75,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const deleteUser = useCallback(async (id: number): Promise<void> => {
+  const deleteUser = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await userService.deleteUser(id);
       userState.removeUser(id);
@@ -86,17 +86,17 @@ export const useUsers = () => {
   }, [handleRequest, userState]);
 
   // Statistics
-  const getUserStats = useCallback(async (id?: number): Promise<UserStatsResponse | UserStats> => {
+  const getUserStats = useCallback(async (id?: string): Promise<UserStatsResponse | UserStats> => {
     return handleRequest(() => userService.getUserStats(id));
   }, [handleRequest]);
 
   // Preferences
-  const getUserPreferences = useCallback(async (id: number): Promise<UserPreferences> => {
+  const getUserPreferences = useCallback(async (id: string): Promise<UserPreferences> => {
     return handleRequest(() => userService.getUserPreferences(id));
   }, [handleRequest]);
 
   const updateUserPreferences = useCallback(async (
-    id: number,
+    id: string,
     preferences: Partial<UserPreferences>
   ): Promise<UserPreferences> => {
     return handleRequest(() => userService.updateUserPreferences(id, preferences));
@@ -104,26 +104,26 @@ export const useUsers = () => {
 
   // Activity and Sessions
   const getUserActivity = useCallback(async (
-    id: number,
+    id: string,
     params?: UserActivityParams
   ): Promise<UserActivityLog[]> => {
     return handleRequest(() => userService.getUserActivity(id, params));
   }, [handleRequest]);
 
-  const getUserSessions = useCallback(async (id: number): Promise<UserSession[]> => {
+  const getUserSessions = useCallback(async (id: string): Promise<UserSession[]> => {
     return handleRequest(() => userService.getUserSessions(id));
   }, [handleRequest]);
 
-  const revokeUserSession = useCallback(async (userId: number, sessionId: number): Promise<void> => {
+  const revokeUserSession = useCallback(async (userId: string, sessionId: string): Promise<void> => {
     return handleRequest(() => userService.revokeUserSession(userId, sessionId));
   }, [handleRequest]);
 
-  const revokeAllUserSessions = useCallback(async (id: number): Promise<void> => {
+  const revokeAllUserSessions = useCallback(async (id: string): Promise<void> => {
     return handleRequest(() => userService.revokeAllUserSessions(id));
   }, [handleRequest]);
 
   // Avatar Management
-  const uploadAvatar = useCallback(async (id: number, file: File): Promise<AvatarUploadResponse> => {
+  const uploadAvatar = useCallback(async (id: string, file: File): Promise<AvatarUploadResponse> => {
     return handleRequest(async () => {
       const result = await userService.uploadAvatar(id, file);
       // Update user avatar in state
@@ -138,7 +138,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const deleteAvatar = useCallback(async (id: number): Promise<void> => {
+  const deleteAvatar = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await userService.deleteAvatar(id);
       // Remove avatar from state
@@ -153,11 +153,11 @@ export const useUsers = () => {
   }, [handleRequest, userState]);
 
   // Password Management
-  const changeUserPassword = useCallback(async (id: number, data: PasswordChangeRequest): Promise<void> => {
+  const changeUserPassword = useCallback(async (id: string, data: PasswordChangeRequest): Promise<void> => {
     return handleRequest(() => userService.changeUserPassword(id, data));
   }, [handleRequest]);
 
-  const resetUserPassword = useCallback(async (id: number): Promise<{ temporary_password: string }> => {
+  const resetUserPassword = useCallback(async (id: string): Promise<{ temporary_password: string }> => {
     return handleRequest(() => userService.resetUserPassword(id));
   }, [handleRequest]);
 
@@ -170,16 +170,16 @@ export const useUsers = () => {
     return handleRequest(() => userService.getInvitations());
   }, [handleRequest]);
 
-  const resendInvitation = useCallback(async (inviteId: number): Promise<void> => {
+  const resendInvitation = useCallback(async (inviteId: string): Promise<void> => {
     return handleRequest(() => userService.resendInvitation(inviteId));
   }, [handleRequest]);
 
-  const cancelInvitation = useCallback(async (inviteId: number): Promise<void> => {
+  const cancelInvitation = useCallback(async (inviteId: string): Promise<void> => {
     return handleRequest(() => userService.cancelInvitation(inviteId));
   }, [handleRequest]);
 
   // Status Management
-  const activateUser = useCallback(async (id: number): Promise<User> => {
+  const activateUser = useCallback(async (id: string): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.activateUser(id);
       userState.updateUserInList(id, user);
@@ -187,7 +187,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const deactivateUser = useCallback(async (id: number): Promise<User> => {
+  const deactivateUser = useCallback(async (id: string): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.deactivateUser(id);
       userState.updateUserInList(id, user);
@@ -195,7 +195,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const suspendUser = useCallback(async (id: number, reason?: string): Promise<User> => {
+  const suspendUser = useCallback(async (id: string, reason?: string): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.suspendUser(id, reason);
       userState.updateUserInList(id, user);
@@ -203,7 +203,7 @@ export const useUsers = () => {
     });
   }, [handleRequest, userState]);
 
-  const unsuspendUser = useCallback(async (id: number): Promise<User> => {
+  const unsuspendUser = useCallback(async (id: string): Promise<User> => {
     return handleRequest(async () => {
       const user = await userService.unsuspendUser(id);
       userState.updateUserInList(id, user);
@@ -212,7 +212,7 @@ export const useUsers = () => {
   }, [handleRequest, userState]);
 
   // Email Verification
-  const sendVerificationEmail = useCallback(async (id: number): Promise<void> => {
+  const sendVerificationEmail = useCallback(async (id: string): Promise<void> => {
     return handleRequest(() => userService.sendVerificationEmail(id));
   }, [handleRequest]);
 
@@ -267,42 +267,42 @@ export const useUsers = () => {
     return handleRequest(() => userService.getUserRoles());
   }, [handleRequest]);
 
-  const getUserPermissions = useCallback(async (id: number): Promise<string[]> => {
+  const getUserPermissions = useCallback(async (id: string): Promise<string[]> => {
     return handleRequest(() => userService.getUserPermissions(id));
   }, [handleRequest]);
 
   // User Content
-  const getUserProjects = useCallback(async (id: number, params?: UserProjectParams): Promise<any[]> => {
+  const getUserProjects = useCallback(async (id: string, params?: UserProjectParams): Promise<any[]> => {
     return handleRequest(() => userService.getUserProjects(id, params));
   }, [handleRequest]);
 
-  const getUserTasks = useCallback(async (id: number, params?: UserTaskParams): Promise<any[]> => {
+  const getUserTasks = useCallback(async (id: string, params?: UserTaskParams): Promise<any[]> => {
     return handleRequest(() => userService.getUserTasks(id, params));
   }, [handleRequest]);
 
   // Notifications
-  const getUserNotifications = useCallback(async (id: number, params?: UserNotificationParams): Promise<any[]> => {
+  const getUserNotifications = useCallback(async (id: string, params?: UserNotificationParams): Promise<any[]> => {
     return handleRequest(() => userService.getUserNotifications(id, params));
   }, [handleRequest]);
 
-  const markNotificationAsRead = useCallback(async (userId: number, notificationId: number): Promise<void> => {
+  const markNotificationAsRead = useCallback(async (userId: string, notificationId: string): Promise<void> => {
     return handleRequest(() => userService.markNotificationAsRead(userId, notificationId));
   }, [handleRequest]);
 
-  const markAllNotificationsAsRead = useCallback(async (id: number): Promise<void> => {
+  const markAllNotificationsAsRead = useCallback(async (id: string): Promise<void> => {
     return handleRequest(() => userService.markAllNotificationsAsRead(id));
   }, [handleRequest]);
 
   // Team Management
-  const getUserTeams = useCallback(async (id: number): Promise<any[]> => {
+  const getUserTeams = useCallback(async (id: string): Promise<any[]> => {
     return handleRequest(() => userService.getUserTeams(id));
   }, [handleRequest]);
 
-  const addUserToTeam = useCallback(async (userId: number, teamId: number, role?: string): Promise<void> => {
+  const addUserToTeam = useCallback(async (userId: string, teamId: string, role?: string): Promise<void> => {
     return handleRequest(() => userService.addUserToTeam(userId, teamId, role));
   }, [handleRequest]);
 
-  const removeUserFromTeam = useCallback(async (userId: number, teamId: number): Promise<void> => {
+  const removeUserFromTeam = useCallback(async (userId: string, teamId: string): Promise<void> => {
     return handleRequest(() => userService.removeUserFromTeam(userId, teamId));
   }, [handleRequest]);
 

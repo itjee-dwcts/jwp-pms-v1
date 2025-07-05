@@ -42,7 +42,7 @@ export interface RoleConfig {
 }
 
 export interface UserPermissions {
-  user_id: number;
+  user_id: string;
   role: Role;
   permissions: Permission[];
   granted_permissions: Permission[];
@@ -52,7 +52,7 @@ export interface UserPermissions {
 
 export interface ResourcePermissions {
   resource_type: 'project' | 'task' | 'calendar' | 'user';
-  resource_id: number;
+  resource_id: string;
   permissions: Permission[];
   inherited_permissions: Permission[];
 }
@@ -83,7 +83,7 @@ export interface PermissionsActions {
   hasRole: (role: Role | Role[]) => boolean;
   hasAnyPermission: (permissions: Permission[]) => boolean;
   hasAllPermissions: (permissions: Permission[]) => boolean;
-  checkResourcePermission: (resourceType: string, resourceId: number, permission: Permission) => Promise<boolean>;
+  checkResourcePermission: (resourceType: string, resourceId: string, permission: Permission) => Promise<boolean>;
   refreshPermissions: () => Promise<void>;
   getRoleConfig: (role: Role) => RoleConfig | undefined;
   getPermissionGroups: () => PermissionGroup[];

@@ -6,10 +6,10 @@ interface UseTaskTimeTrackingReturn {
   timeLogs: TaskTimeLog[];
   loading: boolean;
   error: string | null;
-  getTimeLogs: (taskId: number) => Promise<TaskTimeLog[]>;
-  addTimeLog: (taskId: number, data: TimeLogCreateRequest) => Promise<TaskTimeLog>;
-  updateTimeLog: (taskId: number, timeLogId: number, data: Partial<TimeLogCreateRequest>) => Promise<TaskTimeLog>;
-  deleteTimeLog: (taskId: number, timeLogId: number) => Promise<void>;
+  getTimeLogs: (taskId: string) => Promise<TaskTimeLog[]>;
+  addTimeLog: (taskId: string, data: TimeLogCreateRequest) => Promise<TaskTimeLog>;
+  updateTimeLog: (taskId: string, timeLogId: string, data: Partial<TimeLogCreateRequest>) => Promise<TaskTimeLog>;
+  deleteTimeLog: (taskId: string, timeLogId: string) => Promise<void>;
   getTotalHours: () => number;
   clearError: () => void;
 }
@@ -40,7 +40,7 @@ export const useTaskTimeTracking = (): UseTaskTimeTrackingReturn => {
     }
   }, []);
 
-  const getTimeLogs = useCallback(async (taskId: number): Promise<TaskTimeLog[]> => {
+  const getTimeLogs = useCallback(async (taskId: string): Promise<TaskTimeLog[]> => {
     return handleRequest(async () => {
       const logs = await taskService.getTaskTimeLogs(taskId);
       setTimeLogs(logs);
@@ -48,7 +48,7 @@ export const useTaskTimeTracking = (): UseTaskTimeTrackingReturn => {
     });
   }, [handleRequest]);
 
-  const addTimeLog = useCallback(async (taskId: number, data: TimeLogCreateRequest): Promise<TaskTimeLog> => {
+  const addTimeLog = useCallback(async (taskId: string, data: TimeLogCreateRequest): Promise<TaskTimeLog> => {
     return handleRequest(async () => {
       const timeLog = await taskService.addTimeLog(taskId, data);
       setTimeLogs(prev => [...prev, timeLog]);
@@ -57,8 +57,8 @@ export const useTaskTimeTracking = (): UseTaskTimeTrackingReturn => {
   }, [handleRequest]);
 
   const updateTimeLog = useCallback(async (
-    taskId: number,
-    timeLogId: number,
+    taskId: string,
+    timeLogId: string,
     data: Partial<TimeLogCreateRequest>
   ): Promise<TaskTimeLog> => {
     return handleRequest(async () => {
@@ -68,7 +68,7 @@ export const useTaskTimeTracking = (): UseTaskTimeTrackingReturn => {
     });
   }, [handleRequest]);
 
-  const deleteTimeLog = useCallback(async (taskId: number, timeLogId: number): Promise<void> => {
+  const deleteTimeLog = useCallback(async (taskId: string, timeLogId: string): Promise<void> => {
     return handleRequest(async () => {
       await taskService.deleteTimeLog(taskId, timeLogId);
       setTimeLogs(prev => prev.filter(log => log.id !== timeLogId));

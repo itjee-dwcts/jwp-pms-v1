@@ -267,7 +267,7 @@ const Unauthorized: React.FC = () => {
                 variant="outline"
                 className="w-full"
               >
-                <ArrowLeftIcon className="w-4 w-4 mr-2" />
+                <ArrowLeftIcon className="w-4 mr-2" />
                 Go Back
               </Button>
 

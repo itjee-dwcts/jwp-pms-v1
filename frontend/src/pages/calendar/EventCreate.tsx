@@ -17,7 +17,6 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
 import { useCalendar } from '@/hooks/use-calendar';
 import { useUsers } from '@/hooks/use-users';
 import type { CreateEventRequest } from '@/types/calendar';
@@ -41,7 +40,6 @@ interface EventFormData {
 const EventCreate: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
   const { createEvent, isCreating } = useCalendar();
   const { users } = useUsers();
 

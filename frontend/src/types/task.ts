@@ -1,33 +1,27 @@
-export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
-export type TaskType = 'task' | 'bug' | 'feature' | 'improvement' | 'research';
-export type DependencyType = 'blocks' | 'blocked_by' | 'relates_to';
-export type SortOrder = 'asc' | 'desc';
-
 export interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  type: TaskType;
+  status: string;
+  priority: string;
+  type: string;
   due_date?: string;
   estimated_hours?: number;
   actual_hours?: number;
   created_at: string;
   updated_at: string;
   project: {
-    id: number;
+    id: string;
     name: string;
   };
   assignees: TaskAssignee[];
   creator: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
   };
   parent_task?: {
-    id: number;
+    id: string;
     title: string;
   };
   subtasks?: Task[];
@@ -44,9 +38,9 @@ export interface Task {
 }
 
 export interface TaskAssignee {
-  id: number;
+  id: string;
   user: {
-    id: number;
+    id: string;
     username: string;
     full_name: string;
     email: string;
@@ -57,7 +51,7 @@ export interface TaskAssignee {
 }
 
 export interface TaskTag {
-  id: number;
+  id: string;
   name: string;
   color: string;
   created_at: string;
@@ -65,33 +59,33 @@ export interface TaskTag {
 }
 
 export interface TaskComment {
-  id: number;
+  id: string;
   content: string;
   created_at: string;
   updated_at: string;
   user: {
-    id: number;
+    id: string;
     full_name: string;
     avatar_url?: string;
   };
-  parent_id?: number;
+  parent_id?: string;
   replies?: TaskComment[];
   is_edited?: boolean;
   mentions?: Array<{
-    id: number;
+    id: string;
     username: string;
   }>;
 }
 
 export interface TaskAttachment {
-  id: number;
+  id: string;
   file_name: string;
   file_size: number;
   file_path: string;
   mime_type: string;
   uploaded_at: string;
   uploader: {
-    id: number;
+    id: string;
     full_name: string;
   };
   download_url?: string;
@@ -99,29 +93,29 @@ export interface TaskAttachment {
 }
 
 export interface TaskTimeLog {
-  id: number;
+  id: string;
   hours: number;
   description?: string;
   work_date: string;
   created_at: string;
   user: {
-    id: number;
+    id: string;
     full_name: string;
   };
   is_billable?: boolean;
 }
 
 export interface TaskDependency {
-  id: number;
-  dependent_task_id: number;
-  dependency_task_id: number;
-  dependency_type: DependencyType;
+  id: string;
+  dependent_task_id: string;
+  dependency_task_id: string;
+  dependency_type: string;
   created_at: string;
   dependency_task: {
-    id: number;
+    id: string;
     title: string;
-    status: TaskStatus;
-    priority: TaskPriority;
+    status: string;
+    priority: string;
   };
 }
 
@@ -129,57 +123,57 @@ export interface TaskDependency {
 export interface TaskCreateRequest {
   title: string;
   description: string;
-  project_id: number;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  type?: TaskType;
+  project_id: string;
+  status?: string;
+  priority?: string;
+  type?: string;
   due_date?: string;
   estimated_hours?: number;
-  parent_task_id?: number;
-  assignee_ids?: number[];
-  tag_ids?: number[];
-  dependency_ids?: number[];
+  parent_task_id?: string;
+  assignee_ids?: string[];
+  tag_ids?: string[];
+  dependency_ids?: string[];
 }
 
 export interface TaskUpdateRequest extends Partial<TaskCreateRequest> {
-  id: number;
+  id: string;
 }
 
 export interface TaskSearchParams {
   search?: string;
-  project_id?: number;
-  assignee_id?: number;
-  creator_id?: number;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  type?: TaskType;
+  project_id?: string;
+  assignee_id?: string;
+  creator_id?: string;
+  status?: string;
+  priority?: string;
+  type?: string;
   due_before?: string;
   due_after?: string;
   created_before?: string;
   created_after?: string;
-  tag_ids?: number[];
-  has_due_date?: boolean;
-  is_overdue?: boolean;
-  parent_task_id?: number;
+  tag_ids?: string[];
+  has_due_date?: string;
+  is_overdue?: string;
+  parent_task_id?: string;
   page_no?: number;
   page_size?: number;
   sort_by?: string;
-  sort_order?: SortOrder;
+  sort_order?: string;
 }
 
 export interface TaskListResponse {
   tasks: Task[];
-  total_items: number;
   page_no: number;
   page_size: number;
   total_pages: number;
+  total_items: number;
 }
 
 export interface TaskStatsResponse {
   total_tasks: number;
-  by_status: Record<TaskStatus, number>;
-  by_priority: Record<TaskPriority, number>;
-  by_type: Record<TaskType, number>;
+  by_status: Record<string, number>;
+  by_priority: Record<string, number>;
+  by_type: Record<string, number>;
   completion_rate: number;
   overdue_tasks: number;
   average_completion_time: number;
@@ -195,7 +189,7 @@ export interface TaskKanbanBoard {
 }
 
 export interface TaskKanbanColumn {
-  status: TaskStatus;
+  status: string;
   title: string;
   tasks: Task[];
   task_count: number;
@@ -212,28 +206,28 @@ export interface TaskGanttChart {
 }
 
 export interface TaskGanttItem {
-  id: number;
+  id: string;
   title: string;
   start_date: string;
   end_date: string;
   progress: number;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: string;
+  priority: string;
   assignees: string[];
-  parent_id?: number;
+  parent_id?: string;
   estimated_hours?: number;
   actual_hours?: number;
 }
 
 export interface CommentCreateRequest {
   content: string;
-  parent_id?: number;
-  mentions?: number[];
+  parent_id?: string;
+  mentions?: string[];
 }
 
 export interface CommentUpdateRequest {
   content: string;
-  mentions?: number[];
+  mentions?: string[];
 }
 
 export interface TimeLogCreateRequest {
@@ -244,11 +238,11 @@ export interface TimeLogCreateRequest {
 }
 
 export interface TimeLogUpdateRequest extends Partial<TimeLogCreateRequest> {
-  id: number;
+  id: string;
 }
 
 export interface AssignTaskRequest {
-  user_ids: number[];
+  user_ids: string[];
 }
 
 export interface TagCreateRequest {
@@ -257,8 +251,8 @@ export interface TagCreateRequest {
 }
 
 export interface DependencyCreateRequest {
-  dependency_task_id: number;
-  dependency_type: DependencyType;
+  dependency_task_id: string;
+  dependency_type: string;
 }
 
 export interface TaskDuplicateOptions {
@@ -271,26 +265,26 @@ export interface TaskDuplicateOptions {
 }
 
 export interface BulkTaskUpdateRequest {
-  ids: number[];
+  ids: string[];
   updates: Partial<TaskCreateRequest>;
 }
 
 export interface BulkTaskDeleteRequest {
-  ids: number[];
+  ids: string[];
 }
 
 export interface BulkTaskAssignRequest {
-  task_ids: number[];
-  user_ids: number[];
+  task_ids: string[];
+  user_ids: string[];
 }
 
 export interface TaskFilter {
-  status?: TaskStatus[];
-  priority?: TaskPriority[];
-  type?: TaskType[];
-  assignee_ids?: number[];
-  tag_ids?: number[];
-  project_ids?: number[];
+  status?: string[];
+  priority?: string[];
+  type?: string[];
+  assignee_ids?: string[];
+  tag_ids?: string[];
+  project_ids?: string[];
   due_date_range?: {
     start: string;
     end: string;

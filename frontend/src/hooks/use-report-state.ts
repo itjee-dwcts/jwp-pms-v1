@@ -42,11 +42,11 @@ interface UseReportStateReturn extends ReportState {
   setExportProgress: (progress: number) => void;
   clearError: () => void;
   addTemplate: (template: ReportTemplate) => void;
-  updateTemplate: (id: number, updates: Partial<ReportTemplate>) => void;
-  removeTemplate: (id: number) => void;
+  updateTemplate: (id: string, updates: Partial<ReportTemplate>) => void;
+  removeTemplate: (id: string) => void;
   addScheduledReport: (report: ScheduledReport) => void;
-  updateScheduledReport: (id: number, updates: Partial<ScheduledReport>) => void;
-  removeScheduledReport: (id: number) => void;
+  updateScheduledReport: (id: string, updates: Partial<ScheduledReport>) => void;
+  removeScheduledReport: (id: string) => void;
   exportReport: (options: ExportOptions) => Promise<void>; // 추가된 함수
   exportMultipleReports: (optionsArray: ExportOptions[]) => Promise<void>; // 추가된 함수
 }
@@ -130,7 +130,7 @@ export const useReportState = (): UseReportStateReturn => {
     });
   }, [updateState, state.templates]);
 
-  const updateTemplate = useCallback((id: number, updates: Partial<ReportTemplate>) => {
+  const updateTemplate = useCallback((id: string, updates: Partial<ReportTemplate>) => {
     updateState({
       templates: state.templates.map(template =>
         template.id === id ? { ...template, ...updates } : template
@@ -138,7 +138,7 @@ export const useReportState = (): UseReportStateReturn => {
     });
   }, [updateState, state.templates]);
 
-  const removeTemplate = useCallback((id: number) => {
+  const removeTemplate = useCallback((id: string) => {
     updateState({
       templates: state.templates.filter(template => template.id !== id)
     });
@@ -151,7 +151,7 @@ export const useReportState = (): UseReportStateReturn => {
     });
   }, [updateState, state.scheduledReports]);
 
-  const updateScheduledReport = useCallback((id: number, updates: Partial<ScheduledReport>) => {
+  const updateScheduledReport = useCallback((id: string, updates: Partial<ScheduledReport>) => {
     updateState({
       scheduledReports: state.scheduledReports.map(report =>
         report.id === id ? { ...report, ...updates } : report
@@ -159,7 +159,7 @@ export const useReportState = (): UseReportStateReturn => {
     });
   }, [updateState, state.scheduledReports]);
 
-  const removeScheduledReport = useCallback((id: number) => {
+  const removeScheduledReport = useCallback((id: string) => {
     updateState({
       scheduledReports: state.scheduledReports.filter(report => report.id !== id)
     });

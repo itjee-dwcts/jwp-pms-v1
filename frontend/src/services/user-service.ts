@@ -36,7 +36,7 @@ export class UserService {
     return response.users;
   }
 
-  async getUser(id: number): Promise<User> {
+  async getUser(id: string): Promise<User> {
     return apiClient.request<User>(`/users/${id}`);
   }
 
@@ -47,32 +47,32 @@ export class UserService {
     });
   }
 
-  async updateUser(id: number, data: UserUpdateRequest): Promise<User> {
+  async updateUser(id: string, data: UserUpdateRequest): Promise<User> {
     return apiClient.request<User>(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteUser(id: number): Promise<void> {
+  async deleteUser(id: string): Promise<void> {
     await apiClient.request(`/users/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Statistics
-  async getUserStats(id?: number): Promise<UserStatsResponse | UserStats> {
+  async getUserStats(id?: string): Promise<UserStatsResponse | UserStats> {
     const endpoint = id ? `/users/${id}/stats` : '/users/stats';
     return apiClient.request<UserStatsResponse | UserStats>(endpoint);
   }
 
   // Preferences
-  async getUserPreferences(id: number): Promise<UserPreferences> {
+  async getUserPreferences(id: string): Promise<UserPreferences> {
     return apiClient.request<UserPreferences>(`/users/${id}/preferences`);
   }
 
   async updateUserPreferences(
-    id: number,
+    id: string,
     preferences: Partial<UserPreferences>
   ): Promise<UserPreferences> {
     return apiClient.request<UserPreferences>(`/users/${id}/preferences`, {
@@ -82,31 +82,31 @@ export class UserService {
   }
 
   // Activity and Sessions
-  async getUserActivity(id: number, params?: UserActivityParams): Promise<UserActivityLog[]> {
+  async getUserActivity(id: string, params?: UserActivityParams): Promise<UserActivityLog[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<UserActivityLog[]>(
       `/users/${id}/activity${queryString ? `?${queryString}` : ''}`
     );
   }
 
-  async getUserSessions(id: number): Promise<UserSession[]> {
+  async getUserSessions(id: string): Promise<UserSession[]> {
     return apiClient.request<UserSession[]>(`/users/${id}/sessions`);
   }
 
-  async revokeUserSession(userId: number, sessionId: number): Promise<void> {
+  async revokeUserSession(userId: string, sessionId: string): Promise<void> {
     await apiClient.request(`/users/${userId}/sessions/${sessionId}`, {
       method: 'DELETE',
     });
   }
 
-  async revokeAllUserSessions(id: number): Promise<void> {
+  async revokeAllUserSessions(id: string): Promise<void> {
     await apiClient.request(`/users/${id}/sessions`, {
       method: 'DELETE',
     });
   }
 
   // Avatar Management
-  async uploadAvatar(id: number, file: File): Promise<AvatarUploadResponse> {
+  async uploadAvatar(id: string, file: File): Promise<AvatarUploadResponse> {
     const formData = new FormData();
     formData.append('avatar', file);
 
@@ -127,21 +127,21 @@ export class UserService {
     return response.json();
   }
 
-  async deleteAvatar(id: number): Promise<void> {
+  async deleteAvatar(id: string): Promise<void> {
     await apiClient.request(`/users/${id}/avatar`, {
       method: 'DELETE',
     });
   }
 
   // Password Management
-  async changeUserPassword(id: number, data: PasswordChangeRequest): Promise<void> {
+  async changeUserPassword(id: string, data: PasswordChangeRequest): Promise<void> {
     await apiClient.request(`/users/${id}/change-password`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async resetUserPassword(id: number): Promise<{ temporary_password: string }> {
+  async resetUserPassword(id: string): Promise<{ temporary_password: string }> {
     return apiClient.request<{ temporary_password: string }>(`/users/${id}/reset-password`, {
       method: 'POST',
     });
@@ -159,46 +159,46 @@ export class UserService {
     return apiClient.request<UserInviteResponse[]>('/users/invitations');
   }
 
-  async resendInvitation(inviteId: number): Promise<void> {
+  async resendInvitation(inviteId: string): Promise<void> {
     await apiClient.request(`/users/invitations/${inviteId}/resend`, {
       method: 'POST',
     });
   }
 
-  async cancelInvitation(inviteId: number): Promise<void> {
+  async cancelInvitation(inviteId: string): Promise<void> {
     await apiClient.request(`/users/invitations/${inviteId}`, {
       method: 'DELETE',
     });
   }
 
   // Status Management
-  async activateUser(id: number): Promise<User> {
+  async activateUser(id: string): Promise<User> {
     return apiClient.request<User>(`/users/${id}/activate`, {
       method: 'POST',
     });
   }
 
-  async deactivateUser(id: number): Promise<User> {
+  async deactivateUser(id: string): Promise<User> {
     return apiClient.request<User>(`/users/${id}/deactivate`, {
       method: 'POST',
     });
   }
 
-  async suspendUser(id: number, reason?: string): Promise<User> {
+  async suspendUser(id: string, reason?: string): Promise<User> {
     return apiClient.request<User>(`/users/${id}/suspend`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
     });
   }
 
-  async unsuspendUser(id: number): Promise<User> {
+  async unsuspendUser(id: string): Promise<User> {
     return apiClient.request<User>(`/users/${id}/unsuspend`, {
       method: 'POST',
     });
   }
 
   // Email Verification
-  async sendVerificationEmail(id: number): Promise<void> {
+  async sendVerificationEmail(id: string): Promise<void> {
     await apiClient.request(`/users/${id}/send-verification`, {
       method: 'POST',
     });
@@ -263,19 +263,19 @@ export class UserService {
     return apiClient.request<string[]>('/users/roles');
   }
 
-  async getUserPermissions(id: number): Promise<string[]> {
+  async getUserPermissions(id: string): Promise<string[]> {
     return apiClient.request<string[]>(`/users/${id}/permissions`);
   }
 
   // User Content
-  async getUserProjects(id: number, params?: UserProjectParams): Promise<any[]> {
+  async getUserProjects(id: string, params?: UserProjectParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
       `/users/${id}/projects${queryString ? `?${queryString}` : ''}`
     );
   }
 
-  async getUserTasks(id: number, params?: UserTaskParams): Promise<any[]> {
+  async getUserTasks(id: string, params?: UserTaskParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
       `/users/${id}/tasks${queryString ? `?${queryString}` : ''}`
@@ -283,38 +283,38 @@ export class UserService {
   }
 
   // Notifications
-  async getUserNotifications(id: number, params?: UserNotificationParams): Promise<any[]> {
+  async getUserNotifications(id: string, params?: UserNotificationParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
       `/users/${id}/notifications${queryString ? `?${queryString}` : ''}`
     );
   }
 
-  async markNotificationAsRead(userId: number, notificationId: number): Promise<void> {
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<void> {
     await apiClient.request(`/users/${userId}/notifications/${notificationId}/read`, {
       method: 'PUT',
     });
   }
 
-  async markAllNotificationsAsRead(id: number): Promise<void> {
+  async markAllNotificationsAsRead(id: string): Promise<void> {
     await apiClient.request(`/users/${id}/notifications/read-all`, {
       method: 'PUT',
     });
   }
 
   // Team Management
-  async getUserTeams(id: number): Promise<any[]> {
+  async getUserTeams(id: string): Promise<any[]> {
     return apiClient.request<any[]>(`/users/${id}/teams`);
   }
 
-  async addUserToTeam(userId: number, teamId: number, role?: string): Promise<void> {
+  async addUserToTeam(userId: string, teamId: string, role?: string): Promise<void> {
     await apiClient.request(`/users/${userId}/teams/${teamId}`, {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
   }
 
-  async removeUserFromTeam(userId: number, teamId: number): Promise<void> {
+  async removeUserFromTeam(userId: string, teamId: string): Promise<void> {
     await apiClient.request(`/users/${userId}/teams/${teamId}`, {
       method: 'DELETE',
     });

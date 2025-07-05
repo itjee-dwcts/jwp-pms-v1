@@ -1,9 +1,9 @@
 // src/components/ui/Pagination.tsx
 import {
-    ChevronDoubleLeftIcon,
-    ChevronDoubleRightIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import React from 'react';
 import { cn } from '../../utils/cn';

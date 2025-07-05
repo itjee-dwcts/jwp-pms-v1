@@ -13,6 +13,7 @@ import type {
   ProjectComment,
   ProjectCreateRequest,
   ProjectDuplicateOptions,
+  ProjectListResponse,
   ProjectMember,
   ProjectSearchParams,
   ProjectStatsResponse,
@@ -42,15 +43,15 @@ export const useProjects = () => {
   }, [projectState]);
 
   // CRUD Operations
-  const getProjects = useCallback(async (params?: ProjectSearchParams): Promise<Project[]> => {
+  const getProjects = useCallback(async (params?: ProjectSearchParams): Promise<ProjectListResponse> => {
     return handleRequest(async () => {
-      const projects = await projectService.getProjects(params);
-      projectState.setProjects(projects);
-      return projects;
+      const response = await projectService.getProjects(params);
+      projectState.setProjects(response.projects);
+      return response;
     });
   }, [handleRequest, projectState]);
 
-  const getProject = useCallback(async (id: number): Promise<Project> => {
+  const getProject = useCallback(async (id: string): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.getProject(id);
       projectState.setCurrentProject(project);
@@ -66,7 +67,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const updateProject = useCallback(async (id: number, data: Partial<ProjectCreateRequest>): Promise<Project> => {
+  const updateProject = useCallback(async (id: string, data: Partial<ProjectCreateRequest>): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.updateProject(id, data);
       projectState.updateProjectInList(id, project);
@@ -77,7 +78,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const deleteProject = useCallback(async (id: number): Promise<void> => {
+  const deleteProject = useCallback(async (id: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.deleteProject(id);
       projectState.removeProject(id);
@@ -93,7 +94,7 @@ export const useProjects = () => {
   }, [handleRequest]);
 
   // Members Management
-  const getProjectMembers = useCallback(async (projectId: number): Promise<ProjectMember[]> => {
+  const getProjectMembers = useCallback(async (projectId: string): Promise<ProjectMember[]> => {
     return handleRequest(async () => {
       const members = await projectService.getProjectMembers(projectId);
       projectState.setProjectMembers(members);
@@ -101,7 +102,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const addProjectMember = useCallback(async (projectId: number, data: MemberAddRequest): Promise<ProjectMember> => {
+  const addProjectMember = useCallback(async (projectId: string, data: MemberAddRequest): Promise<ProjectMember> => {
     return handleRequest(async () => {
       const member = await projectService.addProjectMember(projectId, data);
       projectState.addMember(member);
@@ -110,8 +111,8 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   const updateProjectMember = useCallback(async (
-    projectId: number,
-    memberId: number,
+    projectId: string,
+    memberId: string,
     data: MemberUpdateRequest
   ): Promise<ProjectMember> => {
     return handleRequest(async () => {
@@ -121,7 +122,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const removeProjectMember = useCallback(async (projectId: number, memberId: number): Promise<void> => {
+  const removeProjectMember = useCallback(async (projectId: string, memberId: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.removeProjectMember(projectId, memberId);
       projectState.removeMember(memberId);
@@ -129,7 +130,7 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   // Comments Management
-  const getProjectComments = useCallback(async (projectId: number): Promise<ProjectComment[]> => {
+  const getProjectComments = useCallback(async (projectId: string): Promise<ProjectComment[]> => {
     return handleRequest(async () => {
       const comments = await projectService.getProjectComments(projectId);
       projectState.setProjectComments(comments);
@@ -138,7 +139,7 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   const addProjectComment = useCallback(async (
-    projectId: number,
+    projectId: string,
     data: CommentCreateRequest
   ): Promise<ProjectComment> => {
     return handleRequest(async () => {
@@ -149,8 +150,8 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   const updateProjectComment = useCallback(async (
-    projectId: number,
-    commentId: number,
+    projectId: string,
+    commentId: string,
     data: CommentUpdateRequest
   ): Promise<ProjectComment> => {
     return handleRequest(async () => {
@@ -160,7 +161,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const deleteProjectComment = useCallback(async (projectId: number, commentId: number): Promise<void> => {
+  const deleteProjectComment = useCallback(async (projectId: string, commentId: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.deleteProjectComment(projectId, commentId);
       projectState.removeComment(commentId);
@@ -168,7 +169,7 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   // Attachments Management
-  const getProjectAttachments = useCallback(async (projectId: number): Promise<ProjectAttachment[]> => {
+  const getProjectAttachments = useCallback(async (projectId: string): Promise<ProjectAttachment[]> => {
     return handleRequest(async () => {
       const attachments = await projectService.getProjectAttachments(projectId);
       projectState.setProjectAttachments(attachments);
@@ -176,7 +177,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const uploadProjectFile = useCallback(async (projectId: number, file: File): Promise<FileUploadResponse> => {
+  const uploadProjectFile = useCallback(async (projectId: string, file: File): Promise<FileUploadResponse> => {
     return handleRequest(async () => {
       const response = await projectService.uploadProjectFile(projectId, file);
       // Refresh attachments list
@@ -185,7 +186,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, getProjectAttachments]);
 
-  const deleteProjectAttachment = useCallback(async (projectId: number, attachmentId: number): Promise<void> => {
+  const deleteProjectAttachment = useCallback(async (projectId: string, attachmentId: string): Promise<void> => {
     return handleRequest(async () => {
       await projectService.deleteProjectAttachment(projectId, attachmentId);
       projectState.removeAttachment(attachmentId);
@@ -193,7 +194,7 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   // Advanced Operations
-  const duplicateProject = useCallback(async (id: number, options?: ProjectDuplicateOptions): Promise<Project> => {
+  const duplicateProject = useCallback(async (id: string, options?: ProjectDuplicateOptions): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.duplicateProject(id, options);
       projectState.addProject(project);
@@ -201,7 +202,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const archiveProject = useCallback(async (id: number): Promise<Project> => {
+  const archiveProject = useCallback(async (id: string): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.archiveProject(id);
       projectState.updateProjectInList(id, project);
@@ -209,7 +210,7 @@ export const useProjects = () => {
     });
   }, [handleRequest, projectState]);
 
-  const unarchiveProject = useCallback(async (id: number): Promise<Project> => {
+  const unarchiveProject = useCallback(async (id: string): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.unarchiveProject(id);
       projectState.updateProjectInList(id, project);
@@ -238,7 +239,7 @@ export const useProjects = () => {
   }, [handleRequest, projectState]);
 
   // Activity & History
-  const getProjectActivity = useCallback(async (projectId: number): Promise<ProjectActivityLog[]> => {
+  const getProjectActivity = useCallback(async (projectId: string): Promise<ProjectActivityLog[]> => {
     return handleRequest(() => projectService.getProjectActivity(projectId));
   }, [handleRequest]);
 
@@ -247,7 +248,7 @@ export const useProjects = () => {
     return handleRequest(() => projectService.getProjectTemplates());
   }, [handleRequest]);
 
-  const createProjectFromTemplate = useCallback(async (templateId: number, data: Partial<ProjectCreateRequest>): Promise<Project> => {
+  const createProjectFromTemplate = useCallback(async (templateId: string, data: Partial<ProjectCreateRequest>): Promise<Project> => {
     return handleRequest(async () => {
       const project = await projectService.createProjectFromTemplate(templateId, data);
       projectState.addProject(project);

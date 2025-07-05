@@ -1,12 +1,12 @@
 import type {
-    Task,
-    TaskAssignee,
-    TaskAttachment,
-    TaskComment,
-    TaskDependency,
-    TaskKanbanBoard,
-    TaskTag,
-    TaskTimeLog,
+  Task,
+  TaskAssignee,
+  TaskAttachment,
+  TaskComment,
+  TaskDependency,
+  TaskKanbanBoard,
+  TaskTag,
+  TaskTimeLog,
 } from '@/types/task';
 import { useCallback, useState } from 'react';
 
@@ -38,22 +38,22 @@ interface UseTaskStateReturn extends TaskState {
   setError: (error: string | null) => void;
   clearError: () => void;
   addTask: (task: Task) => void;
-  updateTaskInList: (id: number, updates: Partial<Task>) => void;
-  removeTask: (id: number) => void;
+  updateTaskInList: (id: string, updates: Partial<Task>) => void;
+  removeTask: (id: string) => void;
   addAssignee: (assignee: TaskAssignee) => void;
-  removeAssignee: (id: number) => void;
+  removeAssignee: (id: string) => void;
   addComment: (comment: TaskComment) => void;
-  updateComment: (id: number, updates: Partial<TaskComment>) => void;
-  removeComment: (id: number) => void;
+  updateComment: (id: string, updates: Partial<TaskComment>) => void;
+  removeComment: (id: string) => void;
   addAttachment: (attachment: TaskAttachment) => void;
-  removeAttachment: (id: number) => void;
+  removeAttachment: (id: string) => void;
   addTimeLog: (timeLog: TaskTimeLog) => void;
-  updateTimeLog: (id: number, updates: Partial<TaskTimeLog>) => void;
-  removeTimeLog: (id: number) => void;
+  updateTimeLog: (id: string, updates: Partial<TaskTimeLog>) => void;
+  removeTimeLog: (id: string) => void;
   addTag: (tag: TaskTag) => void;
-  removeTag: (id: number) => void;
+  removeTag: (id: string) => void;
   addDependency: (dependency: TaskDependency) => void;
-  removeDependency: (id: number) => void;
+  removeDependency: (id: string) => void;
 }
 
 export const useTaskState = (): UseTaskStateReturn => {
@@ -130,7 +130,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const updateTaskInList = useCallback((id: number, updates: Partial<Task>) => {
+  const updateTaskInList = useCallback((id: string, updates: Partial<Task>) => {
     setState(prev => ({
       ...prev,
       tasks: prev.tasks.map(task =>
@@ -139,7 +139,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeTask = useCallback((id: number) => {
+  const removeTask = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       tasks: prev.tasks.filter(task => task.id !== id),
@@ -153,7 +153,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeAssignee = useCallback((id: number) => {
+  const removeAssignee = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskAssignees: prev.taskAssignees.filter(assignee => assignee.id !== id),
@@ -167,7 +167,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const updateComment = useCallback((id: number, updates: Partial<TaskComment>) => {
+  const updateComment = useCallback((id: string, updates: Partial<TaskComment>) => {
     setState(prev => ({
       ...prev,
       taskComments: prev.taskComments.map(comment =>
@@ -176,7 +176,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeComment = useCallback((id: number) => {
+  const removeComment = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskComments: prev.taskComments.filter(comment => comment.id !== id),
@@ -190,7 +190,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeAttachment = useCallback((id: number) => {
+  const removeAttachment = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskAttachments: prev.taskAttachments.filter(attachment => attachment.id !== id),
@@ -204,7 +204,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const updateTimeLog = useCallback((id: number, updates: Partial<TaskTimeLog>) => {
+  const updateTimeLog = useCallback((id: string, updates: Partial<TaskTimeLog>) => {
     setState(prev => ({
       ...prev,
       taskTimeLogs: prev.taskTimeLogs.map(timeLog =>
@@ -213,7 +213,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeTimeLog = useCallback((id: number) => {
+  const removeTimeLog = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskTimeLogs: prev.taskTimeLogs.filter(timeLog => timeLog.id !== id),
@@ -227,7 +227,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeTag = useCallback((id: number) => {
+  const removeTag = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskTags: prev.taskTags.filter(tag => tag.id !== id),
@@ -241,7 +241,7 @@ export const useTaskState = (): UseTaskStateReturn => {
     }));
   }, []);
 
-  const removeDependency = useCallback((id: number) => {
+  const removeDependency = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       taskDependencies: prev.taskDependencies.filter(dependency => dependency.id !== id),

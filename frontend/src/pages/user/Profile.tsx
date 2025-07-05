@@ -353,7 +353,7 @@ const Profile: React.FC = () => {
                         <p className="font-medium text-gray-900 dark:text-white">
                           {user.email}
                         </p>
-                        {user.is_email_verified && (
+                        {user.is_verified && (
                           <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
                             인증됨
                           </span>
@@ -544,8 +544,8 @@ const Profile: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">이메일 인증</span>
-                <span className={`font-medium ${user.is_email_verified ? 'text-green-600' : 'text-red-600'}`}>
-                  {user.is_email_verified ? '완료' : '미완료'}
+                <span className={`font-medium ${user.is_verified ? 'text-green-600' : 'text-red-600'}`}>
+                  {user.is_verified ? '완료' : '미완료'}
                 </span>
               </div>
 
@@ -564,7 +564,7 @@ const Profile: React.FC = () => {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">마지막 로그인</span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  {user.last_login_at ? formatDate(user.last_login_at) : '정보 없음'}
+                  {user.last_login ? formatDate(user.last_login) : '정보 없음'}
                 </span>
               </div>
             </div>

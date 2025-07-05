@@ -43,7 +43,6 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   hideWhenDenied = false
 }) => {
   const {
-    hasPermission,
     hasRole,
     hasAnyPermission,
     hasAllPermissions,

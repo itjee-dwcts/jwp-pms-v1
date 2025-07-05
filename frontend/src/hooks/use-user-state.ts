@@ -15,8 +15,8 @@ interface UseUserStateReturn extends UserState {
   setError: (error: string | null) => void;
   clearError: () => void;
   addUser: (user: User) => void;
-  updateUserInList: (id: number, updates: Partial<User>) => void;
-  removeUser: (id: number) => void;
+  updateUserInList: (id: string, updates: Partial<User>) => void;
+  removeUser: (id: string) => void;
 }
 
 export const useUserState = (): UseUserStateReturn => {
@@ -58,7 +58,7 @@ export const useUserState = (): UseUserStateReturn => {
     }));
   }, []);
 
-  const updateUserInList = useCallback((id: number, updates: Partial<User>) => {
+  const updateUserInList = useCallback((id: string, updates: Partial<User>) => {
     setState(prev => ({
       ...prev,
       users: prev.users.map(user =>
@@ -67,7 +67,7 @@ export const useUserState = (): UseUserStateReturn => {
     }));
   }, []);
 
-  const removeUser = useCallback((id: number) => {
+  const removeUser = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       users: prev.users.filter(user => user.id !== id),

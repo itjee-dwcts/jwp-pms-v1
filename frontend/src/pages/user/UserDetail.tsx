@@ -34,14 +34,14 @@ import type { UserUpdateRequest } from '../../types/user';
 
 // TODO: 실제 서비스에서 가져올 임시 타입들
 interface Project {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   status: 'active' | 'completed' | 'on_hold';
 }
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description?: string;
   status: 'todo' | 'in_progress' | 'completed';
@@ -158,21 +158,21 @@ const UserDetail: React.FC = () => {
 
         // 임시 더미 데이터
         const userData: User = {
-          id: parseInt(id),
+          id: String(id),
           username: `user${id}`,
           email: `user${id}@example.com`,
           full_name: `사용자 ${id}`,
           role: 'developer',
           status: 'active',
           is_active: true,
-          is_email_verified: true,
+          is_verified: true,
           avatar_url: '',
           bio: '프로젝트 관리 시스템을 사용하는 개발자입니다.',
           phone: '010-1234-5678',
           location: '서울, 대한민국',
           website: 'https://example.com',
           timezone: 'Asia/Seoul',
-          last_login_at: '2024-01-15T10:30:00Z',
+          last_login: '2024-01-15T10:30:00Z',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-15T10:30:00Z',
           project_count: 5,
@@ -199,13 +199,13 @@ const UserDetail: React.FC = () => {
 
         // TODO: 사용자의 프로젝트 및 작업 데이터 로드
         setUserProjects([
-          { id: 1, name: '웹사이트 리뉴얼', description: '회사 웹사이트 UI/UX 개선', status: 'active' },
-          { id: 2, name: '모바일 앱 개발', description: 'React Native 기반 모바일 앱', status: 'completed' },
+          { id: "1", name: '웹사이트 리뉴얼', description: '회사 웹사이트 UI/UX 개선', status: 'active' },
+          { id: "2", name: '모바일 앱 개발', description: 'React Native 기반 모바일 앱', status: 'completed' },
         ]);
 
         setUserTasks([
           {
-            id: 1,
+            id: "1",
             title: 'API 문서 작성',
             description: 'REST API 문서화 작업',
             status: 'in_progress',
@@ -213,7 +213,7 @@ const UserDetail: React.FC = () => {
             due_date: '2024-02-01T00:00:00Z'
           },
           {
-            id: 2,
+            id: "2",
             title: '데이터베이스 최적화',
             description: '쿼리 성능 개선',
             status: 'completed',
@@ -378,9 +378,9 @@ const UserDetail: React.FC = () => {
                 <Badge variant={getStatusBadgeVariant(user.status)}>
                   {getStatusDisplayName(user.status)}
                 </Badge>
-                {user.last_login_at && (
+                {user.last_login && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    마지막 로그인: {formatDate(user.last_login_at)}
+                    마지막 로그인: {formatDate(user.last_login)}
                   </span>
                 )}
               </div>
@@ -449,7 +449,7 @@ const UserDetail: React.FC = () => {
                       <p className="font-medium text-gray-900 dark:text-white">
                         {user.email}
                       </p>
-                      {user.is_email_verified && (
+                      {user.is_verified && (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
                           인증됨
                         </span>
@@ -715,11 +715,11 @@ const UserDetail: React.FC = () => {
                 </p>
               </div>
 
-              {user.last_login_at && (
+              {user.last_login && (
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">마지막 로그인</p>
                   <p className="text-gray-900 dark:text-white">
-                    {formatDateTime(user.last_login_at)}
+                    {formatDateTime(user.last_login)}
                   </p>
                 </div>
               )}

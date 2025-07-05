@@ -1,4 +1,4 @@
-import type { CalendarEvent, CalendarView, CalendarViewConfig, DateRange } from '@/types/calendar';
+import type { CalendarEvent, CalendarViewConfig, DateRange } from '@/types/calendar';
 import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subDays, subMonths, subWeeks, subYears } from 'date-fns';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -86,7 +86,7 @@ export const useCalendarView = (initialConfig?: Partial<CalendarViewConfig>) => 
   }, [config.view, config.date, config.firstDayOfWeek, dateRange]);
 
   // 뷰 변경
-  const changeView = useCallback((view: CalendarView) => {
+  const changeView = useCallback((view: string) => {
     setConfig(prev => ({ ...prev, view }));
   }, []);
 
@@ -165,7 +165,7 @@ export const useCalendarView = (initialConfig?: Partial<CalendarViewConfig>) => 
           hour,
           minute,
           isWorkingHour,
-          label: formatTimeSlot(timeString, config.timeFormat)
+          label: formatTimeSlot(timeString, config.timeFormat as '12h' | '24h')
         });
       }
     }

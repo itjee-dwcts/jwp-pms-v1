@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProjects } from '@/hooks/use-projects';
 import { useTasks } from '@/hooks/use-tasks';
 import { useUsers } from '@/hooks/use-users';
+import { User } from '@/types/auth';
 import {
   Task,
   TaskPriority,
@@ -14,7 +15,6 @@ import {
   TaskType,
   TaskUpdateRequest
 } from '@/types/task';
-import { User } from '@/types/user';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -39,7 +39,7 @@ interface TaskFormData {
   due_date: string;
   estimated_hours: string;
   parent_task_id: string;
-  assignee_ids: number[];
+  assignee_ids: string[];
   tags: string[];
 }
 
@@ -120,7 +120,7 @@ const TaskEdit: React.FC = () => {
 
     try {
       setLoading(true);
-      const taskData = await getTask(parseInt(id));
+      const taskData = await getTask(id);
       setTask(taskData);
 
       // 폼 데이터 초기화
@@ -244,15 +244,15 @@ const TaskEdit: React.FC = () => {
         id: task.id,
         title: formData.title,
         description: formData.description,
-        project_id: parseInt(formData.project_id),
+        project_id: formData.project_id,
         status: formData.status as TaskStatus,
         priority: formData.priority as TaskPriority,
         type: formData.type as TaskType,
         ...(formData.due_date && { due_date: formData.due_date }),
         ...(formData.estimated_hours && { estimated_hours: parseFloat(formData.estimated_hours) }),
-        ...(formData.parent_task_id && { parent_task_id: parseInt(formData.parent_task_id) }),
+        ...(formData.parent_task_id && { parent_task_id: formData.parent_task_id }),
         ...(formData.assignee_ids.length > 0 && { assignee_ids: formData.assignee_ids }),
-        ...(formData.tags.length > 0 && { tag_ids: formData.tags.map(tag => parseInt(tag)) }),
+        ...(formData.tags.length > 0 && { tag_ids: formData.tags.map(tag => tag) }),
       };
 
       await updateTask(task.id, updateData);
@@ -315,7 +315,7 @@ const TaskEdit: React.FC = () => {
   /**
    * 담당자 추가
    */
-  const addAssignee = (userId: number) => {
+  const addAssignee = (userId: string) => {
     if (!formData.assignee_ids.includes(userId)) {
       setFormData(prev => ({
         ...prev,
@@ -329,7 +329,7 @@ const TaskEdit: React.FC = () => {
   /**
    * 담당자 제거
    */
-  const removeAssignee = (userId: number) => {
+  const removeAssignee = (userId: string) => {
     setFormData(prev => ({
       ...prev,
       assignee_ids: prev.assignee_ids.filter(id => id !== userId)

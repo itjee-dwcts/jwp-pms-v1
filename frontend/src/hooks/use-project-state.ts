@@ -21,16 +21,16 @@ interface UseProjectStateReturn extends ProjectState {
   setError: (error: string | null) => void;
   clearError: () => void;
   addProject: (project: Project) => void;
-  updateProjectInList: (id: number, updates: Partial<Project>) => void;
-  removeProject: (id: number) => void;
+  updateProjectInList: (id: string, updates: Partial<Project>) => void;
+  removeProject: (id: string) => void;
   addMember: (member: ProjectMember) => void;
-  updateMember: (id: number, updates: Partial<ProjectMember>) => void;
-  removeMember: (id: number) => void;
+  updateMember: (id: string, updates: Partial<ProjectMember>) => void;
+  removeMember: (id: string) => void;
   addComment: (comment: ProjectComment) => void;
-  updateComment: (id: number, updates: Partial<ProjectComment>) => void;
-  removeComment: (id: number) => void;
+  updateComment: (id: string, updates: Partial<ProjectComment>) => void;
+  removeComment: (id: string) => void;
   addAttachment: (attachment: ProjectAttachment) => void;
-  removeAttachment: (id: number) => void;
+  removeAttachment: (id: string) => void;
 }
 
 export const useProjectState = (): UseProjectStateReturn => {
@@ -87,7 +87,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const updateProjectInList = useCallback((id: number, updates: Partial<Project>) => {
+  const updateProjectInList = useCallback((id: string, updates: Partial<Project>) => {
     setState(prev => ({
       ...prev,
       projects: prev.projects.map(project =>
@@ -96,7 +96,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const removeProject = useCallback((id: number) => {
+  const removeProject = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       projects: prev.projects.filter(project => project.id !== id),
@@ -110,7 +110,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const updateMember = useCallback((id: number, updates: Partial<ProjectMember>) => {
+  const updateMember = useCallback((id: string, updates: Partial<ProjectMember>) => {
     setState(prev => ({
       ...prev,
       projectMembers: prev.projectMembers.map(member =>
@@ -119,7 +119,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const removeMember = useCallback((id: number) => {
+  const removeMember = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       projectMembers: prev.projectMembers.filter(member => member.id !== id),
@@ -133,7 +133,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const updateComment = useCallback((id: number, updates: Partial<ProjectComment>) => {
+  const updateComment = useCallback((id: string, updates: Partial<ProjectComment>) => {
     setState(prev => ({
       ...prev,
       projectComments: prev.projectComments.map(comment =>
@@ -142,7 +142,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const removeComment = useCallback((id: number) => {
+  const removeComment = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       projectComments: prev.projectComments.filter(comment => comment.id !== id),
@@ -156,7 +156,7 @@ export const useProjectState = (): UseProjectStateReturn => {
     }));
   }, []);
 
-  const removeAttachment = useCallback((id: number) => {
+  const removeAttachment = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       projectAttachments: prev.projectAttachments.filter(attachment => attachment.id !== id),
