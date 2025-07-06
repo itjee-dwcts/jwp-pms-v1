@@ -1,6 +1,6 @@
-import type { CalendarEvent, CalendarViewConfig, DateRange } from '@/types/calendar';
 import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subDays, subMonths, subWeeks, subYears } from 'date-fns';
 import { useCallback, useMemo, useState } from 'react';
+import type { CalendarEvent, CalendarViewConfig, DateRange } from '../types/calendar';
 
 /**
  * 캘린더 뷰 상태 및 네비게이션을 관리하는 커스텀 훅

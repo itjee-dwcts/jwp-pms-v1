@@ -1,4 +1,5 @@
-import { taskService } from '@/services/task-service';
+import { useCallback } from 'react';
+import { taskService } from '../services/task-service';
 import type {
   AssignTaskRequest,
   BulkTaskAssignRequest,
@@ -23,8 +24,7 @@ import type {
   TaskTag,
   TaskTimeLog,
   TimeLogCreateRequest
-} from '@/types/task';
-import { useCallback } from 'react';
+} from '../types/task';
 import { useTaskState } from './use-task-state';
 
 export const useTasks = () => {

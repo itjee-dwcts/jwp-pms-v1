@@ -13,14 +13,14 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useCalendar } from '@/hooks/use-calendar';
-import { useUsers } from '@/hooks/use-users';
-import type { UpdateEventRequest } from '@/types/calendar';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useCalendar } from '../../hooks/use-calendar';
+import { useUsers } from '../../hooks/use-users';
+import type { UpdateEventRequest } from '../../types/calendar';
 
 interface EventFormData {
   title: string;
@@ -237,7 +237,7 @@ const EventEdit: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => navigate(`/calendar/events/${eventId}`)}
           >
@@ -484,7 +484,7 @@ const EventEdit: React.FC = () => {
                     </select>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => removeReminder(index)}
                       disabled={formData.reminder_minutes.length === 1}
@@ -495,7 +495,7 @@ const EventEdit: React.FC = () => {
                 ))}
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={addReminder}
                   className="w-full"
@@ -552,7 +552,7 @@ const EventEdit: React.FC = () => {
         <div className="flex items-center justify-end space-x-4">
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             onClick={() => navigate(`/calendar/events/${eventId}`)}
             disabled={isUpdating}
           >

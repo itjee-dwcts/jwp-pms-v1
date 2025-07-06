@@ -1,3 +1,19 @@
+export type ExportFormat = 'pdf' | 'excel' | 'csv' | 'json';
+export type ReportType = 'overview' | 'projects' | 'tasks' | 'users' | 'calendar';
+
+export interface BaseExportOptions {
+  type: ReportType;
+  format: ExportFormat;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  filters?: Record<string, any>;
+}
+
+// Removed duplicate ExportStatus interface with status: 'pending' | 'processing' | 'completed' | 'failed'
+// Use the ExportStatus interface defined later with status: ExportStatusType
+
 export interface ReportFilters {
   dateRange: string;
   startDate?: string;
@@ -319,7 +335,7 @@ export interface ExportStatus {
   };
 }
 
-export interface ExportOptions {
+export interface ExtendedExportOptions {
   type: string; // 'overview' | 'projects' | 'tasks' | 'users' | 'productivity' | 'timeline'
   format: string;
   filters: ReportFilters;

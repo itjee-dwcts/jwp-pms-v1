@@ -1,6 +1,6 @@
-import { userService } from '@/services/user-service';
-import type { AvatarUploadResponse } from '@/types/user';
 import { useCallback, useState } from 'react';
+import { userService } from '../services/user-service';
+import type { AvatarUploadResponse } from '../types/user';
 
 interface UseUserAvatarReturn {
   uploading: boolean;

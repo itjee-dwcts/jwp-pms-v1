@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import type {
   Task,
   TaskAssignee,
@@ -7,8 +8,7 @@ import type {
   TaskKanbanBoard,
   TaskTag,
   TaskTimeLog,
-} from '@/types/task';
-import { useCallback, useState } from 'react';
+} from '../types/task';
 
 interface TaskState {
   tasks: Task[];

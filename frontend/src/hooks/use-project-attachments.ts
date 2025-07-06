@@ -1,6 +1,6 @@
-import { projectService } from '@/services/project-service';
-import type { FileUploadResponse, ProjectAttachment } from '@/types/project';
 import { useCallback, useState } from 'react';
+import { projectService } from '../services/project-service';
+import type { FileUploadResponse, ProjectAttachment } from '../types/project';
 
 interface UseProjectAttachmentsReturn {
   attachments: ProjectAttachment[];

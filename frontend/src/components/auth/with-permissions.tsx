@@ -1,6 +1,6 @@
-import { usePermissions } from '@/hooks/use-permissions';
-import type { Permission, WithPermissionsOptions } from '@/types/permission';
 import React from 'react';
+import { usePermissions } from '../../hooks/use-permissions';
+import type { Permission, WithPermissionsOptions } from '../../types/permission';
 
 export const withPermissions = <P extends object>(
   Component: React.ComponentType<P>,
@@ -8,7 +8,7 @@ export const withPermissions = <P extends object>(
   options: WithPermissionsOptions = {}
 ) => {
   const WrappedComponent: React.FC<P> = (props) => {
-    const { hasPermission, hasAllPermissions, hasAnyPermission, loading } = usePermissions();
+    const { hasAllPermissions, hasAnyPermission, loading } = usePermissions();
     const {
       requireAll = true,
       fallbackComponent: FallbackComponent,

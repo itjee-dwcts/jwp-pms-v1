@@ -1,13 +1,13 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { config } from '@/lib/config';
 import { EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { config } from '../../lib/config';
 
 interface LoginFormData {
   username: string;
@@ -279,7 +279,7 @@ const Login: React.FC = () => {
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   onClick={() => handleOAuthLogin('google')}
                   disabled={loading}
                   className="w-full"
@@ -307,7 +307,7 @@ const Login: React.FC = () => {
 
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   onClick={() => handleOAuthLogin('github')}
                   disabled={loading}
                   className="w-full"

@@ -1,5 +1,5 @@
-import type { Project, ProjectAttachment, ProjectComment, ProjectMember } from '@/types/project';
 import { useCallback, useState } from 'react';
+import type { Project, ProjectAttachment, ProjectComment, ProjectMember } from '../types/project';
 
 interface ProjectState {
   projects: Project[];

@@ -1,15 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import { useTasks } from '@/hooks/use-tasks';
-import { useUsers } from '@/hooks/use-users';
-import { User } from '@/types/auth';
-import {
-  TaskCreateRequest,
-} from '@/types/task';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -22,6 +10,18 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import { useTasks } from '../../hooks/use-tasks';
+import { useUsers } from '../../hooks/use-users';
+import { User } from '../../types/auth';
+import {
+  TaskCreateRequest,
+} from '../../types/task';
 
 // 작업 폼 데이터 인터페이스 (내부 폼 상태용)
 interface TaskFormData {

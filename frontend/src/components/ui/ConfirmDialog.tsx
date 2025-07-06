@@ -228,7 +228,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   // Get confirm button variant
   const getConfirmButtonVariant = () => {
-    if (confirmVariant === 'danger') return 'destructive';
+    if (confirmVariant === 'danger') return 'danger';
+    if (confirmVariant === 'primary') return 'primary';
     if (confirmVariant === 'warning') return 'outline';
     if (confirmVariant === 'success') return 'default';
     return 'default';
@@ -346,7 +347,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   onClick={onClose}
                   disabled={loading}
                   className="mt-3 w-full justify-center sm:mt-0 sm:w-auto"

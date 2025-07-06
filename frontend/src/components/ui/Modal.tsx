@@ -2,7 +2,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ModalProps } from '../../types';
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  children: React.ReactNode;
+  className?: string;
+}
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,

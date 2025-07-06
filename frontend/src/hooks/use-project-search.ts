@@ -1,7 +1,7 @@
-import { useDebounce } from '@/hooks/use-debounce';
-import { projectService } from '@/services/project-service';
-import type { Project, ProjectSearchParams } from '@/types/project';
 import { useCallback, useEffect, useState } from 'react';
+import { useDebounce } from '../hooks/use-debounce';
+import { projectService } from '../services/project-service';
+import type { Project, ProjectSearchParams } from '../types/project';
 
 interface UseProjectSearchReturn {
   searchResults: Project[];

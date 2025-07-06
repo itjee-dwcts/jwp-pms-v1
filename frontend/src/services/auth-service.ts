@@ -13,7 +13,7 @@ import type {
   TwoFactorVerificationRequest,
   UpdateProfileRequest,
   User
-} from '@/types/auth';
+} from '../types/auth';
 import { apiClient } from './api-client';
 
 export class AuthService {

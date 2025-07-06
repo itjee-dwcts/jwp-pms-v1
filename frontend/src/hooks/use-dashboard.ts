@@ -2,19 +2,19 @@
 // use-dashboard.ts - 대시보드 관련 훅
 // ============================================================================
 
-import { dashboardService } from '@/services/dashboard-service';
-import type {
-    DashboardFilters,
-    DashboardOverview,
-    DashboardStats,
-    DashboardStatsParams,
-    ProjectStatusStats,
-    RecentActivity,
-    TaskStatusStats,
-    UpcomingEvent,
-    UserWorkloadStats
-} from '@/types/dashboard';
 import { useCallback, useState } from 'react';
+import { dashboardService } from '../services/dashboard-service';
+import type {
+  DashboardFilters,
+  DashboardOverview,
+  DashboardStats,
+  DashboardStatsParams,
+  ProjectStatusStats,
+  RecentActivity,
+  TaskStatusStats,
+  UpcomingEvent,
+  UserWorkloadStats
+} from '../types/dashboard';
 
 /**
  * 대시보드 상태 인터페이스

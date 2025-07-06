@@ -1,7 +1,7 @@
-import { useDebounce } from '@/hooks/use-debounce';
-import { taskService } from '@/services/task-service';
-import type { Task, TaskSearchParams } from '@/types/task';
 import { useCallback, useEffect, useState } from 'react';
+import { useDebounce } from '../hooks/use-debounce';
+import { taskService } from '../services/task-service';
+import type { Task, TaskSearchParams } from '../types/task';
 
 interface UseTaskSearchReturn {
   searchResults: Task[];

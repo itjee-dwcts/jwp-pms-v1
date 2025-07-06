@@ -1,5 +1,5 @@
-import type { User } from '@/types/auth';
 import { useCallback, useState } from 'react';
+import type { User } from '../types/auth';
 
 interface UserState {
   users: User[];

@@ -1,9 +1,9 @@
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { usePermissions } from '@/hooks/use-permissions';
-import type { Permission, Role } from '@/types/permission';
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { usePermissions } from '../../hooks/use-permissions';
+import type { Permission, Role } from '../../types/permission';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

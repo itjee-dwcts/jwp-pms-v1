@@ -1,10 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import ErrorMessage from '@/components/ui/ErrorMessage';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useTasks } from '@/hooks/use-tasks';
-import { Task, TaskPriority, TaskStatus, TaskType } from '@/types/task';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -24,6 +17,13 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import ErrorMessage from '../../components/ui/ErrorMessage';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useTasks } from '../../hooks/use-tasks';
+import { Task } from '../../types/task';
 
 /**
  * 작업 상세 페이지 컴포넌트
@@ -57,7 +57,7 @@ const TaskDetail: React.FC = () => {
 
     try {
       setLoading(true);
-      const taskData = await getTask(parseInt(id));
+      const taskData = await getTask(id);
       setTask(taskData);
     } catch (error) {
       console.error('작업 로드 실패:', error);
@@ -91,7 +91,7 @@ const TaskDetail: React.FC = () => {
   /**
    * 작업 상태 변경
    */
-  const handleStatusChange = async (newStatus: TaskStatus) => {
+  const handleStatusChange = async (newStatus: string) => {
     if (!task) return;
 
     try {
@@ -125,81 +125,99 @@ const TaskDetail: React.FC = () => {
   /**
    * 상태별 색상 반환
    */
-  const getStatusColor = (status: TaskStatus) => {
-    const colors = {
-      todo: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-      in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
-      in_review: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      done: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-    };
-    return colors[status];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'todo':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
+      case 'in_review':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case 'done':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      default:
+        console.warn(`알 수 없는 상태: ${status}`);
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
   };
 
-  /**
-   * 우선순위별 색상 반환
-   */
-  const getPriorityColor = (priority: TaskPriority) => {
-    const colors = {
-      low: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      high: 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-    };
-    return colors[priority];
-  };
 
   /**
    * 타입별 색상 반환
    */
-  const getTypeColor = (type: TaskType) => {
-    const colors = {
-      task: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
-      bug: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-      feature: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      improvement: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200',
-      research: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200',
-    };
-    return colors[type];
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'task':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
+      case 'bug':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      case 'feature':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case 'improvement':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200';
+      case 'research':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200';
+      default:
+        console.warn(`알 수 없는 타입: ${type}`);
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
   };
 
   /**
    * 상태 텍스트 변환
    */
-  const getStatusText = (status: TaskStatus) => {
-    const statusMap = {
-      todo: '할 일',
-      in_progress: '진행 중',
-      in_review: '검토 중',
-      done: '완료',
-    };
-    return statusMap[status];
+  const getStatusText = (status: string) => {
+    switch(status){
+      case 'todo':
+        return '할 일';
+      case 'in_progress':
+        return '진행 중';
+      case 'in_review':
+        return '검토 중';
+      case 'done':
+        return '완료';
+      default:
+        console.warn(`알 수 없는 상태: ${status}`);
+        return '알 수 없음';
+    }
   };
 
   /**
    * 우선순위 텍스트 변환
    */
-  const getPriorityText = (priority: TaskPriority) => {
-    const priorityMap = {
-      low: '낮음',
-      medium: '보통',
-      high: '높음',
-      critical: '긴급',
-    };
-    return priorityMap[priority];
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return '낮음';
+      case 'medium':
+        return '보통';
+      case 'high':
+        return '높음';
+      case 'critical':
+        return '긴급';
+      default:
+        return '알 수 없음';
+    }
   };
 
   /**
    * 타입 텍스트 변환
    */
-  const getTypeText = (type: TaskType) => {
-    const typeMap = {
-      task: '작업',
-      bug: '버그',
-      feature: '기능',
-      improvement: '개선',
-      research: '연구',
-    };
-    return typeMap[type];
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'task':
+        return '작업';
+      case 'bug':
+        return '버그';
+      case 'feature':
+        return '기능';
+      case 'improvement':
+        return '개선';
+      case 'research':
+        return '연구';
+      default:
+        return '알 수 없음';
+    }
   };
 
   /**
@@ -250,28 +268,43 @@ const TaskDetail: React.FC = () => {
   /**
    * 다음 상태 반환
    */
-  const getNextStatus = (currentStatus: TaskStatus): TaskStatus | null => {
-    const statusFlow = {
-      todo: 'in_progress' as TaskStatus,
-      in_progress: 'in_review' as TaskStatus,
-      in_review: 'done' as TaskStatus,
-      done: null,
-    };
-    return statusFlow[currentStatus];
+  const getNextStatus = (currentStatus: string): string => {
+    switch (currentStatus) {
+      case 'todo':
+        return 'in_progress';
+      case 'in_progress':
+        return 'in_review';
+      case 'in_review':
+        return 'done';
+      case 'done':
+        return ''; // 완료 상태에서는 다음 상태가 없음
+      default:
+        // 잘못된 상태일 경우 null 반환
+        console.warn(`알 수 없는 상태: ${currentStatus}`);
+        return '';
+    }
   };
 
   /**
    * 이전 상태 반환
    */
-  const getPreviousStatus = (currentStatus: TaskStatus): TaskStatus | null => {
-    const statusFlow = {
-      todo: null,
-      in_progress: 'todo' as TaskStatus,
-      in_review: 'in_progress' as TaskStatus,
-      done: 'in_review' as TaskStatus,
-    };
-    return statusFlow[currentStatus];
+  const getPreviousStatus = (currentStatus: string): string => {
+    switch (currentStatus) {
+      case 'todo':
+        return '';
+      case 'in_progress':
+        return 'todo';
+      case 'in_review':
+        return 'in_progress';
+      case 'done':
+        return 'in_review';
+      default:
+        // 잘못된 상태일 경우 null 반환
+        console.warn(`알 수 없는 상태: ${currentStatus}`);
+        return '';
+    }
   };
+
 
   // 로딩 중
   if (loading) {
@@ -294,6 +327,24 @@ const TaskDetail: React.FC = () => {
   const nextStatus = getNextStatus(task.status);
   const previousStatus = getPreviousStatus(task.status);
   const dueInfo = task.due_date ? getDaysUntilDue(task.due_date) : null;
+
+  /**
+   * 우선순위별 색상 반환
+   */
+  function getPriorityColor(priority: string) {
+    switch (priority) {
+      case 'low':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200';
+      case 'critical':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-6">

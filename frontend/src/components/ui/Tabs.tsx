@@ -91,7 +91,7 @@ const Tabs: React.FC<TabsProps> = ({
   /**
    * 탭 버튼 클래스 생성
    */
-  const getTabButtonClasses = (tab: TabItem, isActive: boolean) => {
+  const getTabButtonClasses = (_tab: TabItem, isActive: boolean) => {
     const baseClasses = cn(
       'relative inline-flex items-center justify-center',
       'font-medium transition-all duration-200',
@@ -286,8 +286,6 @@ export const VerticalTabs: React.FC<Omit<TabsProps, 'align' | 'fullWidth'>> = ({
   tabs,
   activeTab,
   onChange,
-  variant = 'default',
-  size = 'md',
   className,
   children,
 }) => {

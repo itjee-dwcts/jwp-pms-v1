@@ -1,13 +1,13 @@
-import { DEFAULT_ROLE_CONFIGS } from '@/constants/permissions';
-import { useAuth } from '@/hooks/use-auth';
-import { permissionService } from '@/services/permission-service';
+import { useCallback, useEffect } from 'react';
+import { DEFAULT_ROLE_CONFIGS } from '../constants/permissions';
+import { useAuth } from '../hooks/use-auth';
+import { permissionService } from '../services/permission-service';
 import type {
   Permission,
   PermissionGroup,
   Role,
   RoleConfig
-} from '@/types/permission';
-import { useCallback, useEffect } from 'react';
+} from '../types/permission';
 import { usePermissionState } from './use-permission-state';
 
 export const usePermissions = () => {

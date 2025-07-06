@@ -1,5 +1,5 @@
-import type { Permission, PermissionsState, Role } from '@/types/permission';
 import { useCallback, useState } from 'react';
+import type { Permission, PermissionsState, Role } from '../types/permission';
 
 /**
  * 권한 상태 관리를 위한 내부 훅

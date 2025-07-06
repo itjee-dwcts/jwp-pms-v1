@@ -15,14 +15,14 @@ import {
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useCalendar } from '@/hooks/use-calendar';
-import type { CalendarEvent } from '@/types/calendar';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useCalendar } from '../../hooks/use-calendar';
+import type { CalendarEvent } from '../../types/calendar';
 
 type ViewMode = 'month' | 'week' | 'day' | 'list';
 
@@ -341,7 +341,7 @@ const Calendar: React.FC = () => {
               <div className="flex space-x-2 ml-4">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="default"
                   onClick={() => navigate(`/calendar/events/${event.id}/edit`)}
                 >
                   수정
@@ -398,20 +398,20 @@ const Calendar: React.FC = () => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => navigateDate('prev')}
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               onClick={goToToday}
             >
               오늘
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => navigateDate('next')}
             >
@@ -460,7 +460,7 @@ const Calendar: React.FC = () => {
           </div>
 
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
           >
@@ -522,7 +522,7 @@ const Calendar: React.FC = () => {
             </div>
             <div className="flex items-end">
               <Button
-                variant="outline"
+                variant="default"
                 onClick={() => setFilters({ search: '', status: '', priority: '' })}
                 className="w-full"
               >

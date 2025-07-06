@@ -1,5 +1,5 @@
-import { useProjects } from '@/hooks/use-projects';
 import React, { createContext, useContext } from 'react';
+import { useProjects } from '../hooks/use-projects';
 
 type ProjectContextType = ReturnType<typeof useProjects>;
 

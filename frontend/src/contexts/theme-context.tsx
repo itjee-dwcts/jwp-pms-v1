@@ -1,5 +1,5 @@
-import { useTheme } from '@/hooks/use-theme';
 import React, { createContext, useContext } from 'react';
+import { useTheme } from '../hooks/use-theme';
 
 type ThemeContextType = ReturnType<typeof useTheme>;
 

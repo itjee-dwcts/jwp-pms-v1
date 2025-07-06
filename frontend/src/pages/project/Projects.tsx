@@ -1,17 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import {
-  Project,
-  ProjectListResponse,
-  ProjectPriority,
-  ProjectSearchParams,
-  ProjectStatus,
-  SortOrder
-} from '@/types/project';
 import {
   CalendarIcon,
   ClockIcon,
@@ -27,9 +13,20 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import {
+  Project,
+  ProjectListResponse,
+  ProjectSearchParams,
+} from '../../types/project';
 
 // 정렬 필드 타입
-type SortField = 'name' | 'created_at' | 'updated_at' | 'status' | 'priority';
+//type SortField = 'name' | 'created_at' | 'updated_at' | 'status' | 'priority';
 
 // 필터 인터페이스 (내부 상태 관리용)
 interface ProjectFilters {
@@ -38,8 +35,8 @@ interface ProjectFilters {
   priority: string;
   owner_id: string;
   tags: string[];
-  sort_by: SortField;
-  sort_order: SortOrder;
+  sort_by: string;
+  sort_order: string;
 }
 
 /**
@@ -67,8 +64,8 @@ const Projects: React.FC = () => {
     priority: searchParams.get('priority') || '',
     owner_id: searchParams.get('owner_id') || '',
     tags: searchParams.getAll('tags') || [],
-    sort_by: (searchParams.get('sort_by') as SortField) || 'updated_at',
-    sort_order: (searchParams.get('sort_order') as SortOrder) || 'desc',
+    sort_by: searchParams.get('sort_by') || 'updated_at',
+    sort_order: searchParams.get('sort_order') || 'desc',
   });
 
   // 컴포넌트 마운트 시 프로젝트 목록 로드
@@ -108,7 +105,7 @@ const Projects: React.FC = () => {
         ...filters,
         page_no: currentPage,
         page_size: pageSize,
-        ...(filters.owner_id && { owner_id: parseInt(filters.owner_id) }),
+        ...(filters.owner_id && { owner_id: filters.owner_id.toString() }),
       };
 
       const response: ProjectListResponse = await getProjects(queryParams);
@@ -166,75 +163,96 @@ const Projects: React.FC = () => {
   /**
    * 상태별 색상 반환
    */
-  const getStatusColor = (status: ProjectStatus) => {
-    const colors = {
-      planning: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-      active: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
-      on_hold: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      completed: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      cancelled: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-    };
-    return colors[status];
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case "planning":
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      case "active":
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
+      case "on_hold":
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case "completed":
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case "cancelled":
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
   };
 
   /**
    * 우선순위별 색상 반환
    */
-  const getPriorityColor = (priority: ProjectPriority) => {
-    const colors = {
-      low: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      high: 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-    };
-    return colors[priority];
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200';
+      case 'critical':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
   };
 
-  /**
-   * 상태 텍스트 변환
-   */
-  const getStatusText = (status: ProjectStatus) => {
-    const statusMap = {
-      planning: '계획 중',
-      active: '진행 중',
-      on_hold: '대기',
-      completed: '완료',
-      cancelled: '취소',
-    };
-    return statusMap[status];
-  };
 
   /**
    * 우선순위 텍스트 변환
    */
-  const getPriorityText = (priority: ProjectPriority) => {
-    const priorityMap = {
-      low: '낮음',
-      medium: '보통',
-      high: '높음',
-      critical: '긴급',
-    };
-    return priorityMap[priority];
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return '낮음';
+      case 'medium':
+        return '보통';
+      case 'high':
+        return '높음';
+      case 'critical':
+        return '긴급';
+      default:
+        return '알 수 없음';
+    }
   };
 
-  /**
-   * 진행률 계산
-   */
-  const getProgressPercentage = (project: Project) => {
-    if (!project.tasks_count) return 0;
-    return Math.round((project.completed_tasks_count / project.tasks_count) * 100);
-  };
 
   /**
    * 사용자가 프로젝트 멤버인지 확인
    */
   const isProjectMember = (project: Project) => {
     return project.owner.id === user?.id ||
-           project.members.some(member => member.id === user?.id);
+           project.members?.some(member => member.id === user?.id);
   };
 
   // 총 페이지 수 계산
   const totalPages = Math.ceil(totalItems / pageSize);
+
+  function getStatusText(status: string): React.ReactNode {
+    switch (status) {
+      case 'planning':
+        return '계획 중';
+      case 'active':
+        return '진행 중';
+      case 'on_hold':
+        return '대기';
+      case 'completed':
+        return '완료';
+      case 'cancelled':
+        return '취소';
+      default:
+        return '알 수 없음';
+    }
+  }
+
+  function getProgressPercentage(project: Project): React.ReactNode {
+    if (!project.task_count || project.task_count === 0) return 0;
+    const completed = project.completed_task_count ?? 0;
+    const total = project.task_count;
+    const percent = Math.round((completed / total) * 100);
+    return percent;
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -300,10 +318,11 @@ const Projects: React.FC = () => {
             <div className="grid md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               {/* 상태 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="status-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   상태
                 </label>
                 <select
+                  id="status-select"
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -319,10 +338,11 @@ const Projects: React.FC = () => {
 
               {/* 우선순위 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="priority-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   우선순위
                 </label>
                 <select
+                  id="priority-select"
                   value={filters.priority}
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -337,15 +357,16 @@ const Projects: React.FC = () => {
 
               {/* 정렬 기준 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="sortby-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   정렬 기준
                 </label>
                 <select
+                  id="sortby-select"
                   value={`${filters.sort_by}_${filters.sort_order}`}
                   onChange={(e) => {
                     const [sort_by, sort_order] = e.target.value.split('_');
-                    handleFilterChange('sort_by', sort_by);
-                    handleFilterChange('sort_order', sort_order);
+                    handleFilterChange('sort_by', sort_by ?? '');
+                    handleFilterChange('sort_order', sort_order ?? '');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
                 >
@@ -360,10 +381,11 @@ const Projects: React.FC = () => {
 
               {/* 내 프로젝트만 보기 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="owner-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   소유자
                 </label>
                 <select
+                  id="owner-select"
                   value={filters.owner_id}
                   onChange={(e) => handleFilterChange('owner_id', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -423,8 +445,7 @@ const Projects: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         navigate(`/projects/${project.id}`);
                       }}
                       className="p-1"
@@ -434,8 +455,7 @@ const Projects: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         navigate(`/projects/${project.id}/edit`);
                       }}
                       className="p-1"
@@ -452,7 +472,7 @@ const Projects: React.FC = () => {
               </p>
 
               {/* 진행률 */}
-              {project.tasks_count > 0 && (
+              {project.task_count !== undefined && project.task_count > 0 && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>진행률</span>
@@ -465,14 +485,14 @@ const Projects: React.FC = () => {
                     />
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>{project.completed_tasks_count}개 완료</span>
-                    <span>총 {project.tasks_count}개</span>
+                    <span>{project.completed_task_count}개 완료</span>
+                    <span>총 {project.task_count}개</span>
                   </div>
                 </div>
               )}
 
               {/* 태그 */}
-              {project.tags.length > 0 && (
+              {project.tags && project.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-4">
                   {project.tags.slice(0, 3).map((tag, index) => (
                     <span
@@ -501,7 +521,7 @@ const Projects: React.FC = () => {
                 {/* 팀원 수 */}
                 <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                   <UserGroupIcon className="h-4 w-4" />
-                  <span>{project.members.length + 1}명의 팀원</span>
+                  <span>{(project.members?.length ?? 0) + 1}명의 팀원</span>
                 </div>
 
                 {/* 날짜 정보 */}
@@ -579,26 +599,26 @@ const Projects: React.FC = () => {
             {/* 페이지 번호 */}
             <div className="flex items-center space-x-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
+                let pageNo = 1;
                 if (totalPages <= 5) {
-                  pageNum = i + 1;
+                  pageNo = i + 1;
                 } else if (currentPage <= 3) {
-                  pageNum = i + 1;
+                  pageNo = i + 1;
                 } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
+                  pageNo = totalPages - 4 + i;
                 } else {
-                  pageNum = currentPage - 2 + i;
+                  pageNo = currentPage - 2 + i;
                 }
 
                 return (
                   <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
+                    key={pageNo}
+                    variant={currentPage === pageNo ? "default" : "outline"}
                     size="sm"
-                    onClick={() => handlePageChange(pageNum)}
+                    onClick={() => handlePageChange(pageNo)}
                     className="w-10"
                   >
-                    {pageNum}
+                    {pageNo}
                   </Button>
                 );
               })}

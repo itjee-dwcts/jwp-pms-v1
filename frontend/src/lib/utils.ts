@@ -416,8 +416,10 @@ export function groupBy<T, K extends keyof T>(
 ): Record<string, T[]> {
   return array.reduce((groups, item) => {
     const group = String(item[key]);
-    groups[group] = groups[group] || [];
-    groups[group].push(item);
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group]!.push(item); // Non-null assertion 추가
     return groups;
   }, {} as Record<string, T[]>);
 }

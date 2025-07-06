@@ -1,16 +1,16 @@
-import { reportService } from '@/services/report-service';
-import type {
-    ExportOptions,
-    ProjectReport,
-    ReportData,
-    ReportMetrics,
-    ReportTemplate,
-    ScheduledReport,
-    TaskReport,
-    TimeTrackingReport,
-    UserReport,
-} from '@/types/report';
 import { useCallback, useState } from 'react';
+import { reportService } from '../services/report-service';
+import type {
+  ExportOptions,
+  ProjectReport,
+  ReportData,
+  ReportMetrics,
+  ReportTemplate,
+  ScheduledReport,
+  TaskReport,
+  TimeTrackingReport,
+  UserReport,
+} from '../types/report';
 
 interface ReportState {
   reportData: ReportData | null;

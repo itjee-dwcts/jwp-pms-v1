@@ -1,6 +1,6 @@
-import { taskService } from '@/services/task-service';
-import type { Task, TaskKanbanBoard } from '@/types/task';
 import { useCallback, useState } from 'react';
+import { taskService } from '../services/task-service';
+import type { Task, TaskKanbanBoard } from '../types/task';
 
 interface UseTaskKanbanReturn {
   kanbanBoard: TaskKanbanBoard | null;

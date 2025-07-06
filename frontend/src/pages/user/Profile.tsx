@@ -28,7 +28,6 @@ import { authService } from '../../services/auth-service';
 import type {
   ChangePasswordRequest,
   UpdateProfileRequest,
-  UserRole
 } from '../../types/auth';
 
 /**
@@ -70,33 +69,23 @@ const Profile: React.FC = () => {
   /**
    * 사용자 역할 한글 변환 함수
    */
-  const getRoleDisplayName = (role: UserRole): string => {
-    const roleNames: Record<UserRole, string> = {
-      admin: '관리자',
-      manager: '매니저',
-      developer: '개발자',
-      viewer: '뷰어',
-    };
-    return roleNames[role] || '사용자';
-  };
-
-  /**
-   * 역할별 배지 색상 결정 함수
-   */
-  const getRoleBadgeVariant = (role: UserRole) => {
+  const getRoleDisplayName = (role: string): string => {
     switch (role) {
       case 'admin':
-        return 'danger';
+        return '관리자';
       case 'manager':
-        return 'warning';
+        return '매니저';
       case 'developer':
-        return 'primary';
+        return '개발자';
       case 'viewer':
-        return 'default';
+        return '뷰어';
+      case 'guest':
+        return '게스트';
       default:
-        return 'primary';
+        return '사용자';
     }
   };
+
 
   /**
    * 프로필 업데이트 처리
@@ -234,6 +223,23 @@ const Profile: React.FC = () => {
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  function getRoleBadgeVariant(role: string): "default" | "primary" | "success" | "warning" | "danger" {
+    switch (role) {
+      case 'admin':
+        return 'danger';
+      case 'manager':
+        return 'primary';
+      case 'developer':
+        return 'success';
+      case 'viewer':
+        return 'default';
+      case 'guest':
+        return 'warning';
+      default:
+        return 'default';
+    }
   }
 
   return (

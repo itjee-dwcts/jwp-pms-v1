@@ -13,13 +13,13 @@ import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useCalendar } from '@/hooks/use-calendar';
-import { useUsers } from '@/hooks/use-users';
-import type { CreateEventRequest } from '@/types/calendar';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useCalendar } from '../../hooks/use-calendar';
+import { useUsers } from '../../hooks/use-users';
+import type { CreateEventRequest } from '../../types/calendar';
 
 interface EventFormData {
   title: string;
@@ -27,14 +27,14 @@ interface EventFormData {
   start_date: string;
   end_date: string;
   all_day: boolean;
-  type: 'meeting' | 'deadline' | 'reminder' | 'personal';
-  status: 'confirmed' | 'tentative' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
+  type: string; //'meeting' | 'deadline' | 'reminder' | 'personal';
+  status: string; // 'confirmed' | 'tentative' | 'cancelled';
+  priority: string; // 'low' | 'medium' | 'high';
   location: string;
   url: string;
   attendee_ids: string[];
   reminder_minutes: number[];
-  visibility: 'public' | 'private' | 'confidential';
+  visibility: string; // 'public' | 'private' | 'confidential';
 }
 
 const EventCreate: React.FC = () => {
@@ -163,7 +163,7 @@ const EventCreate: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => navigate('/calendar')}
           >
@@ -409,7 +409,7 @@ const EventCreate: React.FC = () => {
                     </select>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => removeReminder(index)}
                       disabled={formData.reminder_minutes.length === 1}
@@ -420,7 +420,7 @@ const EventCreate: React.FC = () => {
                 ))}
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={addReminder}
                   className="w-full"
@@ -478,7 +478,7 @@ const EventCreate: React.FC = () => {
         <div className="flex items-center justify-end space-x-4">
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             onClick={() => navigate('/calendar')}
             disabled={isCreating}
           >

@@ -1,6 +1,19 @@
 import classNames from 'classnames';
 import React from 'react';
-import { ButtonProps } from '../../types';
+
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'ghost' | 'default' | 'outline';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  loading?: boolean;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
+  className?: string;
+  icon?: React.ReactNode;
+  ref?: React.Ref<HTMLButtonElement>;
+}
 
 const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
@@ -12,6 +25,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   type = 'button',
   className = '',
+  icon,
   ...props
 }) => {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -23,7 +37,9 @@ const Button: React.FC<ButtonProps> = ({
     warning: 'bg-warning-600 hover:bg-warning-700 text-white shadow-sm focus:ring-warning-500',
     danger: 'bg-danger-600 hover:bg-danger-700 text-white shadow-sm focus:ring-danger-500',
     ghost: 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700',
-  };
+    outline: 'border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50 focus:ring-gray-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800',
+    default: 'bg-gray-100 hover:bg-gray-200 text-gray-900 shadow-sm focus:ring-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white'
+};
 
   const sizeClasses = {
     xs: 'px-2.5 py-1.5 text-xs',
@@ -74,6 +90,7 @@ const Button: React.FC<ButtonProps> = ({
           />
         </svg>
       )}
+      {icon && <span className="mr-2">{icon}</span>}
       {children}
     </button>
   );

@@ -1,5 +1,5 @@
-import { useCalendar } from '@/hooks/use-calendar';
 import React, { createContext, useContext } from 'react';
+import { useCalendar } from '../hooks/use-calendar';
 
 type CalendarContextType = ReturnType<typeof useCalendar>;
 

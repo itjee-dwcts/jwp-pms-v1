@@ -17,13 +17,13 @@ import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useCalendar } from '@/hooks/use-calendar';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useCalendar } from '../../hooks/use-calendar';
 
 const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -148,7 +148,7 @@ const EventDetail: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => navigate('/calendar')}
           >

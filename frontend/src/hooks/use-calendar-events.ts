@@ -1,13 +1,13 @@
-import { calendarService } from '@/services/calendar-service';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
+import { calendarService } from '../services/calendar-service';
 import type {
   CalendarConflict,
   CalendarEvent,
   CalendarEventDisplay,
   DateRange,
   EventFilters
-} from '@/types/calendar';
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+} from '../types/calendar';
 
 // 유틸리티 함수들
 const formatDate = (date: Date): string => {
@@ -137,15 +137,17 @@ export const useCalendarEvents = (dateRange?: DateRange, initialFilters?: EventF
       if (!Array.isArray(grouped[dateKey])) {
         grouped[dateKey] = [];
       }
-      grouped[dateKey].push(event);
+      grouped[dateKey]!.push(event);
     });
 
     // 각 날짜의 이벤트를 시간순으로 정렬
     Object.keys(grouped).forEach(date => {
-      if (Array.isArray(grouped[date])) {
-        grouped[date].sort((a, b) =>
-          a.display_start.getTime() - b.display_start.getTime()
-        );
+      if (grouped[date] !== undefined && grouped[date] && grouped[date]!.length > 0) {
+        if (Array.isArray(grouped[date])) {
+          grouped[date]!.sort((a, b) =>
+            a.display_start.getTime() - b.display_start.getTime()
+          );
+        }
       }
     });
 

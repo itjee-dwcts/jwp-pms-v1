@@ -10,7 +10,7 @@
   // ============================================================================
   // Pylance 언어 서버 설정 (IntelliSense 엔진)
   // ============================================================================
-  "python.languageServer": "Pylance", // 명시적으로 Pylance 지정
+  //"python.languageServer": "Pylance", // 명시적으로 Pylance 지정
 
   // Python 경로 설정 (가장 중요!)
   "python.analysis.extraPaths": [
@@ -104,7 +104,7 @@
   // 터미널 설정 (환경 변수 포함)
   // ============================================================================
   "terminal.integrated.defaultProfile.windows": "PowerShell",
-  "terminal.integrated.cwd": "./backend",
+  "terminal.integrated.cwd": "./",
   "terminal.integrated.env.windows": {
     "PYTHONPATH": "./backend/src;./backend;./backend/.venv/Lib/site-packages"
   },

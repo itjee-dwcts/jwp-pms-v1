@@ -13,8 +13,8 @@ import type {
   UpcomingEvent,
   UserActivityLogRequest,
   UserWorkloadStats
-} from '@/types/dashboard';
-import { buildQueryParams } from '@/utils/query-params';
+} from '../types/dashboard';
+import { buildQueryParams } from '../utils/query-params';
 import { apiClient } from './api-client';
 
 export class DashboardService {

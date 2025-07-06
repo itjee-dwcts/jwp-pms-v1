@@ -1,9 +1,3 @@
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useReports } from '@/hooks/use-reports';
 import {
   ChartBarIcon,
   ClockIcon,
@@ -31,6 +25,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useReports } from '../../hooks/use-reports';
 
 interface ReportFilters {
   dateRange: string;  //'week' | 'month' | 'quarter' | 'year';

@@ -1,15 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { PROJECT_PRIORITY, PROJECT_STATUS } from '@/constants/project';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import { useUsers } from '@/hooks/use-users';
-import { User } from '@/types/auth';
-import {
-  ProjectCreateRequest,
-} from '@/types/project';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -22,6 +10,18 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { PROJECT_PRIORITY, PROJECT_STATUS } from '../../constants/project';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import { useUsers } from '../../hooks/use-users';
+import { User } from '../../types/auth';
+import {
+  ProjectCreateRequest,
+} from '../../types/project';
 
 // 프로젝트 폼 데이터 인터페이스 (내부 폼 상태용)
 interface ProjectFormData {

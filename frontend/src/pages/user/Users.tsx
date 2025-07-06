@@ -427,8 +427,8 @@ const Users: React.FC = () => {
         {canManageUsers() && (
           <Button
             onClick={() => navigate('/users/create')}
-            icon={<PlusIcon className="w-5 h-5" />}
           >
+            <PlusIcon className="w-5 h-5 mr-2" />
             사용자 초대
           </Button>
         )}
@@ -505,11 +505,11 @@ const Users: React.FC = () => {
           {/* 필터 및 정렬 버튼 */}
           <div className="flex items-center space-x-3">
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              icon={<FunnelIcon className="w-4 h-4" />}
             >
+              <FunnelIcon className="w-4 h-4" />
               필터 {Object.values(filters).some(v => v !== undefined) && '(활성)'}
             </Button>
 
@@ -532,11 +532,11 @@ const Users: React.FC = () => {
             />
 
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={() => setPageSize(pageSize === 20 ? 50 : pageSize === 50 ? 100 : 20)}
-              icon={<AdjustmentsHorizontalIcon className="w-4 h-4" />}
             >
+              <AdjustmentsHorizontalIcon className="w-4 h-4" />
               {pageSize}개씩
             </Button>
           </div>
@@ -600,10 +600,10 @@ const Users: React.FC = () => {
 
             <div className="mt-4 flex justify-end">
               <Button
-                variant="outline"
+                variant="primary"
                 onClick={resetFilters}
-                icon={<XCircleIcon className="w-4 h-4" />}
               >
+                <XCircleIcon className="w-4 h-4" />
                 필터 초기화
               </Button>
             </div>
@@ -624,7 +624,7 @@ const Users: React.FC = () => {
             description="검색 조건에 맞는 사용자가 없습니다."
             action={
               searchQuery || Object.values(filters).some(v => v !== undefined) ? (
-                <Button variant="outline" onClick={resetFilters}>
+                <Button variant="primary" onClick={resetFilters}>
                   필터 초기화
                 </Button>
               ) : canManageUsers() ? (
@@ -656,10 +656,10 @@ const Users: React.FC = () => {
 
                 {selectedUsers.length > 0 && canManageUsers() && (
                   <div className="flex items-center space-x-2">
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="primary">
                       일괄 활성화
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="primary">
                       일괄 비활성화
                     </Button>
                     <Button size="sm" variant="danger">
@@ -747,10 +747,10 @@ const Users: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="primary"
                         onClick={() => navigate(`/users/${user.id}`)}
-                        icon={<EyeIcon className="w-4 h-4" />}
                       >
+                        <EyeIcon className="w-4 h-4" />
                         보기
                       </Button>
 
@@ -758,18 +758,17 @@ const Users: React.FC = () => {
                         <>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="primary"
                             onClick={() => navigate(`/users/${user.id}/edit`)}
-                            icon={<PencilIcon className="w-4 h-4" />}
                           >
+                            <PencilIcon className="w-4 h-4" />
                             편집
                           </Button>
 
                           <Button
                             size="sm"
-                            variant={user.is_active ? "outline" : "primary"}
+                            variant={user.is_active ? "secondary" : "primary"}
                             onClick={() => handleToggleUserStatus(user)}
-                            title={user.is_active ? '비활성화' : '활성화'}
                           >
                             {user.is_active ? (
                               <XCircleIcon className="w-4 h-4" />
@@ -786,8 +785,8 @@ const Users: React.FC = () => {
                                 setUserToDelete(user);
                                 setIsDeleteModalOpen(true);
                               }}
-                              icon={<TrashIcon className="w-4 h-4" />}
                             >
+                              <TrashIcon className="w-4 h-4" />
                               삭제
                             </Button>
                           )}

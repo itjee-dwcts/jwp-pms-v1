@@ -1,12 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import ErrorMessage from '@/components/ui/ErrorMessage';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import { useTasks } from '@/hooks/use-tasks';
-import { Project } from '@/types/project';
-import { Task } from '@/types/task';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -22,6 +13,15 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import ErrorMessage from '../../components/ui/ErrorMessage';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import { useTasks } from '../../hooks/use-tasks';
+import { Project } from '../../types/project';
+import { Task } from '../../types/task';
 
 /**
  * 프로젝트 상세 페이지 컴포넌트

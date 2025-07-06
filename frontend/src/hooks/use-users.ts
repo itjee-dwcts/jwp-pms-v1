@@ -1,4 +1,3 @@
-import { userService } from '@/services/user-service';
 import { PasswordChangeRequest, User, UserActivityLog, UserPreferences, UserSession, UserStats } from '@/types/auth';
 import type {
   AvatarUploadResponse,
@@ -17,6 +16,7 @@ import type {
   UserUpdateRequest
 } from '@/types/user';
 import { useCallback } from 'react';
+import { userService } from '../services/user-service';
 import { useUserState } from './use-user-state';
 
 export const useUsers = () => {

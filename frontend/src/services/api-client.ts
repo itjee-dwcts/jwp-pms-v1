@@ -1,5 +1,5 @@
-import { config } from '@/lib/config';
-import { tokenStorage } from '@/utils/token-storage';
+import { config } from '../lib/config';
+import { tokenStorage } from '../utils/token-storage';
 
 export class ApiClient {
   public baseUrl: string;

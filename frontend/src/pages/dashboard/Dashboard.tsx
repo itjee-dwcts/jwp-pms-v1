@@ -1,14 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import Select from '@/components/ui/Select';
-import { useAuth } from '@/hooks/use-auth';
-import { useDashboard } from '@/hooks/use-dashboard';
-import type {
-  DashboardStatsParams
-} from '@/types/dashboard';
 import {
   ArrowTrendingUpIcon,
   CalendarIcon,
@@ -36,6 +25,17 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Select from '../../components/ui/Select';
+import { useAuth } from '../../hooks/use-auth';
+import { useDashboard } from '../../hooks/use-dashboard';
+import type {
+  DashboardStatsParams
+} from '../../types/dashboard';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -201,7 +201,7 @@ const Dashboard: React.FC = () => {
           <Button
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            variant="outline"
+            variant="default"
             size="sm"
           >
             {refreshing ? <LoadingSpinner size="sm" /> : '새로고침'}

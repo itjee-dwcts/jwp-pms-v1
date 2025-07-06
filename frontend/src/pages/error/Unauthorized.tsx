@@ -1,7 +1,3 @@
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import { useAuth } from '@/hooks/use-auth';
 import {
   ArrowLeftIcon,
   ArrowRightOnRectangleIcon,
@@ -14,6 +10,10 @@ import {
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { useAuth } from '../../hooks/use-auth';
 
 interface UnauthorizedDetails {
   reason?: 'not_authenticated' | 'insufficient_permissions' | 'session_expired' | 'account_disabled' | 'ip_restricted';

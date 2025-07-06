@@ -1,7 +1,7 @@
-import { useAuthState } from '@/hooks/use-auth-state';
-import { config } from '@/lib/config';
-import type { AuthContextType } from '@/types/auth';
 import React, { createContext, useContext, useEffect } from 'react';
+import { useAuthState } from '../hooks/use-auth-state';
+import { config } from '../lib/config';
+import type { AuthContextType } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

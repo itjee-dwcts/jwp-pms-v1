@@ -1,10 +1,10 @@
-import { calendarService } from '@/services/calendar-service';
-import type {
-    CreateEventRequest,
-    UpdateEventRequest
-} from '@/types/calendar';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { calendarService } from '../services/calendar-service';
+import type {
+  CreateEventRequest,
+  UpdateEventRequest
+} from '../types/calendar';
 
 /**
  * 캘린더 이벤트 관리를 위한 커스텀 훅

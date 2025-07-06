@@ -1,9 +1,3 @@
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
 import {
   AcademicCapIcon,
   BookOpenIcon,
@@ -23,6 +17,76 @@ import {
 } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+
+// 탭 상수 클래스
+class HelpTabs {
+  static readonly FAQ = 'faq';
+  static readonly ARTICLES = 'articles';
+  static readonly SUPPORT = 'support';
+  static readonly CONTACT = 'contact';
+
+  static getAllTabs() {
+    return [this.FAQ, this.ARTICLES, this.SUPPORT, this.CONTACT];
+  }
+}
+
+// 지원 티켓 상태 상수 클래스
+// class SupportStatus {
+//   static readonly OPEN = 'open';
+//   static readonly IN_PROGRESS = 'in_progress';
+//   static readonly RESOLVED = 'resolved';
+//   static readonly CLOSED = 'closed';
+
+//   static getAllStatuses() {
+//     return [this.OPEN, this.IN_PROGRESS, this.RESOLVED, this.CLOSED];
+//   }
+// }
+
+// 우선순위 상수 클래스
+class Priority {
+  static readonly LOW = 'low';
+  static readonly MEDIUM = 'medium';
+  static readonly HIGH = 'high';
+  static readonly URGENT = 'urgent';
+
+  static getAllPriorities() {
+    return [this.LOW, this.MEDIUM, this.HIGH, this.URGENT];
+  }
+}
+
+// 지원 카테고리 상수 클래스
+class SupportCategories {
+  static readonly GENERAL = 'general';
+  static readonly TECHNICAL = 'technical';
+  static readonly BILLING = 'billing';
+  static readonly FEATURE = 'feature';
+  static readonly BUG = 'bug';
+
+  static getAllCategories() {
+    return [this.GENERAL, this.TECHNICAL, this.BILLING, this.FEATURE, this.BUG];
+  }
+
+  static getCategoryLabel(category: string) {
+    const labels: { [key: string]: string } = {
+      [this.GENERAL]: '일반 문의',
+      [this.TECHNICAL]: '기술적 문제',
+      [this.BILLING]: '결제 & 구독',
+      [this.FEATURE]: '기능 요청',
+      [this.BUG]: '버그 신고',
+    };
+    return labels[category] || category;
+  }
+}
+
+type HelpTab = typeof HelpTabs[keyof typeof HelpTabs];
+// type SupportStatusType = typeof SupportStatus[keyof typeof SupportStatus];
+// type PriorityType = typeof Priority[keyof typeof Priority];
+// type SupportCategoryType = typeof SupportCategories[keyof typeof SupportCategories];
 
 // 자주 묻는 질문 인터페이스
 interface FAQItem {
@@ -36,15 +100,15 @@ interface FAQItem {
 }
 
 // 지원 티켓 인터페이스
-interface SupportTicket {
-  id: string;
-  subject: string;
-  description: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  created_at: string;
-  updated_at: string;
-}
+// interface SupportTicket {
+//   id: string;
+//   subject: string;
+//   description: string;
+//   status: SupportStatusType;
+//   priority: PriorityType;
+//   created_at: string;
+//   updated_at: string;
+// }
 
 // 도움말 문서 인터페이스
 interface HelpArticle {
@@ -58,17 +122,20 @@ interface HelpArticle {
   rating: number;
 }
 
+/**
+ * 도움말 및 지원 페이지 컴포넌트
+ * FAQ, 도움말 문서, 지원 티켓, 연락처 정보를 제공합니다.
+ */
 const Help: React.FC = () => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'faq' | 'articles' | 'support' | 'contact'>('faq');
+  const [activeTab, setActiveTab] = useState<HelpTab>(HelpTabs.FAQ);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [supportForm, setSupportForm] = useState({
     subject: '',
     description: '',
-    priority: 'medium' as const,
-    category: 'general',
+    priority: Priority.MEDIUM,
+    category: SupportCategories.GENERAL,
   });
 
   // 목업 데이터 - 실제 앱에서는 API에서 가져옴
@@ -154,11 +221,11 @@ const Help: React.FC = () => {
   ];
 
   const supportCategories = [
-    { value: 'general', label: '일반 문의' },
-    { value: 'technical', label: '기술적 문제' },
-    { value: 'billing', label: '결제 & 구독' },
-    { value: 'feature', label: '기능 요청' },
-    { value: 'bug', label: '버그 신고' },
+    { value: SupportCategories.GENERAL, label: SupportCategories.getCategoryLabel(SupportCategories.GENERAL) },
+    { value: SupportCategories.TECHNICAL, label: SupportCategories.getCategoryLabel(SupportCategories.TECHNICAL) },
+    { value: SupportCategories.BILLING, label: SupportCategories.getCategoryLabel(SupportCategories.BILLING) },
+    { value: SupportCategories.FEATURE, label: SupportCategories.getCategoryLabel(SupportCategories.FEATURE) },
+    { value: SupportCategories.BUG, label: SupportCategories.getCategoryLabel(SupportCategories.BUG) },
   ];
 
   // 필터링된 FAQ 목록
@@ -174,7 +241,9 @@ const Help: React.FC = () => {
     article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // 지원 티켓 제출 핸들러
+  /**
+   * 지원 티켓 제출 핸들러
+   */
   const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -187,8 +256,8 @@ const Help: React.FC = () => {
       setSupportForm({
         subject: '',
         description: '',
-        priority: 'medium',
-        category: 'general',
+        priority: Priority.MEDIUM,
+        category: SupportCategories.GENERAL,
       });
     } catch (error) {
       toast.error('지원 티켓 생성에 실패했습니다. 다시 시도해주세요.');
@@ -197,12 +266,16 @@ const Help: React.FC = () => {
     }
   };
 
-  // FAQ 토글 핸들러
+  /**
+   * FAQ 토글 핸들러
+   */
   const toggleFAQ = (id: string) => {
     setExpandedFAQ(expandedFAQ === id ? null : id);
   };
 
-  // FAQ 탭 렌더링
+  /**
+   * FAQ 탭 렌더링
+   */
   const renderFAQTab = () => (
     <div className="space-y-6">
       {/* 검색 */}
@@ -269,12 +342,12 @@ const Help: React.FC = () => {
                   {faq.answer}
                 </div>
                 <div className="mt-4 flex items-center space-x-4">
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="secondary">
                     <CheckCircleIcon className="w-4 h-4 mr-1" />
-                    Helpful
+                    도움됨
                   </Button>
                   <Button size="sm" variant="ghost">
-                    Share
+                    공유
                   </Button>
                 </div>
               </div>
@@ -285,7 +358,9 @@ const Help: React.FC = () => {
     </div>
   );
 
-  // 문서 탭 렌더링
+  /**
+   * 문서 탭 렌더링
+   */
   const renderArticlesTab = () => (
     <div className="space-y-6">
       {/* 검색 */}
@@ -362,7 +437,9 @@ const Help: React.FC = () => {
     </div>
   );
 
-  // 지원 탭 렌더링
+  /**
+   * 지원 탭 렌더링
+   */
   const renderSupportTab = () => (
     <div className="space-y-6">
       <Card className="p-6">
@@ -376,7 +453,7 @@ const Help: React.FC = () => {
                 카테고리
               </label>
               <select
-                id = "select-category"
+                id="select-category"
                 value={supportForm.category}
                 onChange={(e) => setSupportForm(prev => ({ ...prev, category: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
@@ -392,15 +469,15 @@ const Help: React.FC = () => {
                 우선순위
               </label>
               <select
-                id = "select-priority"
+                id="select-priority"
                 value={supportForm.priority}
-                onChange={(e) => setSupportForm(prev => ({ ...prev, priority: e.target.value as any }))}
+                onChange={(e) => setSupportForm(prev => ({ ...prev, priority: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
               >
-                <option value="low">낮음</option>
-                <option value="medium">보통</option>
-                <option value="high">높음</option>
-                <option value="urgent">긴급</option>
+                <option value={Priority.LOW}>낮음</option>
+                <option value={Priority.MEDIUM}>보통</option>
+                <option value={Priority.HIGH}>높음</option>
+                <option value={Priority.URGENT}>긴급</option>
               </select>
             </div>
           </div>
@@ -420,7 +497,7 @@ const Help: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
+              설명
             </label>
             <textarea
               rows={6}
@@ -465,10 +542,12 @@ const Help: React.FC = () => {
     </div>
   );
 
-  // 연락처 탭 렌더링
+  /**
+   * 연락처 탭 렌더링
+   */
   const renderContactTab = () => (
     <div className="space-y-6">
-      {/* Contact Options */}
+      {/* 연락처 옵션 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="p-6 text-center">
           <div className="w-12 h-12 mx-auto mb-4 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
@@ -479,9 +558,9 @@ const Help: React.FC = () => {
             지원팀과 실시간으로 채팅하세요
           </p>
           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            오전 9시 - 오후 6시 PST 이용 가능
+            오전 9시 - 오후 6시 KST 이용 가능
           </Badge>
-          <Button className="w-full mt-4">Start Chat</Button>
+          <Button className="w-full mt-4">채팅 시작</Button>
         </Card>
 
         <Card className="p-6 text-center">
@@ -493,9 +572,9 @@ const Help: React.FC = () => {
             이메일을 보내주시면 신속하게 답변드리겠습니다
           </p>
           <p className="text-sm font-medium text-gray-900 dark:text-white">
-            support@itjee.com
+            support@pms.com
           </p>
-          <Button variant="outline" className="w-full mt-4">이메일 보내기</Button>
+          <Button variant="secondary" className="w-full mt-4">이메일 보내기</Button>
         </Card>
 
         <Card className="p-6 text-center">
@@ -507,7 +586,7 @@ const Help: React.FC = () => {
             복잡한 문제를 위한 화상 통화 예약
           </p>
           <Badge variant="default">예약 필요</Badge>
-          <Button variant="outline" className="w-full mt-4">통화 예약</Button>
+          <Button variant="secondary" className="w-full mt-4">통화 예약</Button>
         </Card>
       </div>
 
@@ -522,11 +601,11 @@ const Help: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">월요일 - 금요일</span>
-                <span className="text-gray-900 dark:text-white">오전 9:00 - 오후 6:00 PST</span>
+                <span className="text-gray-900 dark:text-white">오전 9:00 - 오후 6:00 KST</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">토요일</span>
-                <span className="text-gray-900 dark:text-white">오전 10:00 - 오후 4:00 PST</span>
+                <span className="text-gray-900 dark:text-white">오전 10:00 - 오후 4:00 KST</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">일요일</span>
@@ -585,15 +664,15 @@ const Help: React.FC = () => {
 
       {/* 빠른 액션 */}
       <div className="flex flex-wrap justify-center gap-4">
-        <Button variant="outline" onClick={() => setActiveTab('faq')}>
+        <Button variant="secondary" onClick={() => setActiveTab(HelpTabs.FAQ)}>
           <QuestionMarkCircleIcon className="w-4 h-4 mr-2" />
           FAQ 둘러보기
         </Button>
-        <Button variant="outline" onClick={() => setActiveTab('articles')}>
+        <Button variant="secondary" onClick={() => setActiveTab(HelpTabs.ARTICLES)}>
           <BookOpenIcon className="w-4 h-4 mr-2" />
           도움말 문서
         </Button>
-        <Button onClick={() => setActiveTab('support')}>
+        <Button onClick={() => setActiveTab(HelpTabs.SUPPORT)}>
           <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
           지원 요청
         </Button>
@@ -603,14 +682,14 @@ const Help: React.FC = () => {
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'faq', label: 'FAQ', icon: QuestionMarkCircleIcon },
-            { id: 'articles', label: '도움말 문서', icon: BookOpenIcon },
-            { id: 'support', label: '지원 티켓', icon: ChatBubbleLeftRightIcon },
-            { id: 'contact', label: '연락처', icon: EnvelopeIcon },
+            { id: HelpTabs.FAQ, label: 'FAQ', icon: QuestionMarkCircleIcon },
+            { id: HelpTabs.ARTICLES, label: '도움말 문서', icon: BookOpenIcon },
+            { id: HelpTabs.SUPPORT, label: '지원 티켓', icon: ChatBubbleLeftRightIcon },
+            { id: HelpTabs.CONTACT, label: '연락처', icon: EnvelopeIcon },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as HelpTab)}
               className={`${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -626,10 +705,10 @@ const Help: React.FC = () => {
 
       {/* 탭 내용 */}
       <div className="mt-6">
-        {activeTab === 'faq' && renderFAQTab()}
-        {activeTab === 'articles' && renderArticlesTab()}
-        {activeTab === 'support' && renderSupportTab()}
-        {activeTab === 'contact' && renderContactTab()}
+        {activeTab === HelpTabs.FAQ && renderFAQTab()}
+        {activeTab === HelpTabs.ARTICLES && renderArticlesTab()}
+        {activeTab === HelpTabs.SUPPORT && renderSupportTab()}
+        {activeTab === HelpTabs.CONTACT && renderContactTab()}
       </div>
     </div>
   );

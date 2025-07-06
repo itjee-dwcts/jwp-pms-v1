@@ -1,19 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import { useTasks } from '@/hooks/use-tasks';
-import {
-  SortOrder,
-  Task,
-  TaskListResponse,
-  TaskPriority,
-  TaskSearchParams,
-  TaskStatus,
-  TaskType
-} from '@/types/task';
 import {
   CalendarIcon,
   ClockIcon,
@@ -31,9 +15,21 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import { useTasks } from '../../hooks/use-tasks';
+import {
+  Task,
+  TaskListResponse,
+  TaskSearchParams,
+} from '../../types/task';
 
 // 정렬 필드 타입
-type SortField = 'title' | 'created_at' | 'updated_at' | 'due_date' | 'status' | 'priority';
+//type SortField = 'title' | 'created_at' | 'updated_at' | 'due_date' | 'status' | 'priority';
 
 // 뷰 타입
 type ViewType = 'list' | 'kanban';
@@ -50,8 +46,8 @@ interface TaskFilters {
   due_after: string;
   has_due_date: string;
   is_overdue: string;
-  sort_by: SortField;
-  sort_order: SortOrder;
+  sort_by: string;
+  sort_order: string;
 }
 
 /**
@@ -88,8 +84,8 @@ const Tasks: React.FC = () => {
     due_after: searchParams.get('due_after') || '',
     has_due_date: searchParams.get('has_due_date') || '',
     is_overdue: searchParams.get('is_overdue') || '',
-    sort_by: (searchParams.get('sort_by') as SortField) || 'updated_at',
-    sort_order: (searchParams.get('sort_order') as SortOrder) || 'desc',
+    sort_by: searchParams.get('sort_by') || 'updated_at',
+    sort_order: searchParams.get('sort_order') || 'desc',
   });
 
   // 컴포넌트 마운트 시 데이터 로드
@@ -203,81 +199,113 @@ const Tasks: React.FC = () => {
   /**
    * 상태별 색상 반환
    */
-  const getStatusColor = (status: TaskStatus) => {
-    const colors = {
-      todo: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-      in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
-      in_review: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      done: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-    };
-    return colors[status];
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'todo':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
+      case 'in_review':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case 'done':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      default:
+        return '';
+    }
   };
 
   /**
    * 우선순위별 색상 반환
    */
-  const getPriorityColor = (priority: TaskPriority) => {
-    const colors = {
-      low: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
-      high: 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-    };
-    return colors[priority];
+  const getPriorityColor = (priority: string): string => {
+    switch (priority) {
+      case 'low':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200';
+      case 'critical':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      default:
+        return '';
+    }
   };
 
   /**
    * 타입별 색상 반환
    */
-  const getTypeColor = (type: TaskType) => {
-    const colors = {
-      task: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
-      bug: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200',
-      feature: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
-      improvement: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200',
-      research: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200',
-    };
-    return colors[type];
+  const getTypeColor = (type: string): string => {
+    switch (type) {
+      case 'task':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200';
+      case 'bug':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200';
+      case 'feature':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200';
+      case 'improvement':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200';
+      case 'research':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200';
+      default:
+        return '';
+    }
   };
 
   /**
    * 상태 텍스트 변환
    */
-  const getStatusText = (status: TaskStatus) => {
-    const statusMap = {
-      todo: '할 일',
-      in_progress: '진행 중',
-      in_review: '검토 중',
-      done: '완료',
-    };
-    return statusMap[status];
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'todo':
+        return '할 일';
+      case 'in_progress':
+        return '진행 중';
+      case 'in_review':
+        return '검토 중';
+      case 'done':
+        return '완료';
+      default:
+        return '';
+    }
   };
 
   /**
    * 우선순위 텍스트 변환
    */
-  const getPriorityText = (priority: TaskPriority) => {
-    const priorityMap = {
-      low: '낮음',
-      medium: '보통',
-      high: '높음',
-      critical: '긴급',
-    };
-    return priorityMap[priority];
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return '낮음';
+      case 'medium':
+        return '보통';
+      case 'high':
+        return '높음';
+      case 'critical':
+        return '긴급';
+      default:
+        return '';
+    }
   };
 
   /**
    * 타입 텍스트 변환
    */
-  const getTypeText = (type: TaskType) => {
-    const typeMap = {
-      task: '작업',
-      bug: '버그',
-      feature: '기능',
-      improvement: '개선',
-      research: '연구',
-    };
-    return typeMap[type];
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'task':
+        return '작업';
+      case 'bug':
+        return '버그';
+      case 'feature':
+        return '기능';
+      case 'improvement':
+        return '개선';
+      case 'research':
+        return '연구';
+      default:
+        return '';
+    }
   };
 
   /**
@@ -697,8 +725,8 @@ const Tasks: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
+                    onClick={() => {
+                      // Prevent event bubbling by using event.stopPropagation in the parent div's onClick if needed
                       navigate(`/tasks/${task.id}`);
                     }}
                     className="p-1"
@@ -710,8 +738,8 @@ const Tasks: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
+                      onClick={() => {
+                        // Prevent event bubbling by using event.stopPropagation in the parent div's onClick if needed
                         navigate(`/tasks/${task.id}/edit`);
                       }}
                       className="p-1"

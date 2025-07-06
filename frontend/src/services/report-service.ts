@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient } from '../services/api-client';
 import type {
   ExportOptions,
   ExportStatus,
@@ -11,8 +11,8 @@ import type {
   TaskReport,
   TimeTrackingReport,
   UserReport,
-} from '@/types/report';
-import { buildQueryParams } from '@/utils/query-params';
+} from '../types/report';
+import { buildQueryParams } from '../utils/query-params';
 
 export class ReportService {
   // Comprehensive Reports

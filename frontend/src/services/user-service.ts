@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient } from '../services/api-client';
 import {
   PasswordChangeRequest,
   User,
@@ -6,7 +6,7 @@ import {
   UserPreferences,
   UserSession,
   UserStats
-} from '@/types/auth';
+} from '../types/auth';
 import type {
   AvatarUploadResponse,
   BulkDeleteRequest,
@@ -23,8 +23,8 @@ import type {
   UserStatsResponse,
   UserTaskParams,
   UserUpdateRequest
-} from '@/types/user';
-import { buildQueryParams } from '@/utils/query-params';
+} from '../types/user';
+import { buildQueryParams } from '../utils/query-params';
 
 export class UserService {
   // CRUD Operations

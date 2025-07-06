@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_CONFIGS, PERMISSION_GROUPS } from '@/constants/permissions';
-import { apiClient } from '@/services/api-client';
+import { DEFAULT_ROLE_CONFIGS, PERMISSION_GROUPS } from '../constants/permissions';
+import { apiClient } from '../services/api-client';
 import type {
   Permission,
   PermissionCheckResult,
@@ -7,7 +7,7 @@ import type {
   Role,
   RoleConfig,
   UserPermissions,
-} from '@/types/permission';
+} from '../types/permission';
 
 export class PermissionService {
   async getUserPermissions(userId: string): Promise<UserPermissions> {

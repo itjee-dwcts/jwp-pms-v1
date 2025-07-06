@@ -6,6 +6,7 @@ interface CardProps {
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
+  onClick?: () => void;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -13,6 +14,7 @@ const Card: React.FC<CardProps> = ({
   className,
   padding = 'md',
   hover = false,
+  onClick
 }) => {
   const paddingClasses = {
     none: '',
@@ -30,7 +32,12 @@ const Card: React.FC<CardProps> = ({
     className
   );
 
-  return <div className={cardClasses}>{children}</div>;
+  return <div
+    className={cardClasses}
+    onClick={onClick}
+  >
+    {children}
+  </div>;
 };
 
 export default Card;

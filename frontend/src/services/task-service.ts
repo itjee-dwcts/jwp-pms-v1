@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient } from '../services/api-client';
 import type {
   AssignTaskRequest,
   BulkTaskAssignRequest,
@@ -23,8 +23,8 @@ import type {
   TaskTag,
   TaskTimeLog,
   TimeLogCreateRequest
-} from '@/types/task';
-import { buildQueryParams } from '@/utils/query-params';
+} from '../types/task';
+import { buildQueryParams } from '../utils/query-params';
 
 export class TaskService {
   // CRUD Operations

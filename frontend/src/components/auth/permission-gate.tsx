@@ -1,6 +1,6 @@
-import { usePermissions } from '@/hooks/use-permissions';
-import type { Permission, Role } from '@/types/permission';
 import React from 'react';
+import { usePermissions } from '../../hooks/use-permissions';
+import type { Permission, Role } from '../../types/permission';
 
 interface PermissionGateProps {
   children: React.ReactNode;

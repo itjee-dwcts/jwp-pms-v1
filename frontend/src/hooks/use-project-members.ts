@@ -1,6 +1,6 @@
-import { projectService } from '@/services/project-service';
-import type { MemberAddRequest, MemberUpdateRequest, ProjectMember } from '@/types/project';
 import { useCallback, useState } from 'react';
+import { projectService } from '../services/project-service';
+import type { MemberAddRequest, MemberUpdateRequest, ProjectMember } from '../types/project';
 
 interface UseProjectMembersReturn {
   members: ProjectMember[];

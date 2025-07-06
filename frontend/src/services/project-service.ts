@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient } from '../services/api-client';
 import type {
   BulkProjectDeleteRequest,
   BulkProjectUpdateRequest,
@@ -18,8 +18,8 @@ import type {
   ProjectSearchParams,
   ProjectStatsResponse,
   ProjectTemplate
-} from '@/types/project';
-import { buildQueryParams } from '@/utils/query-params';
+} from '../types/project';
+import { buildQueryParams } from '../utils/query-params';
 
 export class ProjectService {
   // CRUD Operations

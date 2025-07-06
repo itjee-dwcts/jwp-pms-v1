@@ -17,11 +17,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 // 타입 정의
 interface SearchResult {
   id: string;
-  type: 'project' | 'task' | 'user' | 'event';
+  type: string; //'project' | 'task' | 'user' | 'event';
   title: string;
   description?: string;
   status?: string;
-  priority?: 'low' | 'medium' | 'high' | 'critical';
+  priority?: string;  // 'low' | 'medium' | 'high' | 'critical';
   dueDate?: string;
   createdAt: string;
   updatedAt: string;

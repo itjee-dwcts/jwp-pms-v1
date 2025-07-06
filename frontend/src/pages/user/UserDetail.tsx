@@ -28,8 +28,9 @@ import Modal from '../../components/ui/Modal';
 import Select from '../../components/ui/Select';
 import Tabs from '../../components/ui/Tabs';
 import Textarea from '../../components/ui/Textarea';
+import type { UserRole, UserStatus } from '../../constants/user';
 import { useAuth } from '../../hooks/use-auth';
-import type { User, UserRole, UserStatus } from '../../types/auth';
+import type { User } from '../../types/auth';
 import type { UserUpdateRequest } from '../../types/user';
 
 // TODO: 실제 서비스에서 가져올 임시 타입들
@@ -86,33 +87,24 @@ const UserDetail: React.FC = () => {
   /**
    * 사용자 역할 한글 변환 함수
    */
-  const getRoleDisplayName = (role: UserRole): string => {
-    const roleNames: Record<UserRole, string> = {
-      admin: '관리자',
-      manager: '매니저',
-      developer: '개발자',
-      viewer: '뷰어',
-    };
-    return roleNames[role] || '사용자';
+  const getRoleDisplayName = (role: string): string => {
+    switch(role){
+      case "admin": return '관리자';
+      case "manager": return '매니저';
+      case "developer": return '개발자';
+      case "viewer": return '뷰어';
+      case "guest": return '게스트';
+      default: return '사용자';
+    }
   };
 
-  /**
-   * 사용자 상태 한글 변환 함수
-   */
-  const getStatusDisplayName = (status: UserStatus): string => {
-    const statusNames: Record<UserStatus, string> = {
-      active: '활성',
-      inactive: '비활성',
-      pending: '대기 중',
-      suspended: '정지됨',
-    };
-    return statusNames[status] || '알 수 없음';
-  };
 
   /**
    * 역할별 배지 색상 결정 함수
    */
-  const getRoleBadgeVariant = (role: UserRole) => {
+  const getRoleBadgeVariant = (
+    role: string
+  ): 'danger' | 'warning' | 'primary' | 'default' | 'success' => {
     switch (role) {
       case 'admin':
         return 'danger';
@@ -130,7 +122,9 @@ const UserDetail: React.FC = () => {
   /**
    * 상태별 배지 색상 결정 함수
    */
-  const getStatusBadgeVariant = (status: UserStatus) => {
+  const getStatusBadgeVariant = (
+    status: string
+  ): 'danger' | 'warning' | 'primary' | 'default' | 'success' => {
     switch (status) {
       case 'active':
         return 'success';
@@ -340,13 +334,28 @@ const UserDetail: React.FC = () => {
     { id: 'activity', label: '활동', icon: <ClockIcon className="w-4 h-4" /> },
   ];
 
+  function getStatusDisplayName(status: string): React.ReactNode {
+    switch (status) {
+      case 'active':
+        return '활성';
+      case 'inactive':
+        return '비활성';
+      case 'pending':
+        return '대기 중';
+      case 'suspended':
+        return '정지됨';
+      default:
+        return '알 수 없음';
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       {/* 페이지 헤더 */}
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => navigate('/users')}
             icon={<ArrowLeftIcon className="w-4 h-4" />}
@@ -391,7 +400,7 @@ const UserDetail: React.FC = () => {
           {canManageUser() && (
             <div className="flex space-x-3">
               <Button
-                variant="outline"
+                variant="default"
                 onClick={() => setIsEditModalOpen(true)}
                 icon={<PencilIcon className="w-4 h-4" />}
               >
@@ -821,7 +830,7 @@ const UserDetail: React.FC = () => {
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
-              variant="outline"
+              variant="primary"
               onClick={() => setIsEditModalOpen(false)}
             >
               취소
@@ -866,7 +875,7 @@ const UserDetail: React.FC = () => {
 
           <div className="flex justify-end space-x-3">
             <Button
-              variant="outline"
+              variant="default"
               onClick={() => setIsDeleteModalOpen(false)}
             >
               취소

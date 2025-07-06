@@ -1,4 +1,5 @@
-import { projectService } from '@/services/project-service';
+import { useCallback } from 'react';
+import { projectService } from '../services/project-service';
 import type {
   BulkProjectDeleteRequest,
   BulkProjectUpdateRequest,
@@ -18,8 +19,7 @@ import type {
   ProjectSearchParams,
   ProjectStatsResponse,
   ProjectTemplate,
-} from '@/types/project';
-import { useCallback } from 'react';
+} from '../types/project';
 import { useProjectState } from './use-project-state';
 
 export const useProjects = () => {

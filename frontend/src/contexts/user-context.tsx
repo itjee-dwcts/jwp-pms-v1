@@ -1,5 +1,5 @@
-import { useUsers } from '@/hooks/use-users';
 import React, { createContext, useContext } from 'react';
+import { useUsers } from '../hooks/use-users';
 
 type UserContextType = ReturnType<typeof useUsers>;
 

@@ -1,16 +1,3 @@
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import ErrorMessage from '@/components/ui/ErrorMessage';
-import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/hooks/use-auth';
-import { useProjects } from '@/hooks/use-projects';
-import { useUsers } from '@/hooks/use-users';
-import { User } from '@/types/auth';
-import {
-  Project,
-  ProjectUpdateRequest
-} from '@/types/project';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -23,6 +10,19 @@ import {
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import ErrorMessage from '../../components/ui/ErrorMessage';
+import Input from '../../components/ui/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/use-auth';
+import { useProjects } from '../../hooks/use-projects';
+import { useUsers } from '../../hooks/use-users';
+import { User } from '../../types/auth';
+import {
+  Project,
+  ProjectUpdateRequest
+} from '../../types/project';
 
 // 프로젝트 폼 데이터 인터페이스 (내부 폼 상태용)
 interface ProjectFormData {
@@ -314,37 +314,6 @@ const ProjectEdit: React.FC = () => {
   const selectedMembers = availableUsers.filter(user =>
     formData.member_ids.includes(user.id)
   );
-
-  /**
-   * 상태별 색상 반환
-   */
-  type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-
-  const getStatusColor = (status: ProjectStatus) => {
-    const colors: Record<ProjectStatus, string> = {
-      planning: 'bg-gray-100 text-gray-800',
-      active: 'bg-blue-100 text-blue-800',
-      on_hold: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    };
-    return colors[status];
-  };
-
-  /**
-   * 우선순위별 색상 반환
-   */
-  type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
-
-  const getPriorityColor = (priority: ProjectPriority) => {
-    const colors: Record<ProjectPriority, string> = {
-      low: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-orange-100 text-orange-800',
-      critical: 'bg-red-100 text-red-800',
-    };
-    return colors[priority];
-  };
 
   // 로딩 중
   if (loading) {

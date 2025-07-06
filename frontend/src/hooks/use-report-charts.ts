@@ -1,7 +1,7 @@
-import type {
-    ReportData
-} from '@/types/report';
 import { useCallback, useMemo } from 'react';
+import type {
+  ReportData
+} from '../types/report';
 
 interface ChartData {
   pieChartData: any[];

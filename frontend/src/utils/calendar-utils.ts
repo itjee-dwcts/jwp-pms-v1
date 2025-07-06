@@ -1,4 +1,4 @@
-import type { CalendarEvent, DateRange, RecurrenceRule } from '@/types/calendar';
+import type { CalendarEvent, DateRange, RecurrenceRule } from '../types/calendar';
 
 /**
  * 캘린더 관련 유틸리티 함수들 (네이티브 JavaScript Date 사용)
@@ -439,7 +439,7 @@ export const getEventStatusIcon = (status: CalendarEvent['status']): string => {
     cancelled: '❌',
   };
 
-  return icons[status] !== undefined ? icons[status] : '❓';
+  return icons[status] !== undefined ? (icons[status] as string) : '❓';
 };
 
 // ============================================================================

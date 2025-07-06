@@ -1,6 +1,6 @@
-import { usePermissions } from '@/hooks/use-permissions';
-import type { PermissionsContextType } from '@/types/permission';
 import React, { createContext, useContext } from 'react';
+import { usePermissions } from '../hooks/use-permissions';
+import type { PermissionsContextType } from '../types/permission';
 
 const PermissionsContext = createContext<PermissionsContextType | null>(null);
 

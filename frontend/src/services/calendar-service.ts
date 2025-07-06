@@ -1,13 +1,13 @@
 import type {
-    CalendarEvent,
-    CalendarSettings,
-    CalendarSyncStatus,
-    CreateEventRequest,
-    EventFilters,
-    ExternalCalendar,
-    UpdateEventRequest
-} from '@/types/calendar';
-import { buildQueryParams } from '@/utils/query-params';
+  CalendarEvent,
+  CalendarSettings,
+  CalendarSyncStatus,
+  CreateEventRequest,
+  EventFilters,
+  ExternalCalendar,
+  UpdateEventRequest
+} from '../types/calendar';
+import { buildQueryParams } from '../utils/query-params';
 import { apiClient } from './api-client';
 
 export class CalendarService {

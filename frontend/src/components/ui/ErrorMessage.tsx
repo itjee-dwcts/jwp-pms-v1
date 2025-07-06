@@ -221,7 +221,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
               <div className="flex space-x-3">
                 {onRetry && (
                   <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
                     onClick={onRetry}
                     className={`
