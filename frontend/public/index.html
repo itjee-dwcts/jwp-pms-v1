@@ -4,59 +4,16 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <!--
-      theme-color 메타 태그는 주로 모바일 브라우저(Chrome, Safari)에서
-      주소창/상태바 색상을 변경하는 데 사용됩니다.
-      Firefox, Opera에서는 지원하지 않으므로 제거하거나 조건부로 적용할 수 있습니다.
-    -->
-
     <meta name="description" content="프로젝트 관리 시스템 - 효율적인 프로젝트 및 작업 관리 솔루션" />
-
-    <!-- Open Graph / Facebook 메타 태그 -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="%PUBLIC_URL%" />
-    <meta property="og:title" content="PMS - 프로젝트 관리 시스템" />
-    <meta property="og:description" content="효율적인 프로젝트 및 작업 관리 솔루션" />
-    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
-
-    <!-- Twitter 카드 메타 태그 -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="%PUBLIC_URL%" />
-    <meta property="twitter:title" content="PMS - 프로젝트 관리 시스템" />
-    <meta property="twitter:description" content="효율적인 프로젝트 및 작업 관리 솔루션" />
-    <meta property="twitter:image" content="%PUBLIC_URL%/og-image.png" />
-
-    <!-- Apple 터치 아이콘 -->
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-
-    <!-- 매니페스트 파일 -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-
-    <!-- 외부 도메인에 미리 연결 (성능 최적화) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
+    
     <!-- Google 폰트 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
-
-    <!-- 보안 헤더 -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
-    <!-- CSP 헤더 추가 (보안 강화) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';" />
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
     <title>PMS - 프로젝트 관리 시스템</title>
-
-    <!-- 다양한 크기의 파비콘 -->
-    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
-
+    
     <style>
-      /* 로딩 화면 스타일 */
-      #loading-screen {
+      /* 디버깅용 간단한 로딩 화면 */
+      .debug-loading {
         position: fixed;
         top: 0;
         left: 0;
@@ -67,161 +24,238 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        z-index: 9999;
+        z-index: 10000;
         color: white;
-        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        font-family: 'Inter', sans-serif;
+        transition: opacity 0.3s ease-out;
       }
-
-      /* 로딩 스피너 애니메이션 */
-      .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top: 4px solid white;
+      
+      .debug-loading.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .debug-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin-bottom: 20px;
       }
-
-      /* 스피너 회전 애니메이션 */
+      
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-
-      /* 로딩 텍스트 스타일 */
-      .loading-text {
-        font-family: 'Inter', sans-serif;
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 10px;
-        text-align: center;
+      
+      .debug-info {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 10001;
+        max-width: 300px;
       }
-
-      /* 로딩 부제목 스타일 */
-      .loading-subtitle {
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        opacity: 0.8;
-        text-align: center;
+      
+      .debug-step {
+        margin: 5px 0;
+        padding: 3px 0;
       }
-
-      /* 앱이 로드되면 로딩 화면 숨기기 */
-      .app-loaded #loading-screen {
-        opacity: 0;
-        visibility: hidden;
+      
+      .debug-step.completed {
+        color: #10b981;
       }
-
-      /* 스타일링되지 않은 콘텐츠의 깜빡임 방지 */
+      
+      .debug-step.error {
+        color: #ef4444;
+      }
+      
+      .debug-step.current {
+        color: #f59e0b;
+      }
+      
       #root {
-        visibility: hidden;
         min-height: 100vh;
+        opacity: 0;
+        transition: opacity 0.3s ease-in;
       }
-
-      /* 앱이 로드되면 루트 요소 표시 */
-      .app-loaded #root {
-        visibility: visible;
+      
+      body.app-ready #root {
+        opacity: 1;
       }
-
-      /* 기본 body 스타일 */
+      
       body {
         margin: 0;
         padding: 0;
         font-family: 'Inter', sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      /* 다크 모드 지원 */
-      @media (prefers-color-scheme: dark) {
-        #loading-screen {
-          background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        }
-      }
-
-      /* 접근성 개선: 애니메이션 줄이기 옵션 */
-      @media (prefers-reduced-motion: reduce) {
-        .loading-spinner {
-          animation: none;
-        }
-
-        #loading-screen {
-          transition: none;
-        }
       }
     </style>
   </head>
   <body>
-    <!-- JavaScript가 비활성화된 경우 표시될 메시지 -->
-    <noscript>
-      <div style="text-align: center; padding: 50px; font-family: 'Inter', sans-serif;">
-        <h2>JavaScript가 필요합니다</h2>
-        <p>이 애플리케이션을 실행하려면 JavaScript를 활성화해야 합니다.</p>
-        <p>브라우저 설정에서 JavaScript를 활성화한 후 페이지를 새로고침해주세요.</p>
+    <!-- 디버깅 정보 패널 -->
+    <div id="debug-info" class="debug-info">
+      <div><strong>🔧 로딩 상태 디버깅</strong></div>
+      <div id="step-1" class="debug-step current">1. HTML 로드됨</div>
+      <div id="step-2" class="debug-step">2. DOM 준비 완료</div>
+      <div id="step-3" class="debug-step">3. React 스크립트 로드</div>
+      <div id="step-4" class="debug-step">4. React 앱 렌더링</div>
+      <div id="step-5" class="debug-step">5. 앱 초기화 완료</div>
+      <div style="margin-top: 10px;">
+        <button onclick="forceHideLoading()" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+          🚨 강제 로딩 해제
+        </button>
       </div>
-    </noscript>
-
-    <!-- 로딩 화면 -->
-    <div id="loading-screen">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">PMS 로딩 중...</div>
-      <div class="loading-subtitle">프로젝트 관리 시스템</div>
+    </div>
+    
+    <!-- 간단한 로딩 화면 -->
+    <div id="loading-screen" class="debug-loading">
+      <div class="debug-spinner"></div>
+      <div style="font-size: 18px; font-weight: 500; margin-bottom: 10px;">
+        🚀 PMS 로딩 중...
+      </div>
+      <div style="font-size: 14px; opacity: 0.8;">
+        디버깅 모드로 실행 중입니다
+      </div>
+      <div id="loading-timer" style="font-size: 12px; margin-top: 10px; opacity: 0.6;">
+        경과 시간: 0초
+      </div>
     </div>
 
-    <!-- 앱 루트 요소 -->
+    <!-- React 앱 마운트 지점 -->
     <div id="root"></div>
 
-    <!-- 앱 로드 완료 시 로딩 화면 숨기기 -->
+    <!-- 디버깅 스크립트 -->
     <script>
       (function() {
-        // DOM이 완전히 로드되고 모든 리소스가 준비되면 실행
-        function hideLoadingScreen() {
-          document.body.classList.add('app-loaded');
-
-          // 접근성: 스크린 리더에 로딩 완료 알림
-          var announcement = document.createElement('div');
-          announcement.setAttribute('aria-live', 'polite');
-          announcement.setAttribute('aria-atomic', 'true');
-          announcement.className = 'sr-only';
-          announcement.textContent = '프로젝트 관리 시스템이 로드되었습니다.';
-          document.body.appendChild(announcement);
-
-          // 공지 제거
-          setTimeout(function() {
-            if (announcement.parentNode) {
-              announcement.parentNode.removeChild(announcement);
+        'use strict';
+        
+        let startTime = Date.now();
+        let currentStep = 1;
+        
+        // 디버깅 로그 함수
+        function debugLog(message, step) {
+          console.log(`🔧 [Step ${step}] ${message}`);
+          updateDebugStep(step, 'completed');
+          if (step < 5) {
+            updateDebugStep(step + 1, 'current');
+          }
+          currentStep = step + 1;
+        }
+        
+        // 디버깅 스텝 업데이트
+        function updateDebugStep(step, status) {
+          const stepElement = document.getElementById(`step-${step}`);
+          if (stepElement) {
+            stepElement.className = `debug-step ${status}`;
+            if (status === 'completed') {
+              stepElement.innerHTML = stepElement.innerHTML.replace(/^\d+\./, `${step}. ✅`);
+            } else if (status === 'error') {
+              stepElement.innerHTML = stepElement.innerHTML.replace(/^\d+\./, `${step}. ❌`);
+            } else if (status === 'current') {
+              stepElement.innerHTML = stepElement.innerHTML.replace(/^\d+\./, `${step}. ⏳`);
             }
-          }, 1000);
+          }
         }
-
-        // React 앱이 준비될 때까지 최소 대기 시간 설정
-        var minLoadTime = 500; // 최소 500ms 로딩 화면 표시
-        var startTime = Date.now();
-
-        // 페이지 로드 완료 이벤트
-        if (document.readyState === 'complete') {
-          setTimeout(hideLoadingScreen, Math.max(0, minLoadTime - (Date.now() - startTime)));
-        } else {
-          window.addEventListener('load', function() {
-            setTimeout(hideLoadingScreen, Math.max(0, minLoadTime - (Date.now() - startTime)));
-          });
+        
+        // 타이머 업데이트
+        function updateTimer() {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          const timerElement = document.getElementById('loading-timer');
+          if (timerElement) {
+            timerElement.textContent = `경과 시간: ${elapsed}초`;
+          }
         }
-
-        // React 앱에서 수동으로 로딩 완료를 알릴 수 있도록 전역 함수 제공
+        
+        // 1초마다 타이머 업데이트
+        setInterval(updateTimer, 1000);
+        
+        // 로딩 화면 숨기기 함수
+        function hideLoadingScreen() {
+          try {
+            debugLog('로딩 화면 숨기는 중...', 5);
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.body.classList.add('app-ready');
+            
+            // 3초 후 디버그 패널 숨기기
+            setTimeout(() => {
+              const debugPanel = document.getElementById('debug-info');
+              if (debugPanel) {
+                debugPanel.style.opacity = '0.3';
+                debugPanel.style.pointerEvents = 'none';
+              }
+            }, 3000);
+            
+            console.log('✅ 앱이 성공적으로 로드되었습니다!');
+          } catch (error) {
+            console.error('❌ 로딩 화면 숨기기 실패:', error);
+            updateDebugStep(5, 'error');
+          }
+        }
+        
+        // 강제 로딩 해제 함수
+        window.forceHideLoading = function() {
+          console.warn('🚨 강제로 로딩 화면을 해제합니다');
+          hideLoadingScreen();
+        };
+        
+        // 전역 함수로 등록
         window.hideLoadingScreen = hideLoadingScreen;
-
-        // 오류 발생 시 로딩 화면 숨기기 (무한 로딩 방지)
-        window.addEventListener('error', function() {
+        window.onReactReady = function() {
+          debugLog('React 앱 준비 완료!', 4);
+          setTimeout(hideLoadingScreen, 100);
+        };
+        
+        // DOM 준비 완료
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            debugLog('DOM 준비 완료', 2);
+          });
+        } else {
+          debugLog('DOM 준비 완료', 2);
+        }
+        
+        // 페이지 로드 완료
+        window.addEventListener('load', function() {
+          debugLog('모든 리소스 로드 완료', 3);
+          
+          // React가 5초 내에 로드되지 않으면 경고
+          setTimeout(() => {
+            if (currentStep < 4) {
+              console.warn('⚠️ React 앱이 5초 내에 로드되지 않았습니다');
+              updateDebugStep(4, 'error');
+            }
+          }, 5000);
+          
+          // 10초 후 강제 해제
+          setTimeout(() => {
+            if (currentStep < 5) {
+              console.warn('⚠️ 10초 타임아웃! 강제로 로딩을 해제합니다');
+              hideLoadingScreen();
+            }
+          }, 10000);
+        });
+        
+        // 에러 핸들링
+        window.addEventListener('error', function(event) {
+          console.error('❌ 윈도우 오류:', event.error);
+          updateDebugStep(currentStep, 'error');
           setTimeout(hideLoadingScreen, 2000);
         });
-
-        // 타임아웃 설정 (최대 10초 후 강제로 로딩 화면 숨기기)
-        setTimeout(function() {
-          if (!document.body.classList.contains('app-loaded')) {
-            console.warn('로딩 시간이 초과되었습니다. 강제로 앱을 표시합니다.');
-            hideLoadingScreen();
-          }
-        }, 10000);
+        
+        // 처리되지 않은 Promise 거부
+        window.addEventListener('unhandledrejection', function(event) {
+          console.error('❌ Promise 거부:', event.reason);
+          updateDebugStep(currentStep, 'error');
+        });
+        
+        debugLog('디버깅 스크립트 초기화 완료', 1);
       })();
     </script>
   </body>

@@ -1,123 +1,85 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// src/index.tsx - 최소한의 테스트 버전
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ErrorBoundary } from 'react-error-boundary';
-import { Toaster } from 'react-hot-toast';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import ErrorFallback from './components/ui/ErrorFallback';
 import './index.css';
+import App from './App';
 
-
-// React Query 클라이언트 생성
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 5 * 60 * 1000, // 5분
-      refetchOnWindowFocus: false,
-      refetchOnMount: true,
-      refetchOnReconnect: true,
-      networkMode: 'offlineFirst',
-    },
-    mutations: {
-      retry: 1,
-      networkMode: 'offlineFirst',
-    },
-  },
-});
-
-// 오류 핸들러
-// 오류 핸들러
-const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
-  console.error('애플리케이션 오류:', error);
-  console.error('오류 위치:', errorInfo.componentStack);
-  // 프로덕션 환경에서는 오류 모니터링 서비스(Sentry 등)로 전송
-  if (process.env.NODE_ENV === 'production') {
-    // TODO: 오류 모니터링 서비스 연동
+// 전역 타입 선언
+declare global {
+  interface Window {
+    hideLoadingScreen?: () => void;
+    onReactReady?: () => void;
   }
-};
-
-// DOM 루트 요소
-const container = document.getElementById('root');
-if (!container) {
-  throw new Error('Root element not found');
 }
 
+console.log('🚀 React index.tsx 시작...');
+
+// DOM 요소 확인
+const container = document.getElementById('root');
+if (!container) {
+  console.error('❌ 루트 컨테이너를 찾을 수 없습니다!');
+  throw new Error('루트 컨테이너를 찾을 수 없습니다!');
+}
+
+console.log('✅ 루트 컨테이너 발견');
+
+// React 루트 생성
 const root = createRoot(container);
+console.log('✅ React 루트 생성 완료');
 
-// 애플리케이션 렌더링
-root.render(
-  <React.StrictMode>
-    <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleError}>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+// 즉시 렌더링 (복잡한 로직 없이)
+try {
+  console.log('🎯 React 앱 렌더링 시작...');
+  
+  root.render(
+    <React.StrictMode>
+      <BrowserRouter>  {/* Router는 최상위에 */}
+        <App />
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+  
+  console.log('✅ React 앱 렌더링 요청 완료');
+  
+  // 렌더링 완료 체크
+  setTimeout(() => {
+    console.log('🔍 렌더링 완료 체크...');
+    const appElement = container.querySelector('div');
+    if (appElement) {
+      console.log('✅ React 앱이 성공적으로 마운트되었습니다!');
+      
+      // React 준비 완료 알림
+      if (window.onReactReady) {
+        window.onReactReady();
+      }
+    } else {
+      console.warn('⚠️ React 앱 마운트 확인 실패');
+    }
+  }, 100);
 
-        {/* Toast 알림 컴포넌트 */}
-        <Toaster
-          position="top-right"
-          reverseOrder={false}
-          gutter={8}
-          containerClassName="toast-container"
-          containerStyle={{
-            top: 20,
-            right: 20,
-            zIndex: 9999,
-          }}
-          toastOptions={{
-            className: 'toast-custom',
-            duration: 4000,
-            style: {
-              borderRadius: '8px',
-              fontSize: '14px',
-              padding: '12px 16px',
-              maxWidth: '400px',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            },
-            success: {
-              duration: 3000,
-              className: 'toast-success',
-              style: {
-                background: '#10b981',
-                color: '#ffffff',
-              },
-              iconTheme: {
-                primary: '#ffffff',
-                secondary: '#10b981',
-              },
-            },
-            error: {
-              duration: 5000,
-              className: 'toast-error',
-              style: {
-                background: '#ef4444',
-                color: '#ffffff',
-              },
-              iconTheme: {
-                primary: '#ffffff',
-                secondary: '#ef4444',
-              },
-            },
-            loading: {
-              duration: Infinity,
-              className: 'toast-loading',
-              style: {
-                background: '#3b82f6',
-                color: '#ffffff',
-              },
-            },
-          }}
-        />
-
-        {/* 개발 환경에서만 React Query DevTools 표시 */}
-        {process.env.NODE_ENV === 'development' && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
-      </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+} catch (error) {
+  console.error('❌ React 앱 렌더링 실패:', error);
+  
+  // 에러 발생 시 로딩 화면 해제
+  if (window.hideLoadingScreen) {
+    window.hideLoadingScreen();
+  }
+  
+  // 간단한 에러 페이지 표시
+  container.innerHTML = `
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px;">
+      <div style="text-align: center; max-width: 400px;">
+        <h1 style="color: #ef4444; margin-bottom: 16px;">⚠️ 앱 로딩 실패</h1>
+        <p style="color: #6b7280; margin-bottom: 16px;">React 앱을 시작할 수 없습니다.</p>
+        <button onclick="window.location.reload()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          🔄 새로고침
+        </button>
+        <details style="margin-top: 16px; text-align: left;">
+          <summary style="cursor: pointer;">오류 정보</summary>
+          <pre style="background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 12px; margin-top: 8px;">${error}</pre>
+        </details>
+      </div>
+    </div>
+  `;
+}

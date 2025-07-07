@@ -68,15 +68,15 @@ dev = [
 ]
 
 [tool.black]
-line-length = 79
+line-length = 88
 
 [tool.isort]
 profile = "black"
-line_length = 79
+line_length = 88
 
 [tool.flake8]
 ignore = ["E722"]
-max-line-length = 79
+max-line-length = 88
 
 [tool.mypy]
 python_version = "3.13"
@@ -97,9 +97,35 @@ extension-pkg-whitelist = ["pydantic"]
 
 [tool.pylint."messages control"]
 disable = [
-    "broad-except",
+   # Import 관련
+    "import-error",
+    "wrong-import-position",
+    "wrong-import-order",
+
+    # 너무 엄격한 규칙들
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-statements",
+    "too-many-instance-attributes",
+    "too-many-public-methods",
+
+    # 문서화 관련
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+
+    # SQLAlchemy 관련
     "no-member",
-    "missing-docstring",
+
+    # 기타
+    "broad-except",
+    "unused-argument",
+    "invalid-name",
+    "line-too-long",
+    "fixme",
+    "unused-variable",
 ]
 
 [tool.pylint.typecheck]
@@ -107,4 +133,9 @@ generated-members = [
     "sqlalchemy.*",
     "func.*",
     "query.*",
+    "Request",
+    "Response",
 ]
+
+[tool.pylint.format]
+max-line-length = 88

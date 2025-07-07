@@ -7,7 +7,13 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useAuth } from '../../hooks/use-auth';
-import { config } from '../../lib/config';
+
+// 임시 config 객체 (실제 config.ts 파일이 없는 경우 대비)
+const config = {
+  GOOGLE_CLIENT_ID: process.env.REACT_APP_GOOGLE_CLIENT_ID || '',
+  GITHUB_CLIENT_ID: process.env.REACT_APP_GITHUB_CLIENT_ID || '',
+  APP_NAME: process.env.REACT_APP_APP_NAME || 'PMS',
+};
 
 interface LoginFormData {
   username: string;
@@ -15,11 +21,15 @@ interface LoginFormData {
   remember: boolean;
 }
 
+/**
+ * 로그인 페이지 컴포넌트
+ */
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // 폼 상태 관리
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: '',
@@ -29,34 +39,46 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
 
-  // Redirect if already authenticated
+  // 이미 인증된 경우 리다이렉트
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       const from = location.state?.from?.pathname || '/dashboard';
+      console.log('✅ 이미 인증된 사용자 - 리다이렉트:', from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate, location]);
 
+  /**
+   * 폼 유효성 검사
+   */
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginFormData> = {};
 
+    // 사용자명/이메일 검증
     if (!formData.username.trim()) {
-      newErrors.username = 'Username or email is required';
+      newErrors.username = '사용자명 또는 이메일을 입력해주세요';
+    } else if (formData.username.length < 2) {
+      newErrors.username = '사용자명은 2자 이상이어야 합니다';
     }
 
+    // 비밀번호 검증
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = '비밀번호를 입력해주세요';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = '비밀번호는 6자 이상이어야 합니다';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * 로그인 폼 제출 처리
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 폼 유효성 검사
     if (!validateForm()) {
       return;
     }
@@ -65,24 +87,32 @@ const Login: React.FC = () => {
       setLoading(true);
       setErrors({});
 
+      console.log('🚀 로그인 폼 제출:', formData.username);
+
+      // 로그인 시도
       await login({
         username: formData.username,
         password: formData.password,
       });
 
-      toast.success('Login successful!');
+      toast.success('로그인 성공!');
 
-      // Redirect to intended page or dashboard
+      // 의도한 페이지 또는 대시보드로 리다이렉트
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다';
+      console.error('❌ 로그인 오류:', error);
+
       toast.error(errorMessage);
 
-      if (errorMessage.toLowerCase().includes('credentials')) {
+      // 인증 실패 시 폼 에러 표시
+      if (errorMessage.toLowerCase().includes('credential') ||
+          errorMessage.toLowerCase().includes('password') ||
+          errorMessage.toLowerCase().includes('비밀번호')) {
         setErrors({
-          username: 'Invalid username or password',
-          password: 'Invalid username or password',
+          username: '사용자명 또는 비밀번호가 올바르지 않습니다',
+          password: '사용자명 또는 비밀번호가 올바르지 않습니다',
         });
       }
     } finally {
@@ -90,35 +120,58 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 입력 필드 변경 처리
+   */
   const handleInputChange = (field: keyof LoginFormData) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const value = field === 'remember' ? e.target.checked : e.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Clear error for this field
+    // 해당 필드의 에러 제거
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
+  /**
+   * OAuth 로그인 처리
+   */
   const handleOAuthLogin = (provider: 'google' | 'github') => {
-    // OAuth login implementation
     const clientId = provider === 'google' ? config.GOOGLE_CLIENT_ID : config.GITHUB_CLIENT_ID;
 
     if (!clientId) {
-      toast.error(`${provider} OAuth is not configured`);
+      toast.error(`${provider} OAuth가 설정되지 않았습니다`);
       return;
     }
 
-    toast(`${provider} OAuth login coming soon!`);
+    // OAuth 로그인 구현 예정
+    toast(`${provider} OAuth 로그인 기능은 곧 지원될 예정입니다!`);
   };
 
-  // Show loading spinner while checking authentication
+  /**
+   * 테스트 계정으로 빠른 로그인
+   */
+  const handleQuickLogin = () => {
+    setFormData({
+      username: 'test',
+      password: '123456',
+      remember: false,
+    });
+    setErrors({});
+  };
+
+  // 인증 상태 확인 중일 때 로딩 스피너 표시
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col items-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            인증 상태를 확인하는 중...
+          </p>
+        </div>
       </div>
     );
   }
@@ -126,32 +179,48 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
+        {/* 헤더 */}
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-600">
             <UserIcon className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-            Sign in to your account
+            계정에 로그인
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Or{' '}
+            또는{' '}
             <Link
               to="/register"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
-              create a new account
+              새 계정을 생성하세요
             </Link>
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* 로그인 폼 */}
         <Card className="p-8">
+          {/* 개발 환경에서 테스트 버튼 표시 */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                개발 모드: 테스트 계정으로 빠른 로그인
+              </p>
+              <button
+                type="button"
+                onClick={handleQuickLogin}
+                className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+              >
+                테스트 계정 입력 (testuser / 123456)
+              </button>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Username/Email Field */}
+            {/* 사용자명/이메일 필드 */}
             <div>
               <label htmlFor="username" className="sr-only">
-                Username or Email
+                사용자명 또는 이메일
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -163,8 +232,8 @@ const Login: React.FC = () => {
                   type="text"
                   autoComplete="username"
                   required
-                  className={`pl-10 ${errors.username ? 'border-red-500' : ''}`}
-                  placeholder="Username or email address"
+                  className={`pl-10 ${errors.username ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  placeholder="사용자명 또는 이메일 주소"
                   value={formData.username}
                   onChange={handleInputChange('username')}
                   disabled={loading}
@@ -177,10 +246,10 @@ const Login: React.FC = () => {
               )}
             </div>
 
-            {/* Password Field */}
+            {/* 비밀번호 필드 */}
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                비밀번호
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -192,8 +261,8 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
-                  placeholder="Password"
+                  className={`pl-10 pr-10 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  placeholder="비밀번호"
                   value={formData.password}
                   onChange={handleInputChange('password')}
                   disabled={loading}
@@ -202,11 +271,12 @@ const Login: React.FC = () => {
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                   )}
                 </button>
               </div>
@@ -217,7 +287,7 @@ const Login: React.FC = () => {
               )}
             </div>
 
-            {/* Remember me and Forgot password */}
+            {/* 로그인 유지 및 비밀번호 찾기 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -230,7 +300,7 @@ const Login: React.FC = () => {
                   disabled={loading}
                 />
                 <label htmlFor="remember" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                  Remember me
+                  로그인 상태 유지
                 </label>
               </div>
 
@@ -239,30 +309,31 @@ const Login: React.FC = () => {
                   to="/forgot-password"
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
                 >
-                  Forgot your password?
+                  비밀번호를 잊으셨나요?
                 </Link>
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* 로그인 버튼 */}
             <div>
               <Button
                 type="submit"
                 className="w-full"
                 disabled={loading}
+                variant="primary"
               >
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
-                    Signing in...
+                    로그인 중...
                   </>
                 ) : (
-                  'Sign in'
+                  '로그인'
                 )}
               </Button>
             </div>
 
-            {/* Divider */}
+            {/* 구분선 */}
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -270,16 +341,16 @@ const Login: React.FC = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Or continue with
+                    또는 다음으로 계속
                   </span>
                 </div>
               </div>
 
-              {/* OAuth Buttons */}
+              {/* OAuth 버튼들 */}
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button
                   type="button"
-                  variant="default"
+                  variant="outline"
                   onClick={() => handleOAuthLogin('google')}
                   disabled={loading}
                   className="w-full"
@@ -307,7 +378,7 @@ const Login: React.FC = () => {
 
                 <Button
                   type="button"
-                  variant="default"
+                  variant="outline"
                   onClick={() => handleOAuthLogin('github')}
                   disabled={loading}
                   className="w-full"
@@ -322,25 +393,39 @@ const Login: React.FC = () => {
           </form>
         </Card>
 
-        {/* Footer */}
+        {/* 푸터 */}
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            By signing in, you agree to our{' '}
+            로그인하면{' '}
             <Link
               to="/terms"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
+              서비스 약관
+            </Link>
+            {' '}및{' '}
             <Link
               to="/privacy"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
-              Privacy Policy
+              개인정보 처리방침
             </Link>
+            에 동의하는 것으로 간주됩니다.
           </p>
         </div>
+
+        {/* 개발 환경에서만 디버그 정보 표시 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400">
+            <h4 className="font-medium mb-2">개발 모드 정보:</h4>
+            <ul className="space-y-1">
+              <li>• 인증 상태: {isAuthenticated ? '✅ 인증됨' : '❌ 미인증'}</li>
+              <li>• 로딩 상태: {authLoading ? '⏳ 로딩 중' : '✅ 완료'}</li>
+              <li>• 테스트 계정: testuser / 123456</li>
+              <li>• 비밀번호는 6자 이상이면 로그인 성공</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

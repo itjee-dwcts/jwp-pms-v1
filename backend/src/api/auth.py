@@ -7,10 +7,12 @@ User authentication, registration, and token management endpoints.
 import logging
 from datetime import datetime, timezone
 
-from core.database import get_async_session
-from core.dependencies import get_current_active_user
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_async_session
+from core.dependencies import get_current_active_user
 from models.user import User, UserRole, UserStatus
 from schemas.auth import (
     LoginRequest,
@@ -21,7 +23,6 @@ from schemas.auth import (
     UserResponse,
 )
 from services.user import UserService
-from sqlalchemy.ext.asyncio import AsyncSession
 from utils.auth import AuthManager, get_password_hash
 
 logger = logging.getLogger(__name__)

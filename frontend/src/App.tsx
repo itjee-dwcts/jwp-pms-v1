@@ -1,41 +1,21 @@
 import React, { useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import PageLoadingSpinner from './components/ui/LoadingSpinner';
+import LoginPage from './pages/auth/Login';
+import RegisterPage from './pages/auth/Register';
+import ForgotPasswordPage from './pages/auth/ForgotPassword';
 import Layout from './components/layout/Layout';
-import { useAuth } from './hooks/use-auth';
-import { useTheme } from './hooks/use-theme';
-
-// 더 나은 성능을 위한 페이지 지연 로딩
-const DashboardPage = React.lazy(() => import('./pages/dashboard/Dashboard'));
-const ProjectsPage = React.lazy(() => import('./pages/project/Projects'));
-const ProjectDetailPage = React.lazy(() => import('./pages/project/ProjectDetail'));
-const TasksPage = React.lazy(() => import('./pages/task/Tasks'));
-const TaskDetailPage = React.lazy(() => import('./pages/task/TaskDetail'));
-const CalendarPage = React.lazy(() => import('./pages/calendar/Calendar'));
-const UsersPage = React.lazy(() => import('./pages/user/Users'));
-const ProfilePage = React.lazy(() => import('./pages/user/Profile'));
-const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
-
-// 인증 페이지들
-const LoginPage = React.lazy(() => import('./pages/auth/Login'));
-const RegisterPage = React.lazy(() => import('./pages/auth/Register'));
-const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPassword'));
-
-// 오류 페이지들
-const NotFoundPage = React.lazy(() => import('./pages/error/NotFound'));
-
-// 로딩 컴포넌트
-const LoadingSpinner: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div className="flex flex-col items-center space-y-4">
-      {/* 로딩 스피너 */}
-      <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-      {/* 로딩 텍스트 */}
-      <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
-        페이지를 불러오는 중...
-      </p>
-    </div>
-  </div>
-);
+import {useAuth} from './hooks/use-auth'
+import DashboardPage from './pages/dashboard/Dashboard'; // Adjust the path if necessary
+import ProjectDetailPage from './pages/project/ProjectDetail';
+import ProjectsPage from './pages/project/Projects';
+import TasksPage from './pages/task/Tasks';
+import TaskDetailPage from './pages/task/TaskDetail';
+import CalendarPage from './pages/calendar/Calendar';
+import UsersPage from './pages/user/Users';
+import ProfilePage from './pages/user/Profile';
+import SettingsPage from './pages/common/Settings';
+import NotFoundPage from './pages/error/NotFound';
 
 // 보호된 라우트 컴포넌트
 interface ProtectedRouteProps {
@@ -49,17 +29,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  // 인증 상태 확인 중일 때 로딩 표시
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <PageLoadingSpinner />;
   }
 
-  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // 특정 역할이 필요한 경우 권한 확인
   if (requiredRole && user?.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -67,16 +44,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return <>{children}</>;
 };
 
-// 공개 라우트 컴포넌트 (이미 인증된 경우 대시보드로 리다이렉트)
-const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+// 공개 라우트 컴포넌트
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // 인증 상태 확인 중일 때 로딩 표시
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <PageLoadingSpinner />;
   }
 
-  // 이미 인증된 경우 대시보드로 리다이렉트
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -84,36 +59,9 @@ const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   return <>{children}</>;
 };
 
-// 전역 window 객체에 hideLoadingScreen 속성 추가
-declare global {
-  interface Window {
-    hideLoadingScreen?: () => void;
-  }
-}
-
-// 메인 앱 컴포넌트
 const App: React.FC = () => {
-  const { isDarkMode } = useTheme();
-  const { checkAuthStatus } = useAuth();
-
-  // 앱 로드 시 인증 상태 및 테마 초기화
   useEffect(() => {
-    // 인증 상태 확인
-    checkAuthStatus();
-  }, [checkAuthStatus]);
-
-  // 다크 모드 클래스를 document에 적용
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  // 앱 로드 완료 알림 (index.html의 로딩 화면 숨기기)
-  useEffect(() => {
-    // 앱이 준비되면 로딩 화면 숨기기
+    console.log('✅ React 앱 마운트됨');
     if (window.hideLoadingScreen) {
       window.hideLoadingScreen();
     }
@@ -121,7 +69,7 @@ const App: React.FC = () => {
 
   return (
     <div className="App min-h-screen bg-gray-50 dark:bg-gray-900">
-      <React.Suspense fallback={<LoadingSpinner />}>
+      <React.Suspense fallback={<PageLoadingSpinner />}>
         <Routes>
           {/* 공개 라우트들 */}
           <Route

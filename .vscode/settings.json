@@ -2,7 +2,7 @@
   // ============================================================================
   // Python 환경 및 인터프리터 설정 (IntelliSense 핵심)
   // ============================================================================
-  "python.defaultInterpreterPath": "./backend/.venv/Scripts/python.exe",
+  "python.defaultInterpreterPath": "./.venv/Scripts/python.exe",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.envFile": "./backend/.env",
@@ -14,8 +14,8 @@
 
   // Python 경로 설정 (가장 중요!)
   "python.analysis.extraPaths": [
+    "./src",
     "./backend/src",
-    "./backend",
     "./backend/.venv/Lib/site-packages" // 가상환경 패키지 명시적 추가
   ],
   "python.analysis.autoSearchPaths": true,
@@ -86,8 +86,8 @@
   ],
 
   // Import 정렬 (isort + Black 호환)
-  "python.sortImports.args": ["--profile", "black"],
-  "isort.args": ["--profile", "black", "--line-length=88"],
+  "python.sortImports.args": ["--profile=black"],
+  "isort.args": ["--profile=black", "--line-length=88"],
 
   // ============================================================================
   // 테스트 설정
@@ -212,21 +212,29 @@
     "editor.suggest.showModules": true
   },
 
+  "[javascript]": {
+    "editor.tabSize": 4
+  },
+
+  "[html]": {
+    "editor.tabSize": 4
+  },
+
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2
+    "editor.tabSize": 4
   },
 
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.tabSize": 2
+    "editor.tabSize": 4
   },
 
   "[yaml]": {
     "editor.defaultFormatter": "redhat.vscode-yaml",
     "editor.insertSpaces": true,
-    "editor.tabSize": 2
+    "editor.tabSize": 4
   },
 
   "[dockerfile]": {

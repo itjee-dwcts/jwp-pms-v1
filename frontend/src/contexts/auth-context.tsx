@@ -15,7 +15,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check authentication status on mount
   useEffect(() => {
     auth.checkAuthStatus();
-  }, []);
+  }, [auth]);
 
   // Set up automatic token refresh
   useEffect(() => {

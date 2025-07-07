@@ -1,11 +1,9 @@
-# src/__init__.py
 """
-PMS Backend API Package
+PMS Backend Source Package
 
-Project Management System Backend built with FastAPI, SQLAlchemy, and GraphQL.
+프로젝트 관리 시스템 백엔드 소스 코드 패키지
 """
 
 __version__ = "0.1.0"
 __author__ = "PMS Team"
-__email__ = "team@pms.com"
-__description__ = "A backend API for a Project Management System using FastAPI, SQLAlchemy, and GraphQL."
+__email__ = "jongho.woo@computer.co.kr"

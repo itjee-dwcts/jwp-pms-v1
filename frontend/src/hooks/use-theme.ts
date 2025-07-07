@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// ============================================================================
 // 타입 정의
+// ============================================================================
+
 interface ThemeState {
   isDarkMode: boolean;
   primaryColor: string;
@@ -21,9 +24,13 @@ interface ThemeStore extends ThemeState {
   resetTheme: () => void;
   getSystemTheme: () => boolean;
   applyTheme: () => void;
+  initializeTheme: () => void; // App.tsx에서 사용하는 함수 추가
 }
 
+// ============================================================================
 // 기본 테마 설정
+// ============================================================================
+
 const defaultTheme: ThemeState = {
   isDarkMode: false,
   primaryColor: '#3b82f6', // Blue-500
@@ -45,7 +52,64 @@ export const colorPalette = {
   cyan: '#06b6d4',
 } as const;
 
-// Zustand store
+// ============================================================================
+// 유틸리티 함수들
+// ============================================================================
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1]!, 16),
+    g: parseInt(result[2]!, 16),
+    b: parseInt(result[3]!, 16)
+  } : null;
+}
+
+function generateColorVariations(baseColor: { r: number; g: number; b: number }) {
+  const variations: Record<string, { r: number; g: number; b: number }> = {};
+
+  // 밝은 변형 생성 (50-400)
+  for (let i = 50; i <= 400; i += 50) {
+    const factor = 1 - (i / 500) * 0.8;
+    variations[i] = {
+      r: Math.round(255 - (255 - baseColor.r) * factor),
+      g: Math.round(255 - (255 - baseColor.g) * factor),
+      b: Math.round(255 - (255 - baseColor.b) * factor),
+    };
+  }
+
+  // 기본 색상 (500)
+  variations[500] = baseColor;
+
+  // 어두운 변형 생성 (600-950)
+  for (let i = 600; i <= 950; i += 50) {
+    const factor = (i - 500) / 450;
+    variations[i] = {
+      r: Math.round(baseColor.r * (1 - factor * 0.8)),
+      g: Math.round(baseColor.g * (1 - factor * 0.8)),
+      b: Math.round(baseColor.b * (1 - factor * 0.8)),
+    };
+  }
+
+  return variations;
+}
+
+function updateMetaThemeColor(color: string): void {
+  let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+  if (!metaThemeColor) {
+    metaThemeColor = document.createElement('meta');
+    metaThemeColor.setAttribute('name', 'theme-color');
+    document.head.appendChild(metaThemeColor);
+  }
+
+  metaThemeColor.setAttribute('content', color);
+}
+
+// ============================================================================
+// Zustand 스토어
+// ============================================================================
+
 const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
@@ -124,6 +188,30 @@ const useThemeStore = create<ThemeStore>()(
         return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
       },
 
+      // App.tsx에서 사용하는 초기화 함수 추가
+      initializeTheme: () => {
+        console.log('🎨 Initializing theme...');
+        
+        const store = get();
+        
+        // 저장된 설정이 없다면 시스템 테마로 초기화
+        const savedTheme = localStorage.getItem('pms-theme-store');
+        if (!savedTheme) {
+          const systemDarkMode = store.getSystemTheme();
+          set({ isDarkMode: systemDarkMode });
+          console.log('🔧 Using system theme:', systemDarkMode ? 'dark' : 'light');
+        }
+        
+        // 테마 적용
+        store.applyTheme();
+        console.log('✅ Theme initialized:', {
+          isDarkMode: store.isDarkMode,
+          primaryColor: store.primaryColor,
+          fontSize: store.fontSize,
+          density: store.density
+        });
+      },
+
       applyTheme: () => {
         const { isDarkMode, primaryColor, fontSize, density } = get();
 
@@ -196,15 +284,20 @@ const useThemeStore = create<ThemeStore>()(
   )
 );
 
+// ============================================================================
 // 메인 테마 훅
+// ============================================================================
+
 export const useTheme = () => {
   const store = useThemeStore();
 
+  // initializeTheme를 useCallback으로 메모이제이션 (App.tsx에서 사용)
+  const initializeTheme = useCallback(() => {
+    store.initializeTheme();
+  }, [store]);
+
   // 초기화 로직
   useEffect(() => {
-    // 저장된 테마 적용
-    store.applyTheme();
-
     // 시스템 테마 변경 감지
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -212,33 +305,44 @@ export const useTheme = () => {
       // 사용자가 명시적으로 설정하지 않았다면 시스템 테마 따라감
       const savedTheme = localStorage.getItem('pms-theme-store');
       if (!savedTheme) {
+        console.log('🔄 System theme changed:', e.matches ? 'dark' : 'light');
         store.setDarkMode(e.matches);
       }
     };
 
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-    // 저장된 설정이 없다면 시스템 테마로 초기화
-    const savedTheme = localStorage.getItem('pms-theme-store');
-    if (!savedTheme) {
-      store.setDarkMode(store.getSystemTheme());
+    // 최신 브라우저
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+      return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    } 
+    // 구형 브라우저 지원
+    else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleSystemThemeChange);
+      return () => mediaQuery.removeListener(handleSystemThemeChange);
     }
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    };
+    // 어떤 경우에도 undefined를 반환하여 모든 경로에서 값을 반환하도록 함
+    return undefined;
   }, [store]);
 
-  return store;
+  return {
+    ...store,
+    initializeTheme, // App.tsx에서 사용하는 메모이제이션된 함수
+  };
 };
 
-// 개별 선택자 훅들
+// ============================================================================
+// 개별 선택자 훅들 (성능 최적화용)
+// ============================================================================
+
 export const useIsDarkMode = () => useThemeStore(state => state.isDarkMode);
 export const usePrimaryColor = () => useThemeStore(state => state.primaryColor);
 export const useFontSize = () => useThemeStore(state => state.fontSize);
 export const useDensity = () => useThemeStore(state => state.density);
 
+// ============================================================================
 // 테마 프리셋
+// ============================================================================
+
 export const themePresets = {
   default: {
     primaryColor: '#3b82f6',
@@ -274,7 +378,10 @@ export const applyThemePreset = (presetName: keyof typeof themePresets) => {
   setTheme(preset);
 };
 
-// 테마 클래스 헬퍼
+// ============================================================================
+// 테마 클래스 헬퍼 (편의 함수들)
+// ============================================================================
+
 export const getThemeClasses = (isDarkMode: boolean) => ({
   // 배경 클래스
   bg: {
@@ -329,53 +436,8 @@ export const getCSSCustomProperties = () => {
   };
 };
 
-// 유틸리티 함수들
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1]!, 16),
-    g: parseInt(result[2]!, 16),
-    b: parseInt(result[3]!, 16)
-  } : null;
-}
-
-function generateColorVariations(baseColor: { r: number; g: number; b: number }) {
-  const variations: Record<string, { r: number; g: number; b: number }> = {};
-
-  // 밝은 변형 생성 (50-400)
-  for (let i = 50; i <= 400; i += 50) {
-    const factor = 1 - (i / 500) * 0.8;
-    variations[i] = {
-      r: Math.round(255 - (255 - baseColor.r) * factor),
-      g: Math.round(255 - (255 - baseColor.g) * factor),
-      b: Math.round(255 - (255 - baseColor.b) * factor),
-    };
-  }
-
-  // 기본 색상 (500)
-  variations[500] = baseColor;
-
-  // 어두운 변형 생성 (600-950)
-  for (let i = 600; i <= 950; i += 50) {
-    const factor = (i - 500) / 450;
-    variations[i] = {
-      r: Math.round(baseColor.r * (1 - factor * 0.8)),
-      g: Math.round(baseColor.g * (1 - factor * 0.8)),
-      b: Math.round(baseColor.b * (1 - factor * 0.8)),
-    };
-  }
-
-  return variations;
-}
-
-function updateMetaThemeColor(color: string): void {
-  let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-
-  if (!metaThemeColor) {
-    metaThemeColor = document.createElement('meta');
-    metaThemeColor.setAttribute('name', 'theme-color');
-    document.head.appendChild(metaThemeColor);
-  }
-
-  metaThemeColor.setAttribute('content', color);
-}
+// useThemeClasses 훅 (편의성을 위해 추가)
+export const useThemeClasses = () => {
+  const isDarkMode = useIsDarkMode();
+  return getThemeClasses(isDarkMode);
+};

@@ -1,0 +1,10 @@
+2025-07-07 08:07:34 - utils.logger - INFO - Logging configured - Level: DEBUG, Environment: development
+2025-07-07 08:07:34 - src.main - INFO - 🚀 Starting PMS Backend API...
+2025-07-07 08:07:34 - src.main - INFO - 🌍 Environment: development
+2025-07-07 08:07:34 - src.main - INFO - 🔧 Debug mode: True
+2025-07-07 08:07:34 - src.main - INFO - ✅ Database connection verified
+2025-07-07 08:07:34 - core.database - INFO - ✅ Database tables created successfully
+2025-07-07 08:07:34 - src.main - INFO - ✅ Database tables created/verified
+2025-07-07 08:07:34 - src.main - INFO - 📊 API Documentation: /docs
+2025-07-07 08:07:34 - src.main - INFO - 🔧 Health check: /health
+2025-07-07 08:07:34 - src.main - INFO - ✨ PMS Backend API is ready!
