@@ -68,11 +68,6 @@ const ProjectCreate: React.FC = () => {
   const [newTag, setNewTag] = useState('');
   const [showUserSearch, setShowUserSearch] = useState(false);
 
-  // 컴포넌트 마운트 시 사용자 목록 로드
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   /**
    * 사용자 목록을 가져오는 함수
    */
@@ -89,6 +84,12 @@ const ProjectCreate: React.FC = () => {
       setUsersLoading(false);
     }
   };
+
+  // 컴포넌트 마운트 시 사용자 목록 로드
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * 폼 유효성 검사

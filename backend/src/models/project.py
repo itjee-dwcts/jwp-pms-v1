@@ -90,9 +90,7 @@ class Project(Base):
     start_date = Column(
         DateTime(timezone=True), nullable=True, doc="Project start date"
     )
-    end_date = Column(
-        DateTime(timezone=True), nullable=True, doc="Project end date"
-    )
+    end_date = Column(DateTime(timezone=True), nullable=True, doc="Project end date")
     actual_start_date = Column(
         DateTime(timezone=True), nullable=True, doc="Actual project start date"
     )
@@ -136,12 +134,8 @@ class Project(Base):
     )
 
     # Additional Information
-    repository_url = Column(
-        String(500), nullable=True, doc="Git repository URL"
-    )
-    documentation_url = Column(
-        String(500), nullable=True, doc="Documentation URL"
-    )
+    repository_url = Column(String(500), nullable=True, doc="Git repository URL")
+    documentation_url = Column(String(500), nullable=True, doc="Documentation URL")
     tags = Column(Text, nullable=True, doc="Project tags (comma-separated)")
 
     # Relationships
@@ -153,9 +147,7 @@ class Project(Base):
         "ProjectMember", back_populates="project", cascade="all, delete-orphan"
     )
 
-    tasks = relationship(
-        "Task", back_populates="project", cascade="all, delete-orphan"
-    )
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
 
     comments = relationship(
         "ProjectComment",
@@ -177,19 +169,12 @@ class Project(Base):
             "progress >= 0 AND progress <= 100", name="ck_project_progress"
         ),
         CheckConstraint("budget >= 0", name="ck_project_budget_positive"),
-        CheckConstraint(
-            "actual_cost >= 0", name="ck_project_actual_cost_positive"
-        ),
-        CheckConstraint(
-            "start_date <= end_date", name="ck_project_date_order"
-        ),
+        CheckConstraint("actual_cost >= 0", name="ck_project_actual_cost_positive"),
+        CheckConstraint("start_date <= end_date", name="ck_project_date_order"),
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Project(id={self.id}, name='{self.name}', "
-            f"status='{self.status}')>"
-        )
+        return f"<Project(id={self.id}, name='{self.name}', status='{self.status}')>"
 
     def update_progress(self):
         """Update project progress based on completed tasks"""
@@ -197,9 +182,7 @@ class Project(Base):
             self.progress = 0
             return
 
-        completed_tasks = sum(
-            1 for task in self.tasks if task.status == "completed"
-        )
+        completed_tasks = sum(1 for task in self.tasks if task.status == "completed")
         total_tasks = len(self.tasks)
         self.progress = int((completed_tasks / total_tasks) * 100)
 
@@ -245,9 +228,7 @@ class ProjectMember(Base):
     project_id = Column(
         Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
     )
-    user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, doc="User ID"
-    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="User ID")
     role = Column(
         String(20),  # Enum(ProjectMemberRole),
         default=ProjectMemberRole.DEVELOPER,

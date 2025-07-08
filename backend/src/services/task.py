@@ -64,9 +64,7 @@ class TaskService:
             )
             project = project_result.scalar_one_or_none()
             if not project:
-                raise NotFoundError(
-                    f"Project with ID {task_data.project_id} not found"
-                )
+                raise NotFoundError(f"Project with ID {task_data.project_id} not found")
 
             # Check if user has permission to create tasks in this project
             project_service = ProjectService(self.db)
@@ -90,14 +88,10 @@ class TaskService:
 
                 parent_project_id = getattr(parent_task, "project_id", None)
                 if not parent_project_id:
-                    raise ValidationError(
-                        "Parent task does not belong to any project"
-                    )
+                    raise ValidationError("Parent task does not belong to any project")
 
                 if parent_project_id != task_data.project_id:
-                    raise ValidationError(
-                        "Parent task must be in the same project"
-                    )
+                    raise ValidationError("Parent task must be in the same project")
 
             # Create task
             task = Task(
@@ -129,9 +123,7 @@ class TaskService:
 
             if task_data.assignee_ids:
                 for user_id in task_data.assignee_ids:
-                    await self.assign_user_to_task(
-                        task_id, user_id, creator_id
-                    )
+                    await self.assign_user_to_task(task_id, user_id, creator_id)
 
             # Add tags if specified
             if task_data.tag_ids:
@@ -148,9 +140,7 @@ class TaskService:
                 select(Task)
                 .options(
                     selectinload(Task.creator),
-                    selectinload(Task.assignments).selectinload(
-                        TaskAssignment.user
-                    ),
+                    selectinload(Task.assignments).selectinload(TaskAssignment.user),
                     selectinload(Task.tags).selectinload(TaskTag.tag),
                 )
                 .where(Task.id == task.id)
@@ -176,18 +166,12 @@ class TaskService:
                 .options(
                     selectinload(Task.creator),
                     selectinload(Task.project),
-                    selectinload(Task.assignments).selectinload(
-                        TaskAssignment.user
-                    ),
-                    selectinload(Task.comments).selectinload(
-                        TaskComment.author
-                    ),
+                    selectinload(Task.assignments).selectinload(TaskAssignment.user),
+                    selectinload(Task.comments).selectinload(TaskComment.author),
                     selectinload(Task.attachments).selectinload(
                         TaskAttachment.uploader
                     ),
-                    selectinload(Task.time_logs).selectinload(
-                        TaskTimeLog.user
-                    ),
+                    selectinload(Task.time_logs).selectinload(TaskTimeLog.user),
                     selectinload(Task.tags).selectinload(TaskTag.tag),
                     selectinload(Task.subtasks),
                 )
@@ -222,9 +206,7 @@ class TaskService:
             if not has_access:
                 raise AuthorizationError("No permission to update this task")
 
-            result = await self.db.execute(
-                select(Task).where(Task.id == task_id)
-            )
+            result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = result.scalar_one_or_none()
 
             if not task:
@@ -262,9 +244,7 @@ class TaskService:
                 select(Task)
                 .options(
                     selectinload(Task.creator),
-                    selectinload(Task.assignments).selectinload(
-                        TaskAssignment.user
-                    ),
+                    selectinload(Task.assignments).selectinload(TaskAssignment.user),
                 )
                 .where(Task.id == task_id)
             )
@@ -286,9 +266,7 @@ class TaskService:
             if not has_access:
                 raise AuthorizationError("No permission to delete this task")
 
-            result = await self.db.execute(
-                select(Task).where(Task.id == task_id)
-            )
+            result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = result.scalar_one_or_none()
 
             if not task:
@@ -322,17 +300,15 @@ class TaskService:
             query = select(Task).options(
                 selectinload(Task.creator),
                 selectinload(Task.project),
-                selectinload(Task.assignments).selectinload(
-                    TaskAssignment.user
-                ),
+                selectinload(Task.assignments).selectinload(TaskAssignment.user),
             )
 
             # Apply access control - user can see tasks in projects they
             # have access to
             if user_id:
                 project_service = ProjectService(self.db)
-                accessible_projects = (
-                    await project_service.get_accessible_projects(user_id)
+                accessible_projects = await project_service.get_accessible_projects(
+                    user_id
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
@@ -342,16 +318,12 @@ class TaskService:
                     query = query.where(
                         or_(
                             Task.title.ilike(f"%{search_params.search_text}%"),
-                            Task.description.ilike(
-                                f"%{search_params.search_text}%"
-                            ),
+                            Task.description.ilike(f"%{search_params.search_text}%"),
                         )
                     )
 
                 if search_params.project_id:
-                    query = query.where(
-                        Task.project_id == search_params.project_id
-                    )
+                    query = query.where(Task.project_id == search_params.project_id)
 
                 # if search_params.task_status:
                 #     query = query.where(
@@ -359,49 +331,33 @@ class TaskService:
                 #     )
 
                 if search_params.priority:
-                    query = query.where(
-                        Task.priority == search_params.priority
-                    )
+                    query = query.where(Task.priority == search_params.priority)
 
                 if search_params.task_type:
-                    query = query.where(
-                        Task.task_type == search_params.task_type
-                    )
+                    query = query.where(Task.task_type == search_params.task_type)
 
                 if search_params.assignee_id:
                     assignment_subquery = (
                         select(TaskAssignment.task_id)
-                        .where(
-                            TaskAssignment.user_id == search_params.assignee_id
-                        )
+                        .where(TaskAssignment.user_id == search_params.assignee_id)
                         .where(TaskAssignment.is_active.is_(True))
                     )
                     query = query.where(Task.id.in_(assignment_subquery))
 
                 if search_params.creator_id:
-                    query = query.where(
-                        Task.creator_id == search_params.creator_id
-                    )
+                    query = query.where(Task.creator_id == search_params.creator_id)
 
                 if search_params.due_date_from:
-                    query = query.where(
-                        Task.due_date >= search_params.due_date_from
-                    )
+                    query = query.where(Task.due_date >= search_params.due_date_from)
 
                 if search_params.due_date_to:
-                    query = query.where(
-                        Task.due_date <= search_params.due_date_to
-                    )
+                    query = query.where(Task.due_date <= search_params.due_date_to)
 
                 if search_params.created_from:
-                    query = query.where(
-                        Task.created_at >= search_params.created_from
-                    )
+                    query = query.where(Task.created_at >= search_params.created_from)
 
                 if search_params.created_to:
-                    query = query.where(
-                        Task.created_at <= search_params.created_to
-                    )
+                    query = query.where(Task.created_at <= search_params.created_to)
 
             # Get total count
             count_query = select(count()).select_from(query.subquery())
@@ -411,9 +367,7 @@ class TaskService:
             # Apply pagination and ordering
             offset = (page_no - 1) * page_size
             query = (
-                query.offset(offset)
-                .limit(page_size)
-                .order_by(desc(Task.created_at))
+                query.offset(offset).limit(page_size).order_by(desc(Task.created_at))
             )
 
             # Execute query
@@ -448,9 +402,7 @@ class TaskService:
                 raise AuthorizationError("No permission to assign this task")
 
             # Verify task exists
-            task_result = await self.db.execute(
-                select(Task).where(Task.id == task_id)
-            )
+            task_result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = task_result.scalar_one_or_none()
             if not task:
                 raise NotFoundError("Task not found")
@@ -476,21 +428,17 @@ class TaskService:
             logger.error("Failed to assign task %d: %s", task_id, e)
             raise
 
-    async def get_task_stats(
-        self, user_id: Optional[int] = None
-    ) -> TaskStatsResponse:
+    async def get_task_stats(self, user_id: Optional[int] = None) -> TaskStatsResponse:
         """Get task statistics"""
         try:
             # Build base query with access control
             base_query = select(Task)
             if user_id:
                 project_service = ProjectService(self.db)
-                accessible_projects = (
-                    await project_service.get_accessible_projects(user_id)
+                accessible_projects = await project_service.get_accessible_projects(
+                    user_id
                 )
-                base_query = base_query.where(
-                    Task.project_id.in_(accessible_projects)
-                )
+                base_query = base_query.where(Task.project_id.in_(accessible_projects))
 
             # Total tasks
             total_query = select(count()).select_from(base_query.subquery())
@@ -534,9 +482,7 @@ class TaskService:
                 .group_by(Task.priority)
             )
             # tasks_by_priority = dict(priority_result.fetchall())
-            tasks_by_priority = {
-                row[0]: row[1] for row in priority_result.fetchall()
-            }
+            tasks_by_priority = {row[0]: row[1] for row in priority_result.fetchall()}
 
             # Tasks by type
             type_result = await self.db.execute(
@@ -552,9 +498,7 @@ class TaskService:
                 todo_tasks=status_counts.get("todo", 0),
                 in_progress_tasks=status_counts.get("in_progress", 0),
                 completed_tasks=status_counts.get("done", 0),
-                overdue_tasks=(
-                    overdue_tasks if overdue_tasks is not None else 0
-                ),
+                overdue_tasks=(overdue_tasks if overdue_tasks is not None else 0),
                 tasks_by_status=status_counts,
                 tasks_by_priority=tasks_by_priority,
                 tasks_by_type=tasks_by_type,
@@ -572,9 +516,7 @@ class TaskService:
             # Build base query
             query = select(Task).options(
                 selectinload(Task.creator),
-                selectinload(Task.assignments).selectinload(
-                    TaskAssignment.user
-                ),
+                selectinload(Task.assignments).selectinload(TaskAssignment.user),
             )
 
             # Filter by project if specified
@@ -582,10 +524,8 @@ class TaskService:
                 # Check access to project
                 if user_id:
                     project_service = ProjectService(self.db)
-                    project_access = (
-                        await project_service.check_project_access(
-                            project_id, user_id
-                        )
+                    project_access = await project_service.check_project_access(
+                        project_id, user_id
                     )
                     if not project_access:
                         raise AuthorizationError("No access to this project")
@@ -593,8 +533,8 @@ class TaskService:
             elif user_id:
                 # Show tasks from accessible projects
                 project_service = ProjectService(self.db)
-                accessible_projects = (
-                    await project_service.get_accessible_projects(user_id)
+                accessible_projects = await project_service.get_accessible_projects(
+                    user_id
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
@@ -634,9 +574,7 @@ class TaskService:
     async def check_task_access(self, task_id: int, user_id: int) -> bool:
         """Check if user has access to task"""
         try:
-            task_result = await self.db.execute(
-                select(Task).where(Task.id == task_id)
-            )
+            task_result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = task_result.scalar_one_or_none()
 
             if not task:
@@ -645,9 +583,7 @@ class TaskService:
             # Task creator has access
             task_creator_id = getattr(task, "creator_id", None)
             if task_creator_id is None:
-                logger.warning(
-                    "Task %d has no creator, access denied", task_id
-                )
+                logger.warning("Task %d has no creator, access denied", task_id)
                 return False
 
             if task_creator_id == user_id:
@@ -669,16 +605,12 @@ class TaskService:
             # Check project access
             task_project_id = getattr(task, "project_id", None)
             if task_project_id is None:
-                logger.warning(
-                    "Task %d has no project, access denied", task_id
-                )
+                logger.warning("Task %d has no project, access denied", task_id)
                 return False
 
             project_service = ProjectService(self.db)
 
-            return await project_service.check_project_access(
-                task_project_id, user_id
-            )
+            return await project_service.check_project_access(task_project_id, user_id)
 
         except (
             NotFoundError,
@@ -689,15 +621,11 @@ class TaskService:
             logger.error("Failed to check task access: %s", e)
             return False
 
-    async def assign_user_to_task(
-        self, task_id: int, user_id: int, assigned_by: int
-    ):
+    async def assign_user_to_task(self, task_id: int, user_id: int, assigned_by: int):
         """Assign a user to a task"""
         try:
             # Verify user exists
-            user_result = await self.db.execute(
-                select(User).where(User.id == user_id)
-            )
+            user_result = await self.db.execute(select(User).where(User.id == user_id))
             if not user_result.scalar_one_or_none():
                 raise NotFoundError(f"User with ID {user_id} not found")
 
@@ -731,9 +659,7 @@ class TaskService:
             ConflictError,
             AuthorizationError,
         ) as e:
-            logger.error(
-                "Failed to assign user %d to task %d: %s", user_id, task_id, e
-            )
+            logger.error("Failed to assign user %d to task %d: %s", user_id, task_id, e)
             raise
 
     async def list_task_comments(

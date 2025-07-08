@@ -97,9 +97,7 @@ except ImportError as e:
             Returns:
                 module: 로드된 모듈 객체
             """
-            spec = importlib.util.spec_from_file_location(
-                module_name, file_path
-            )
+            spec = importlib.util.spec_from_file_location(module_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
@@ -182,9 +180,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """
     # 시작 로직
     logger.info("🚀 PMS 백엔드 API 시작 중...")
-    logger.info(
-        "🌍 실행 환경: %s", getattr(settings, "ENVIRONMENT", "unknown")
-    )
+    logger.info("🌍 실행 환경: %s", getattr(settings, "ENVIRONMENT", "unknown"))
     logger.info("🔧 디버그 모드: %s", getattr(settings, "DEBUG", False))
 
     # 데이터베이스 연결 확인
@@ -265,9 +261,7 @@ if cors_origins:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
-    logger.info(
-        "🌐 CORS가 다음 도메인에 대해 활성화되었습니다: %s", cors_origins
-    )
+    logger.info("🌐 CORS가 다음 도메인에 대해 활성화되었습니다: %s", cors_origins)
 
 # 정적 파일 설정
 upload_path = getattr(settings, "UPLOAD_PATH", "uploads")
@@ -359,19 +353,13 @@ app.include_router(health_router, prefix=api_v1_str, tags=["상태확인"])
 app.include_router(system_router, prefix=api_v1_str, tags=["시스템"])
 app.include_router(auth_router, prefix=f"{api_v1_str}/auth", tags=["인증"])
 app.include_router(users_router, prefix=f"{api_v1_str}/users", tags=["사용자"])
-app.include_router(
-    projects_router, prefix=f"{api_v1_str}/projects", tags=["프로젝트"]
-)
+app.include_router(projects_router, prefix=f"{api_v1_str}/projects", tags=["프로젝트"])
 app.include_router(tasks_router, prefix=f"{api_v1_str}/tasks", tags=["작업"])
-app.include_router(
-    calendar_router, prefix=f"{api_v1_str}/calendar", tags=["캘린더"]
-)
+app.include_router(calendar_router, prefix=f"{api_v1_str}/calendar", tags=["캘린더"])
 app.include_router(
     dashboard_router, prefix=f"{api_v1_str}/dashboard", tags=["대시보드"]
 )
-app.include_router(
-    uploads_router, prefix=f"{api_v1_str}/uploads", tags=["파일업로드"]
-)
+app.include_router(uploads_router, prefix=f"{api_v1_str}/uploads", tags=["파일업로드"])
 
 
 # Strawberry를 사용한 GraphQL 엔드포인트 추가

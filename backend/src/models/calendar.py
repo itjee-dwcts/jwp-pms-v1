@@ -52,18 +52,14 @@ class Calendar(Base):
         default=datetime.now(timezone.utc),
         doc="Creation time",
     )
-    created_by = Column(
-        UUID, nullable=True, doc="User who created this calendar"
-    )
+    created_by = Column(UUID, nullable=True, doc="User who created this calendar")
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
         doc="Last update time",
     )
-    updated_by = Column(
-        UUID, nullable=True, doc="User who last updated this calendar"
-    )
+    updated_by = Column(UUID, nullable=True, doc="User who last updated this calendar")
 
     # Basic Information
     name = Column(String(100), nullable=False, doc="Calendar name")
@@ -107,10 +103,7 @@ class Calendar(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Calendar(id={self.id}, name='{self.name}', "
-            f"owner_id={self.owner_id})>"
-        )
+        return f"<Calendar(id={self.id}, name='{self.name}', owner_id={self.owner_id})>"
 
 
 class Event(Base):
@@ -138,9 +131,7 @@ class Event(Base):
         onupdate=datetime.now(timezone.utc),
         doc="Last update time",
     )
-    updated_by = Column(
-        UUID, nullable=True, doc="User who last updated this event"
-    )
+    updated_by = Column(UUID, nullable=True, doc="User who last updated this event")
 
     # Basic Information
     title = Column(String(200), nullable=False, doc="Event title")
@@ -201,9 +192,7 @@ class Event(Base):
         nullable=True,
         doc="Associated task (optional)",
     )
-    owner_id = Column(
-        UUID, ForeignKey("users.id"), nullable=False, doc="Event owner"
-    )
+    owner_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="Event owner")
 
     # Recurrence
     recurrence_type = Column(
@@ -245,9 +234,7 @@ class Event(Base):
         String(500), nullable=True, doc="Meeting URL (e.g., Zoom, Teams)"
     )
     meeting_id = Column(String(100), nullable=True, doc="Meeting ID")
-    meeting_password = Column(
-        String(100), nullable=True, doc="Meeting password"
-    )
+    meeting_password = Column(String(100), nullable=True, doc="Meeting password")
 
     # Relationships
     calendar = relationship("Calendar", back_populates="events")
@@ -285,8 +272,7 @@ class Event(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<Event(id={self.id}, title='{self.title}', "
-            f"start_time={self.start_time})>"
+            f"<Event(id={self.id}, title='{self.title}', start_time={self.start_time})>"
         )
 
 
@@ -325,9 +311,7 @@ class EventAttendee(Base):
 
     # Basic Information
 
-    event_id = Column(
-        UUID, ForeignKey("events.id"), nullable=False, doc="Event ID"
-    )
+    event_id = Column(UUID, ForeignKey("events.id"), nullable=False, doc="Event ID")
     user_id = Column(
         UUID, ForeignKey("users.id"), nullable=False, doc="Attendee user ID"
     )

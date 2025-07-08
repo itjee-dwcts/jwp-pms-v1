@@ -1,19 +1,12 @@
 {
   "folders": [
     {
+      "name": "jwp-pms-v1",
       "path": "."
     }
   ],
   "settings": {
-    "python.analysis.logLevel": "Information",
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
-    "terminal.integrated.env.windows": {
-      "PYTHONPATH": "./backend/src;./backend;./backend/.venv/Lib/site-packages"
-    },
-    "git.confirmSync": false,
-    "workbench.editor.enablePreview": false,
-    "explorer.confirmDelete": true,
-    "explorer.confirmDragAndDrop": true,
-    "extensions.showRecommendationsOnlyOnDemand": false
+    "cSpell.words": ["officedocument", "pycodestyle", "Pyflakes", "pyupgrade"],
+    "flake8.enabled": false
   }
 }

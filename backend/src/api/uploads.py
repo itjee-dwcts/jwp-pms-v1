@@ -227,9 +227,7 @@ async def delete_file(
     """
     try:
         file_service = FileService(db)
-        success = await file_service.delete_file(
-            file_id, int(str(current_user.id))
-        )
+        success = await file_service.delete_file(file_id, int(str(current_user.id)))
 
         if not success:
             raise HTTPException(

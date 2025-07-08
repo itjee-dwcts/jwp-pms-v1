@@ -16,15 +16,11 @@ from schemas.user import UserPublic
 class ProjectBase(BaseModel):
     """Base project schema"""
 
-    name: str = Field(
-        ..., min_length=1, max_length=200, description="Project name"
-    )
+    name: str = Field(..., min_length=1, max_length=200, description="Project name")
     description: Optional[str] = Field(
         None, max_length=2000, description="Project description"
     )
-    status: str = Field(
-        default=ProjectStatus.PLANNING, description="Project status"
-    )
+    status: str = Field(default=ProjectStatus.PLANNING, description="Project status")
     priority: str = Field(
         default=ProjectPriority.MEDIUM, description="Project priority"
     )
@@ -45,9 +41,7 @@ class ProjectBase(BaseModel):
 
         # Check if the provided status is valid
         if v not in valid_statuses:
-            raise ValueError(
-                f'Status must be one of: {", ".join(valid_statuses)}'
-            )
+            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -63,18 +57,14 @@ class ProjectBase(BaseModel):
             ProjectPriority.CRITICAL,
         ]
         if v not in valid_priorities:
-            raise ValueError(
-                f'Priority must be one of: {", ".join(valid_priorities)}'
-            )
+            raise ValueError(f"Priority must be one of: {', '.join(valid_priorities)}")
         return v
 
 
 class ProjectCreateRequest(ProjectBase):
     """Schema for creating a project"""
 
-    start_date: Optional[datetime] = Field(
-        None, description="Project start date"
-    )
+    start_date: Optional[datetime] = Field(None, description="Project start date")
     end_date: Optional[datetime] = Field(None, description="Project end date")
     budget: Optional[Decimal] = Field(None, ge=0, description="Project budget")
     repository_url: Optional[str] = Field(
@@ -86,15 +76,11 @@ class ProjectCreateRequest(ProjectBase):
     tags: Optional[str] = Field(
         None, max_length=500, description="Project tags (comma-separated)"
     )
-    is_public: bool = Field(
-        default=False, description="Whether the project is public"
-    )
+    is_public: bool = Field(default=False, description="Whether the project is public")
 
     @field_validator("end_date")
     @classmethod
-    def validate_end_date(
-        cls, v: Optional[datetime], values
-    ) -> Optional[datetime]:
+    def validate_end_date(cls, v: Optional[datetime], values) -> Optional[datetime]:
         """Validate end date is after start date if both are provided"""
         if (
             v
@@ -137,9 +123,7 @@ class ProjectUpdateRequest(BaseModel):
                 ProjectStatus.CANCELLED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -156,7 +140,7 @@ class ProjectUpdateRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f'Priority must be one of: {", ".join(valid_priorities)}'
+                    f"Priority must be one of: {', '.join(valid_priorities)}"
                 )
         return v
 
@@ -180,7 +164,7 @@ class ProjectMemberBase(BaseModel):
             ProjectMemberRole.VIEWER,
         ]
         if v not in valid_roles:
-            raise ValueError(f'Role must be one of: {", ".join(valid_roles)}')
+            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
         return v
 
 
@@ -206,7 +190,7 @@ class ProjectMemberUpdateRequest(BaseModel):
             ProjectMemberRole.VIEWER,
         ]
         if v not in valid_roles:
-            raise ValueError(f'Role must be one of: {", ".join(valid_roles)}')
+            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
         return v
 
 
@@ -237,9 +221,7 @@ class ProjectCommentBase(BaseModel):
 class ProjectCommentCreateRequest(ProjectCommentBase):
     """Schema for creating project comment"""
 
-    parent_id: Optional[int] = Field(
-        None, description="Parent comment ID for replies"
-    )
+    parent_id: Optional[int] = Field(None, description="Parent comment ID for replies")
 
 
 class ProjectCommentUpdateRequest(BaseModel):
@@ -365,9 +347,7 @@ class ProjectSearchRequest(BaseModel):
                 ProjectStatus.CANCELLED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -384,7 +364,7 @@ class ProjectSearchRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f'Priority must be one of: {", ".join(valid_priorities)}'
+                    f"Priority must be one of: {', '.join(valid_priorities)}"
                 )
         return v
 

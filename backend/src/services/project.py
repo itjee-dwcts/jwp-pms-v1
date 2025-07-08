@@ -98,9 +98,7 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.creator),
-                    selectinload(Project.members).selectinload(
-                        ProjectMember.user
-                    ),
+                    selectinload(Project.members).selectinload(ProjectMember.user),
                 )
                 .where(Project.id == project.id)
             )
@@ -124,12 +122,8 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.creator),
-                    selectinload(Project.members).selectinload(
-                        ProjectMember.user
-                    ),
-                    selectinload(Project.comments).selectinload(
-                        ProjectComment.author
-                    ),
+                    selectinload(Project.members).selectinload(ProjectMember.user),
+                    selectinload(Project.comments).selectinload(ProjectComment.author),
                     selectinload(Project.attachments).selectinload(
                         ProjectAttachment.uploader
                     ),
@@ -145,9 +139,7 @@ class ProjectService:
 
             # Check access permissions
             if not bool(project.is_public) and user_id:
-                has_access = await self.check_project_access(
-                    project_id, user_id
-                )
+                has_access = await self.check_project_access(project_id, user_id)
                 if not has_access:
                     raise AuthorizationError("Access denied to this project")
 
@@ -167,9 +159,7 @@ class ProjectService:
                 project_id, user_id, ["owner", "manager"]
             )
             if not can_edit:
-                raise AuthorizationError(
-                    "Insufficient permissions to update project"
-                )
+                raise AuthorizationError("Insufficient permissions to update project")
 
             result = await self.db.execute(
                 select(Project).where(Project.id == project_id)
@@ -194,9 +184,7 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.creator),
-                    selectinload(Project.members).selectinload(
-                        ProjectMember.user
-                    ),
+                    selectinload(Project.members).selectinload(ProjectMember.user),
                 )
                 .where(Project.id == project_id)
             )
@@ -218,9 +206,7 @@ class ProjectService:
                 project_id, user_id, ["owner"]
             )
             if not can_delete:
-                raise AuthorizationError(
-                    "Insufficient permissions to delete project"
-                )
+                raise AuthorizationError("Insufficient permissions to delete project")
 
             result = await self.db.execute(
                 select(Project).where(Project.id == project_id)
@@ -281,29 +267,19 @@ class ProjectService:
                 if search_params.search_text:
                     query = query.where(
                         or_(
-                            Project.name.ilike(
-                                f"%{search_params.search_text}%"
-                            ),
-                            Project.description.ilike(
-                                f"%{search_params.search_text}%"
-                            ),
+                            Project.name.ilike(f"%{search_params.search_text}%"),
+                            Project.description.ilike(f"%{search_params.search_text}%"),
                         )
                     )
 
                 if search_params.project_status:
-                    query = query.where(
-                        Project.status == search_params.project_status
-                    )
+                    query = query.where(Project.status == search_params.project_status)
 
                 if search_params.priority:
-                    query = query.where(
-                        Project.priority == search_params.priority
-                    )
+                    query = query.where(Project.priority == search_params.priority)
 
                 if search_params.creator_id:
-                    query = query.where(
-                        Project.creator_id == search_params.creator_id
-                    )
+                    query = query.where(Project.creator_id == search_params.creator_id)
 
                 if search_params.start_date_from:
                     query = query.where(
@@ -316,23 +292,17 @@ class ProjectService:
                     )
 
                 if search_params.end_date_from:
-                    query = query.where(
-                        Project.end_date >= search_params.end_date_from
-                    )
+                    query = query.where(Project.end_date >= search_params.end_date_from)
 
                 if search_params.end_date_to:
-                    query = query.where(
-                        Project.end_date <= search_params.end_date_to
-                    )
+                    query = query.where(Project.end_date <= search_params.end_date_to)
 
                 if search_params.tags:
                     for tag in search_params.tags:
                         query = query.where(Project.tags.ilike(f"%{tag}%"))
 
                 if search_params.is_public is not None:
-                    query = query.where(
-                        Project.is_public == search_params.is_public
-                    )
+                    query = query.where(Project.is_public == search_params.is_public)
 
             # Get total count
             count_query = select(count()).select_from(query.subquery())
@@ -342,9 +312,7 @@ class ProjectService:
             # Apply pagination and ordering
             offset = (page_no - 1) * page_size
             query = (
-                query.offset(offset)
-                .limit(page_size)
-                .order_by(desc(Project.created_at))
+                query.offset(offset).limit(page_size).order_by(desc(Project.created_at))
             )
 
             # Execute query
@@ -358,8 +326,7 @@ class ProjectService:
 
             return ProjectListResponse(
                 projects=[
-                    ProjectResponse.model_validate(project)
-                    for project in projects
+                    ProjectResponse.model_validate(project) for project in projects
                 ],
                 total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
@@ -384,9 +351,7 @@ class ProjectService:
                 project_id, added_by, ["owner", "manager"]
             )
             if not can_add:
-                raise AuthorizationError(
-                    "Insufficient permissions to add members"
-                )
+                raise AuthorizationError("Insufficient permissions to add members")
 
             # Check if user is already a member
             existing_member = await self.db.execute(
@@ -405,9 +370,7 @@ class ProjectService:
                 select(User).where(User.id == member_data.user_id)
             )
             if not user_result.scalar_one_or_none():
-                raise NotFoundError(
-                    f"User with ID {member_data.user_id} not found"
-                )
+                raise NotFoundError(f"User with ID {member_data.user_id} not found")
 
             # Add member
             project_member = ProjectMember(
@@ -429,9 +392,7 @@ class ProjectService:
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(
-                "Failed to add member to project %d: %s", project_id, e
-            )
+            logger.error("Failed to add member to project %d: %s", project_id, e)
             raise
 
     async def remove_project_member(
@@ -444,9 +405,7 @@ class ProjectService:
                 project_id, removed_by, ["owner", "manager"]
             )
             if not can_remove:
-                raise AuthorizationError(
-                    "Insufficient permissions to remove members"
-                )
+                raise AuthorizationError("Insufficient permissions to remove members")
 
             # Cannot remove project owner
             member_result = await self.db.execute(
@@ -468,16 +427,12 @@ class ProjectService:
             await self.db.delete(member)
             await self.db.commit()
 
-            logger.info(
-                "Member removed from project %d: user %d", project_id, user_id
-            )
+            logger.info("Member removed from project %d: user %d", project_id, user_id)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(
-                "Failed to remove member from project %d: %s", project_id, e
-            )
+            logger.error("Failed to remove member from project %d: %s", project_id, e)
             raise
 
     async def get_project_stats(
@@ -544,19 +499,13 @@ class ProjectService:
 
             # Average progress
             progress_result = await self.db.execute(
-                select(func.avg(Project.progress)).select_from(
-                    base_query.subquery()
-                )
+                select(func.avg(Project.progress)).select_from(base_query.subquery())
             )
             average_progress = progress_result.scalar() or 0.0
 
             return ProjectStatsResponse(
-                total_projects=(
-                    total_projects if total_projects is not None else 0
-                ),
-                active_projects=(
-                    active_projects if active_projects is not None else 0
-                ),
+                total_projects=(total_projects if total_projects is not None else 0),
+                active_projects=(active_projects if active_projects is not None else 0),
                 completed_projects=(
                     completed_projects if completed_projects is not None else 0
                 ),
@@ -569,9 +518,7 @@ class ProjectService:
             logger.error("Failed to get project stats: %s", e)
             raise
 
-    async def get_project_dashboard(
-        self, user_id: int
-    ) -> ProjectDashboardResponse:
+    async def get_project_dashboard(self, user_id: int) -> ProjectDashboardResponse:
         """Get project dashboard data for user"""
         try:
             # Get user's projects
@@ -611,8 +558,7 @@ class ProjectService:
                 .where(
                     and_(
                         Project.end_date > datetime.utcnow(),
-                        Project.end_date
-                        < datetime.utcnow() + timedelta(days=30),
+                        Project.end_date < datetime.utcnow() + timedelta(days=30),
                         Project.status.in_(["planning", "active"]),
                         or_(
                             Project.is_public.is_(True),
@@ -653,13 +599,10 @@ class ProjectService:
                 recent_projects=[
                     ProjectResponse.model_validate(p) for p in recent_projects
                 ],
-                my_projects=[
-                    ProjectResponse.model_validate(p) for p in my_projects
-                ],
+                my_projects=[ProjectResponse.model_validate(p) for p in my_projects],
                 project_progress_stats=stats.projects_by_status,
                 upcoming_deadlines=[
-                    ProjectResponse.model_validate(p)
-                    for p in upcoming_deadlines
+                    ProjectResponse.model_validate(p) for p in upcoming_deadlines
                 ],
             )
 
@@ -678,9 +621,7 @@ class ProjectService:
 
             # Get projects where user is a member
             member_result = await self.db.execute(
-                select(ProjectMember.project_id).where(
-                    ProjectMember.user_id == user_id
-                )
+                select(ProjectMember.project_id).where(ProjectMember.user_id == user_id)
             )
             member_projects = [row[0] for row in member_result.fetchall()]
 
@@ -691,9 +632,7 @@ class ProjectService:
             logger.error("Failed to get accessible projects: %s", e)
             return []
 
-    async def check_project_access(
-        self, project_id: int, user_id: int
-    ) -> bool:
+    async def check_project_access(self, project_id: int, user_id: int) -> bool:
         """Check if user has access to project"""
         try:
             # Check if project is public
@@ -757,9 +696,7 @@ class ProjectService:
         List project members for a user
         """
 
-        stmt = select(ProjectMember).where(
-            ProjectMember.project_id == project_id
-        )
+        stmt = select(ProjectMember).where(ProjectMember.project_id == project_id)
         if user_id:
             stmt = stmt.where(ProjectMember.user_id == user_id)
         result = await self.db.execute(stmt)

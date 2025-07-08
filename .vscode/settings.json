@@ -60,15 +60,20 @@
   "python.linting.pylintEnabled": false,
 
   // Flake8 설정 (PEP 8 준수)
-  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Enabled": false,
   "python.linting.flake8Path": "./backend/.venv/Scripts/flake8.exe",
   "python.linting.flake8Args": [
     "--max-line-length=88", // Black과 일치
     "--extend-ignore=E203,E501,W503,F401,F403,F405"
   ],
 
+  // Ruff 활성화
+  "ruff.lint.enable": true,
+  "ruff.format.enable": true,
+  "ruff.organizeImports": true,
+
   // MyPy 설정 (타입 검사 - CI/CD용)
-  "python.linting.mypyEnabled": false,
+  "python.linting.mypyEnabled": true,
   "python.linting.mypyArgs": [
     "--ignore-missing-imports",
     "--strict-optional",
@@ -124,7 +129,7 @@
   "editor.insertSpaces": true,
   "editor.detectIndentation": true,
   "editor.autoIndent": "advanced",
-  "editor.rulers": [80, 120], // Black 기본 + 최대 길이
+  "editor.rulers": [88, 120], // Black 기본 + 최대 길이
   "editor.wordWrap": "off",
 
   // ============================================================================
@@ -198,13 +203,14 @@
   // 언어별 특화 설정
   // ============================================================================
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
       "source.organizeImports": "explicit"
     },
     "editor.formatOnSave": true,
     "editor.tabSize": 4,
-    "editor.rulers": [80],
+    "editor.rulers": [88, 120], // Black 기본 + 최대 길이
     // Python IntelliSense 강화
     "editor.suggest.showClasses": true,
     "editor.suggest.showFunctions": true,
@@ -244,7 +250,7 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.wordWrap": "on",
-    "editor.rulers": [80]
+    "editor.rulers": [88, 120] // Markdown에서 긴 줄 제한
   },
 
   // ============================================================================
@@ -314,6 +320,7 @@
     "letmein",
     "levelname",
     "linting",
+    "msword",
     "multiday",
     "mypy",
     "Neue",
@@ -370,5 +377,6 @@
   "extensions.autoUpdate": true,
 
   // 에러 리포팅 (문제 해결용)
-  "telemetry.telemetryLevel": "error" // 최소한의 텔레메트리만
+  "telemetry.telemetryLevel": "error",
+  "flake8.enabled": false // 최소한의 텔레메트리만
 }

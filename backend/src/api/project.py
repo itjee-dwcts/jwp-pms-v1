@@ -28,15 +28,11 @@ router = APIRouter()
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
     page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(
-        50, ge=1, le=100, description="Number of records to return"
-    ),
+    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
     search_text: Optional[str] = Query(
         None, description="Search by name or description"
     ),
-    project_status: Optional[str] = Query(
-        None, description="Filter by status"
-    ),
+    project_status: Optional[str] = Query(None, description="Filter by status"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -44,7 +40,6 @@ async def list_projects(
     List projects accessible to current user
     """
     try:
-
         project_service = ProjectService(db)
         projects = await project_service.list_projects(
             user_id=int(str(current_user.id)),
@@ -55,9 +50,7 @@ async def list_projects(
             ),
         )
 
-        return [
-            ProjectResponse.model_validate(project) for project in projects
-        ]
+        return [ProjectResponse.model_validate(project) for project in projects]
 
     except Exception as e:
         logger.error("Error listing projects: %s", e)
@@ -100,9 +93,7 @@ async def get_project(
         ) from e
 
 
-@router.post(
-    "/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     project_data: ProjectCreateRequest,
     current_user: User = Depends(get_current_active_user),
@@ -117,9 +108,7 @@ async def create_project(
             project_data, int(str(current_user.id))
         )
 
-        logger.info(
-            "Project created by %s: %s", current_user.name, project.name
-        )
+        logger.info("Project created by %s: %s", current_user.name, project.name)
 
         return ProjectResponse.model_validate(project)
 
@@ -154,9 +143,7 @@ async def update_project(
                 detail="Project not found",
             )
 
-        logger.info(
-            "Project updated by %s: %s", current_user.name, project.name
-        )
+        logger.info("Project updated by %s: %s", current_user.name, project.name)
 
         return ProjectResponse.model_validate(project)
 
@@ -207,9 +194,7 @@ async def delete_project(
         ) from e
 
 
-@router.get(
-    "/{project_id}/members", response_model=List[ProjectMemberResponse]
-)
+@router.get("/{project_id}/members", response_model=List[ProjectMemberResponse])
 async def list_project_members(
     project_id: int,
     current_user: User = Depends(get_current_active_user),
@@ -224,9 +209,7 @@ async def list_project_members(
             project_id, int(str(current_user.id))
         )
 
-        return [
-            ProjectMemberResponse.model_validate(member) for member in members
-        ]
+        return [ProjectMemberResponse.model_validate(member) for member in members]
 
     except Exception as e:
         logger.error("Error listing project members: %s", e)

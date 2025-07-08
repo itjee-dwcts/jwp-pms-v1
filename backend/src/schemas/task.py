@@ -16,9 +16,7 @@ from schemas.user import UserPublic
 class TaskBase(BaseModel):
     """Base task schema"""
 
-    title: str = Field(
-        ..., min_length=1, max_length=200, description="Task title"
-    )
+    title: str = Field(..., min_length=1, max_length=200, description="Task title")
     description: Optional[str] = Field(
         None, max_length=5000, description="Task description"
     )
@@ -40,9 +38,7 @@ class TaskBase(BaseModel):
             TaskStatus.BLOCKED,
         ]
         if v not in valid_statuses:
-            raise ValueError(
-                f'Status must be one of: {", ".join(valid_statuses)}'
-            )
+            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -51,9 +47,7 @@ class TaskBase(BaseModel):
         """Validate task priority"""
         valid_priorities = ["low", "medium", "high", "urgent"]
         if v not in valid_priorities:
-            raise ValueError(
-                f'Priority must be one of: {", ".join(valid_priorities)}'
-            )
+            raise ValueError(f"Priority must be one of: {', '.join(valid_priorities)}")
         return v
 
     @field_validator("task_type")
@@ -70,9 +64,7 @@ class TaskBase(BaseModel):
             TaskType.MAINTENANCE,
         ]
         if v not in valid_types:
-            raise ValueError(
-                f'Task type must be one of: {", ".join(valid_types)}'
-            )
+            raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
         return v
 
 
@@ -85,9 +77,7 @@ class TaskCreateRequest(TaskBase):
     )
     start_date: Optional[datetime] = Field(None, description="Task start date")
     due_date: Optional[datetime] = Field(None, description="Task due date")
-    estimated_hours: Optional[int] = Field(
-        None, ge=0, description="Estimated hours"
-    )
+    estimated_hours: Optional[int] = Field(None, ge=0, description="Estimated hours")
     story_points: Optional[int] = Field(None, ge=0, description="Story points")
     acceptance_criteria: Optional[str] = Field(
         None, max_length=2000, description="Acceptance criteria"
@@ -98,9 +88,7 @@ class TaskCreateRequest(TaskBase):
     assignee_ids: Optional[List[int]] = Field(
         default=[], description="List of assignee user IDs"
     )
-    tag_ids: Optional[List[int]] = Field(
-        default=[], description="List of tag IDs"
-    )
+    tag_ids: Optional[List[int]] = Field(default=[], description="List of tag IDs")
 
     @field_validator("due_date")
     @classmethod
@@ -147,9 +135,7 @@ class TaskUpdateRequest(BaseModel):
                 TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -165,7 +151,7 @@ class TaskUpdateRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f'Priority must be one of: {", ".join(valid_priorities)}'
+                    f"Priority must be one of: {', '.join(valid_priorities)}"
                 )
         return v
 
@@ -184,9 +170,7 @@ class TaskUpdateRequest(BaseModel):
                 TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(
-                    f'Task type must be one of: {", ".join(valid_types)}'
-                )
+                raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
         return v
 
 
@@ -219,9 +203,7 @@ class TaskCommentBase(BaseModel):
 class TaskCommentCreateRequest(TaskCommentBase):
     """Schema for creating task comment"""
 
-    parent_id: Optional[int] = Field(
-        None, description="Parent comment ID for replies"
-    )
+    parent_id: Optional[int] = Field(None, description="Parent comment ID for replies")
 
 
 class TaskCommentUpdateRequest(BaseModel):
@@ -318,9 +300,7 @@ class TagBase(BaseModel):
     """Base tag schema"""
 
     name: str = Field(..., min_length=1, max_length=50, description="Tag name")
-    color: Optional[str] = Field(
-        "#3B82F6", max_length=7, description="Tag color (hex)"
-    )
+    color: Optional[str] = Field("#3B82F6", max_length=7, description="Tag color (hex)")
     description: Optional[str] = Field(
         None, max_length=200, description="Tag description"
     )
@@ -452,9 +432,7 @@ class TaskSearchRequest(BaseModel):
                 TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("priority")
@@ -470,7 +448,7 @@ class TaskSearchRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f'Priority must be one of: {", ".join(valid_priorities)}'
+                    f"Priority must be one of: {', '.join(valid_priorities)}"
                 )
         return v
 
@@ -489,9 +467,7 @@ class TaskSearchRequest(BaseModel):
                 TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(
-                    f'Task type must be one of: {", ".join(valid_types)}'
-                )
+                raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
         return v
 
 

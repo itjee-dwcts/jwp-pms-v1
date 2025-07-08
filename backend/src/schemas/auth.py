@@ -111,9 +111,7 @@ class RefreshTokenRequest(BaseModel):
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
-            "example": {
-                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-            }
+            "example": {"refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."}
         }
 
 
@@ -395,9 +393,7 @@ class TwoFactorAuthRequest(BaseModel):
         """Configuration for the TwoFactorAuthRequest schema"""
 
         from_attributes = True
-        json_schema_extra: dict[str, dict[str, Any]] = {
-            "example": {"token": "123456"}
-        }
+        json_schema_extra: dict[str, dict[str, Any]] = {"example": {"token": "123456"}}
 
 
 class SessionInfo(BaseModel):

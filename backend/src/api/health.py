@@ -35,9 +35,7 @@ async def health_check():
         )
     except Exception as e:
         logger.error("Health check failed: %s", e)
-        raise HTTPException(
-            status_code=503, detail="Service unavailable"
-        ) from e
+        raise HTTPException(status_code=503, detail="Service unavailable") from e
 
 
 @router.get("/health/detailed")
@@ -54,7 +52,6 @@ async def detailed_health_check(db: AsyncSession = Depends(get_async_session)):
     }
 
     try:
-
         # Database health
         try:
             db_health = await get_database_health()
@@ -73,9 +70,7 @@ async def detailed_health_check(db: AsyncSession = Depends(get_async_session)):
 
     except Exception as e:
         logger.error("Detailed health check failed: %s", e)
-        raise HTTPException(
-            status_code=503, detail="Service unavailable"
-        ) from e
+        raise HTTPException(status_code=503, detail="Service unavailable") from e
 
 
 @router.get("/health/database")
@@ -93,9 +88,7 @@ async def database_health_check():
 
     except Exception as e:
         logger.error("Database health check failed: %s", e)
-        raise HTTPException(
-            status_code=503, detail="Database unavailable"
-        ) from e
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
 
 
 @router.get("/system/info", response_model=SystemInfoResponse)
@@ -257,9 +250,7 @@ async def get_metrics():
                 "memory_usage_percent": system_info.get("memory", {}).get(
                     "percentage", 0
                 ),
-                "disk_usage_percent": system_info.get("disk", {}).get(
-                    "percentage", 0
-                ),
+                "disk_usage_percent": system_info.get("disk", {}).get("percentage", 0),
             },
             "database": {
                 "status": db_health.get("status", "unknown"),
@@ -277,6 +268,4 @@ async def get_metrics():
 
     except Exception as e:
         logger.error("Metrics retrieval failed: %s", e)
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve metrics"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to retrieve metrics") from e

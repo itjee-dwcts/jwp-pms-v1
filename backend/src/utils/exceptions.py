@@ -353,9 +353,7 @@ class PermissionDeniedError(AuthorizationError):
 class UserNotFoundError(NotFoundError):
     """Raised when user is not found"""
 
-    def __init__(
-        self, user_id: Optional[str] = None, email: Optional[str] = None
-    ):
+    def __init__(self, user_id: Optional[str] = None, email: Optional[str] = None):
         identifier = user_id or email or "unknown"
         message = f"User not found: {identifier}"
         super().__init__(message, "user", identifier)
@@ -479,9 +477,7 @@ class InvalidOperationError(BusinessLogicError):
         super().__init__(
             message=message,
             rule=(
-                f"invalid_operation_{operation}"
-                if operation
-                else "invalid_operation"
+                f"invalid_operation_{operation}" if operation else "invalid_operation"
             ),
         )
 
@@ -507,9 +503,7 @@ class ResourceLimitExceededError(BusinessLogicError):
         super().__init__(
             message=message,
             rule=(
-                f"resource_limit_{resource_type}"
-                if resource_type
-                else "resource_limit"
+                f"resource_limit_{resource_type}" if resource_type else "resource_limit"
             ),
         )
 
@@ -592,9 +586,7 @@ class EventNotFoundError(NotFoundError):
 class EventConflictError(ConflictError):
     """Raised when there's a scheduling conflict"""
 
-    def __init__(
-        self, message: str, conflicting_events: Optional[list[str]] = None
-    ):
+    def __init__(self, message: str, conflicting_events: Optional[list[str]] = None):
         details: Optional[Dict[str, Any]] = {}
         if conflicting_events:
             details["conflicting_events"] = conflicting_events

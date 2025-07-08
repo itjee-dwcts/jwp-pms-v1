@@ -34,21 +34,11 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="User ID"
-    )
-    created_at = Column(
-        DateTime(timezone=False), default=datetime.now(timezone.utc)
-    )
-    created_by = Column(
-        Integer, nullable=True, doc="User who created this record"
-    )
-    updated_at = Column(
-        DateTime(timezone=True), onupdate=datetime.now(timezone.utc)
-    )
-    updated_by = Column(
-        Integer, nullable=True, doc="User who last updated this record"
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="User ID")
+    created_at = Column(DateTime(timezone=False), default=datetime.now(timezone.utc))
+    created_by = Column(Integer, nullable=True, doc="User who created this record")
+    updated_at = Column(DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    updated_by = Column(Integer, nullable=True, doc="User who last updated this record")
 
     # Basic Information
     email = Column(
@@ -96,9 +86,7 @@ class User(Base):
         nullable=False,
         doc="User account status",
     )
-    avatar_url = Column(
-        String(500), nullable=True, doc="URL to user's avatar image"
-    )
+    avatar_url = Column(String(500), nullable=True, doc="URL to user's avatar image")
     bio = Column(Text, nullable=True, doc="User biography")
 
     # Contact Information
@@ -107,12 +95,8 @@ class User(Base):
     position = Column(String(100), nullable=True, doc="User's job position")
 
     # OAuth Information
-    google_id = Column(
-        String(100), nullable=True, index=True, doc="Google OAuth ID"
-    )
-    github_id = Column(
-        String(100), nullable=True, index=True, doc="GitHub OAuth ID"
-    )
+    google_id = Column(String(100), nullable=True, index=True, doc="Google OAuth ID")
+    github_id = Column(String(100), nullable=True, index=True, doc="GitHub OAuth ID")
 
     # Activity Tracking
     last_login = Column(
@@ -129,9 +113,7 @@ class User(Base):
 
     project_memberships = relationship("ProjectMember", back_populates="user")
 
-    task_assignments = relationship(
-        "TaskAssignment", back_populates="assignee"
-    )
+    task_assignments = relationship("TaskAssignment", back_populates="assignee")
 
     created_tasks = relationship(
         "Task", back_populates="creator", foreign_keys="Task.creator_id"
@@ -152,10 +134,7 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<User(id={self.id}, username='{self.username}', "
-            f"email='{self.email}')>"
-        )
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
 
     def update_last_active(self):
         """Update the last active timestamp to the current time"""
@@ -181,9 +160,7 @@ class UserActivityLog(Base):
 
     __tablename__ = "user_activity_logs"
 
-    id = Column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Log ID"
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Log ID")
 
     created_at = Column(
         DateTime(timezone=True),
@@ -191,9 +168,7 @@ class UserActivityLog(Base):
         default=datetime.now(timezone.utc),
         doc="Timestamp of the log entry",
     )
-    created_by = Column(
-        Integer, nullable=True, doc="User who created this log entry"
-    )
+    created_by = Column(Integer, nullable=True, doc="User who created this log entry")
 
     user_id = Column(
         Integer,
@@ -214,13 +189,9 @@ class UserActivityLog(Base):
         doc="Type of resource affected (e.g., 'project', 'task')",
     )
 
-    resource_id = Column(
-        String(50), nullable=True, doc="ID of the affected resource"
-    )
+    resource_id = Column(String(50), nullable=True, doc="ID of the affected resource")
 
-    description = Column(
-        Text, nullable=True, doc="Detailed description of the action"
-    )
+    description = Column(Text, nullable=True, doc="Detailed description of the action")
 
     ip_address = Column(
         String(45),
@@ -230,9 +201,7 @@ class UserActivityLog(Base):
 
     user_agent = Column(String(500), nullable=True, doc="User agent string")
 
-    extra_data = Column(
-        Text, nullable=True, doc="Additional metadata as JSON string"
-    )
+    extra_data = Column(Text, nullable=True, doc="Additional metadata as JSON string")
 
     # Relationships
     user = relationship("User", back_populates="activity_logs")
@@ -262,17 +231,13 @@ class UserSession(Base):
         nullable=False,
         default=datetime.now(timezone.utc),
     )
-    created_by = Column(
-        Integer, nullable=True, doc="User who created this session"
-    )
+    created_by = Column(Integer, nullable=True, doc="User who created this session")
 
     user_id = Column(String(50), nullable=False, index=True, doc="User ID")
     session_token = Column(
         String(255), unique=True, nullable=False, doc="Session token"
     )
-    refresh_token = Column(
-        String(255), unique=True, nullable=True, doc="Refresh token"
-    )
+    refresh_token = Column(String(255), unique=True, nullable=True, doc="Refresh token")
     expires_at = Column(
         DateTime(timezone=True), nullable=False, doc="Session expiration time"
     )
@@ -282,9 +247,7 @@ class UserSession(Base):
         nullable=False,
         doc="Whether the session is active",
     )
-    ip_address = Column(
-        String(45), nullable=True, doc="IP address of the session"
-    )
+    ip_address = Column(String(45), nullable=True, doc="IP address of the session")
     user_agent = Column(String(500), nullable=True, doc="User agent string")
 
     # Relationships

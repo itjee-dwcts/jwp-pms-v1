@@ -204,9 +204,7 @@ async def list_calendars(
             int(str(current_user.id))
         )
 
-        return [
-            CalendarResponse.model_validate(calendar) for calendar in calendars
-        ]
+        return [CalendarResponse.model_validate(calendar) for calendar in calendars]
 
     except Exception as e:
         logger.error("Error listing calendars: %s", e)

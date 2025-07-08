@@ -29,9 +29,7 @@ async def get_dashboard_summary(
     """
     try:
         dashboard_service = DashboardService(db)
-        summary = await dashboard_service.get_user_summary(
-            int(str(current_user.id))
-        )
+        summary = await dashboard_service.get_user_summary(int(str(current_user.id)))
 
         return summary
 
@@ -53,9 +51,7 @@ async def get_project_stats(
     """
     try:
         dashboard_service = DashboardService(db)
-        stats = await dashboard_service.get_project_stats(
-            int(str(current_user.id))
-        )
+        stats = await dashboard_service.get_project_stats(int(str(current_user.id)))
 
         return stats
 
@@ -77,9 +73,7 @@ async def get_task_stats(
     """
     try:
         dashboard_service = DashboardService(db)
-        stats = await dashboard_service.get_task_stats(
-            int(str(current_user.id))
-        )
+        stats = await dashboard_service.get_task_stats(int(str(current_user.id)))
 
         return stats
 

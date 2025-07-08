@@ -17,13 +17,9 @@ class UserBase(BaseModel):
     """Base user schema"""
 
     email: EmailStr = Field(..., description="Email address")
-    username: str = Field(
-        ..., min_length=3, max_length=50, description="Username"
-    )
+    username: str = Field(..., min_length=3, max_length=50, description="Username")
     password: str = Field(..., min_length=8, description="Password")
-    full_name: Optional[str] = Field(
-        None, max_length=200, description="Full name"
-    )
+    full_name: Optional[str] = Field(None, max_length=200, description="Full name")
     role: str = Field(UserRole.DEVELOPER, description="User role")
     status: str = Field(UserStatus.ACTIVE, description="User status")
     is_active: bool = Field(True, description="User active status")
@@ -33,9 +29,7 @@ class UserBase(BaseModel):
     def name_alphanumeric(cls, v):
         """Validate that username is alphanumeric with optional _ or -"""
         if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError(
-                "Username must be alphanumeric with optional _ or -"
-            )
+            raise ValueError("Username must be alphanumeric with optional _ or -")
         return v
 
 
@@ -60,13 +54,9 @@ class UserCreateRequest(UserBase):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         if not any(c.isupper() for c in v):
-            raise ValueError(
-                "Password must contain at least one uppercase letter"
-            )
+            raise ValueError("Password must contain at least one uppercase letter")
         if not any(c.islower() for c in v):
-            raise ValueError(
-                "Password must contain at least one lowercase letter"
-            )
+            raise ValueError("Password must contain at least one lowercase letter")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit")
         return v
@@ -109,13 +99,9 @@ class UserPasswordChangeRequest(BaseModel):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         if not any(c.isupper() for c in v):
-            raise ValueError(
-                "Password must contain at least one uppercase letter"
-            )
+            raise ValueError("Password must contain at least one uppercase letter")
         if not any(c.islower() for c in v):
-            raise ValueError(
-                "Password must contain at least one lowercase letter"
-            )
+            raise ValueError("Password must contain at least one lowercase letter")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit")
         return v
@@ -264,13 +250,9 @@ class UserPasswordResetConfirm(BaseModel):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         if not any(c.isupper() for c in v):
-            raise ValueError(
-                "Password must contain at least one uppercase letter"
-            )
+            raise ValueError("Password must contain at least one uppercase letter")
         if not any(c.islower() for c in v):
-            raise ValueError(
-                "Password must contain at least one lowercase letter"
-            )
+            raise ValueError("Password must contain at least one lowercase letter")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit")
         return v

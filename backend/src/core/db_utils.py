@@ -53,9 +53,7 @@ async def check_database_health() -> Dict[str, Any]:
                 """
                     )
                 )
-                health_info["tables"] = [
-                    row[0] for row in tables_result.fetchall()
-                ]
+                health_info["tables"] = [row[0] for row in tables_result.fetchall()]
             except SQLAlchemyError as e:
                 logger.warning("Could not list tables: %s", e)
 
@@ -240,7 +238,6 @@ async def reset_database():
     logger.warning("⚠️ Resetting database - all data will be lost!")
 
     try:
-
         async with engine.begin() as conn:
             # Drop all tables
             await conn.run_sync(Base.metadata.drop_all)

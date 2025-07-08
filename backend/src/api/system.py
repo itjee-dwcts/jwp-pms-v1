@@ -41,9 +41,7 @@ async def system_info():
                 "database_configured": bool(settings.DATABASE_URL),
                 "cors_enabled": bool(settings.BACKEND_CORS_ORIGINS),
                 "upload_path": settings.UPLOAD_PATH,
-                "max_file_size": (
-                    f"{settings.MAX_FILE_SIZE / 1024 / 1024:.1f} MB"
-                ),
+                "max_file_size": (f"{settings.MAX_FILE_SIZE / 1024 / 1024:.1f} MB"),
             },
             "features": {
                 "user_management": True,
@@ -113,9 +111,7 @@ async def list_endpoints():
             "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
             "redoc": "/redoc" if settings.DEBUG else "Disabled",
             "openapi_spec": (
-                f"{settings.API_V1_STR}/openapi.json"
-                if settings.DEBUG
-                else "Disabled"
+                f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else "Disabled"
             ),
         },
         "health": {

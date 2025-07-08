@@ -58,9 +58,7 @@ async def register(
         )
 
         if existing_user:
-            raise RegistrationError(
-                "User with this email or username already exists"
-            )
+            raise RegistrationError("User with this email or username already exists")
 
         # Create new user
         hashed_password = get_password_hash(user_data.password)

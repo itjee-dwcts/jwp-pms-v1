@@ -37,9 +37,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     # Unique identifier and timestamps
-    id = Column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Task ID"
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Task ID")
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -105,17 +103,11 @@ class Task(Base):
     )
 
     # Time Tracking
-    estimated_hours = Column(
-        Integer, nullable=True, doc="Estimated hours to complete"
-    )
-    actual_hours = Column(
-        Integer, default=0, nullable=False, doc="Actual hours spent"
-    )
+    estimated_hours = Column(Integer, nullable=True, doc="Estimated hours to complete")
+    actual_hours = Column(Integer, default=0, nullable=False, doc="Actual hours spent")
 
     # Timeline
-    start_date = Column(
-        DateTime(timezone=True), nullable=True, doc="Task start date"
-    )
+    start_date = Column(DateTime(timezone=True), nullable=True, doc="Task start date")
     due_date = Column(
         DateTime(timezone=True), nullable=True, index=True, doc="Task due date"
     )
@@ -182,9 +174,7 @@ class Task(Base):
         "TaskTimeLog", back_populates="task", cascade="all, delete-orphan"
     )
 
-    tags = relationship(
-        "TaskTag", back_populates="task", cascade="all, delete-orphan"
-    )
+    tags = relationship("TaskTag", back_populates="task", cascade="all, delete-orphan")
 
     events = relationship("Event", back_populates="task")
 
@@ -193,30 +183,19 @@ class Task(Base):
         CheckConstraint(
             "estimated_hours >= 0", name="ck_task_estimated_hours_positive"
         ),
-        CheckConstraint(
-            "actual_hours >= 0", name="ck_task_actual_hours_positive"
-        ),
-        CheckConstraint(
-            "story_points >= 0", name="ck_task_story_points_positive"
-        ),
+        CheckConstraint("actual_hours >= 0", name="ck_task_actual_hours_positive"),
+        CheckConstraint("story_points >= 0", name="ck_task_story_points_positive"),
         CheckConstraint("start_date <= due_date", name="ck_task_date_order"),
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Task(id={self.id}, title='{self.title}', "
-            f"status='{self.status}')>"
-        )
+        return f"<Task(id={self.id}, title='{self.title}', status='{self.status}')>"
 
     def assign_to(self, user: "User", assigned_by: "User"):
         """Assign task to a user"""
         # Check if already assigned
         existing = next(
-            (
-                a
-                for a in self.assignments
-                if a.user_id == user.id and a.is_active
-            ),
+            (a for a in self.assignments if a.user_id == user.id and a.is_active),
             None,
         )
         if existing:
@@ -287,9 +266,7 @@ class TaskAssignment(Base):
     )
 
     # Task and User Association
-    task_id = Column(
-        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
-    )
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
     user_id = Column(
         UUID, ForeignKey("users.id"), nullable=False, doc="Assigned user ID"
     )
@@ -310,15 +287,11 @@ class TaskAssignment(Base):
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint(
-            "task_id", "user_id", name="uq_task_assignments_task_user"
-        ),
+        UniqueConstraint("task_id", "user_id", name="uq_task_assignments_task_user"),
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<TaskAssignment(task_id={self.task_id}, user_id={self.user_id})>"
-        )
+        return f"<TaskAssignment(task_id={self.task_id}, user_id={self.user_id})>"
 
 
 class TaskComment(Base):
@@ -359,9 +332,7 @@ class TaskComment(Base):
     )
 
     # Task and User Association
-    task_id = Column(
-        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
-    )
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
     author_id = Column(
         UUID,
         ForeignKey("users.id"),
@@ -445,9 +416,7 @@ class TaskAttachment(Base):
     )
 
     # Task and User Association
-    task_id = Column(
-        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
-    )
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
     file_name = Column(String(255), nullable=False, doc="Original filename")
     file_path = Column(String(500), nullable=False, doc="File storage path")
     file_size = Column(Integer, nullable=False, doc="File size in bytes")
@@ -504,9 +473,7 @@ class TaskTimeLog(Base):
     )
 
     # Task and User Association
-    task_id = Column(
-        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
-    )
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
     user_id = Column(
         UUID,
         ForeignKey("users.id"),
@@ -535,8 +502,7 @@ class TaskTimeLog(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TaskTimeLog(id={self.id}, task_id={self.task_id}, "
-            f"hours={self.hours})>"
+            f"<TaskTimeLog(id={self.id}, task_id={self.task_id}, hours={self.hours})>"
         )
 
 
@@ -548,9 +514,7 @@ class Tag(Base):
     __tablename__ = "tags"
 
     # Unique identifier and timestamps
-    id = Column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Tag ID"
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Tag ID")
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -575,12 +539,8 @@ class Tag(Base):
     )
 
     # Basic Information
-    name = Column(
-        String(50), unique=True, nullable=False, index=True, doc="Tag name"
-    )
-    color = Column(
-        String(7), default="#3B82F6", nullable=False, doc="Tag color (hex)"
-    )
+    name = Column(String(50), unique=True, nullable=False, index=True, doc="Tag name")
+    color = Column(String(7), default="#3B82F6", nullable=False, doc="Tag color (hex)")
     description = Column(Text, nullable=True, doc="Tag description")
 
     # Relationships
@@ -632,9 +592,7 @@ class TaskTag(Base):
     )
 
     # Task and Tag Association
-    task_id = Column(
-        UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID"
-    )
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
     tag_id = Column(UUID, ForeignKey("tags.id"), nullable=False, doc="Tag ID")
 
     # Relationships

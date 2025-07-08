@@ -28,9 +28,7 @@ router = APIRouter()
 @router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
     page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(
-        50, ge=1, le=100, description="Number of records to return"
-    ),
+    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
     project_id: Optional[int] = Query(None, description="Filter by project"),
     assignee_id: Optional[int] = Query(None, description="Filter by assignee"),
     task_status: Optional[str] = Query(None, description="Filter by status"),
@@ -80,9 +78,7 @@ async def get_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.check_task_access(
-            task_id, int(str(current_user.id))
-        )
+        task = await task_service.check_task_access(task_id, int(str(current_user.id)))
 
         if not task:
             raise HTTPException(
@@ -101,9 +97,7 @@ async def get_task(
         ) from e
 
 
-@router.post(
-    "/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
     task_data: TaskCreateRequest,
     current_user: User = Depends(get_current_active_user),
@@ -114,9 +108,7 @@ async def create_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.create_task(
-            task_data, int(str(current_user.id))
-        )
+        task = await task_service.create_task(task_data, int(str(current_user.id)))
 
         logger.info("Task created by %s: %s", current_user.name, task.title)
 
@@ -178,9 +170,7 @@ async def delete_task(
     """
     try:
         task_service = TaskService(db)
-        success = await task_service.delete_task(
-            task_id, int(str(current_user.id))
-        )
+        success = await task_service.delete_task(task_id, int(str(current_user.id)))
 
         if not success:
             raise HTTPException(
@@ -217,9 +207,7 @@ async def list_task_comments(
             task_id, int(str(current_user.id))
         )
 
-        return [
-            TaskCommentResponse.model_validate(comment) for comment in comments
-        ]
+        return [TaskCommentResponse.model_validate(comment) for comment in comments]
 
     except Exception as e:
         logger.error("Error listing task comments: %s", e)

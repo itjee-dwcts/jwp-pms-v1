@@ -34,9 +34,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     # 관계 정의
     projects = relationship("Project", back_populates="owner")
@@ -52,9 +50,7 @@ class Project(Base):
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
     owner_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     # 관계 정의
     owner = relationship("User", back_populates="projects")
@@ -72,9 +68,7 @@ class Task(Base):
     project_id = Column(Integer, ForeignKey("projects.id"))
     assignee_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String(20), default="TODO")
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     # 관계 정의
     project = relationship("Project", back_populates="tasks")
@@ -238,12 +232,8 @@ class FuncCountTests:
         from sqlalchemy import case
 
         query = select(
-            func.sum(case((Task.status == "TODO", 1), else_=0)).label(
-                "todo_count"
-            ),
-            func.sum(case((Task.status == "DONE", 1), else_=0)).label(
-                "done_count"
-            ),
+            func.sum(case((Task.status == "TODO", 1), else_=0)).label("todo_count"),
+            func.sum(case((Task.status == "DONE", 1), else_=0)).label("done_count"),
         )
 
         result = await self.session.execute(query)
@@ -266,9 +256,7 @@ class FuncCountTests:
 
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
-        query = select(func.count(Task.id)).where(
-            Task.created_at >= thirty_days_ago
-        )
+        query = select(func.count(Task.id)).where(Task.created_at >= thirty_days_ago)
         result = await self.session.execute(query)
         count = result.scalar()
 
@@ -306,18 +294,14 @@ class TestDataSeeder:
                 description="회사 웹사이트 개발",
                 owner_id=1,
             ),
-            Project(
-                name="모바일 앱", description="모바일 앱 개발", owner_id=1
-            ),
+            Project(name="모바일 앱", description="모바일 앱 개발", owner_id=1),
             Project(
                 name="데이터 분석",
                 description="데이터 분석 프로젝트",
                 owner_id=2,
             ),
             Project(name="AI 챗봇", description="AI 챗봇 개발", owner_id=2),
-            Project(
-                name="보안 강화", description="시스템 보안 강화", owner_id=3
-            ),
+            Project(name="보안 강화", description="시스템 보안 강화", owner_id=3),
         ]
 
         for project in projects:
@@ -465,9 +449,7 @@ class CountQueryBuilder:
         return query
 
     @staticmethod
-    def build_group_count_query(
-        model, group_by_columns, filters=None, having=None
-    ):
+    def build_group_count_query(model, group_by_columns, filters=None, having=None):
         """그룹별 카운트 쿼리 빌드"""
         query = select(*group_by_columns, func.count(model.id))
 

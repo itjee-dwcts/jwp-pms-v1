@@ -43,15 +43,11 @@ async def get_current_user(
             raise ValueError("Token data is missing 'sub' claim")
 
         # Get user from database
-        result = await db.execute(
-            select(User).where(User.id == int(token_data.sub))
-        )
+        result = await db.execute(select(User).where(User.id == int(token_data.sub)))
         user = result.scalar_one_or_none()
 
         if not user:
-            logger.warning(
-                "User not found for token subject: %s", token_data.sub
-            )
+            logger.warning("User not found for token subject: %s", token_data.sub)
             return None
 
         user_is_active = getattr(user, "is_active", False)

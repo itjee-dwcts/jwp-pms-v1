@@ -4,7 +4,7 @@ Dashboard Service
 Business logic for dashboard analytics and summary.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, cast
 
 from core.constants import TaskStatus
@@ -36,7 +36,7 @@ class DashboardService:
             "tasks": task_stats,
             "recent_activity": recent_activity,
             "upcoming_events": upcoming_events,
-            "last_updated": datetime.utcnow().isoformat(),
+            "last_updated": datetime.now(timezone.utc).isoformat(),
         }
 
     async def get_project_stats(self, user_id: int) -> Dict[str, Any]:
@@ -60,9 +60,7 @@ class DashboardService:
             }
 
         # Total projects
-        total_query = select(count(Project.id)).where(
-            Project.id.in_(project_ids)
-        )
+        total_query = select(count(Project.id)).where(Project.id.in_(project_ids))
         total_result = await self.db.execute(total_query)
         total_projects = total_result.scalar()
 
@@ -73,9 +71,7 @@ class DashboardService:
             .group_by(Project.status)
         )
         status_result = await self.db.execute(status_query)
-        by_status = {
-            status: count for status, count in status_result.fetchall()
-        }
+        by_status = {status: count for status, count in status_result.fetchall()}
 
         # Projects by priority
         priority_query = (
@@ -89,9 +85,7 @@ class DashboardService:
         }
 
         # Owned projects
-        owned_query = select(count(Project.id)).where(
-            Project.creator_id == user_id
-        )
+        owned_query = select(count(Project.id)).where(Project.creator_id == user_id)
         owned_result = await self.db.execute(owned_query)
         owned_projects = owned_result.scalar()
 
@@ -125,9 +119,7 @@ class DashboardService:
             }
 
         # Total tasks in accessible projects
-        total_query = select(count(Task.id)).where(
-            Task.project_id.in_(project_ids)
-        )
+        total_query = select(count(Task.id)).where(Task.project_id.in_(project_ids))
         total_result = await self.db.execute(total_query)
         total_tasks = total_result.scalar()
 
@@ -169,9 +161,7 @@ class DashboardService:
             .group_by(Task.status)
         )
         status_result = await self.db.execute(status_query)
-        by_status = {
-            status: count for status, count in status_result.fetchall()
-        }
+        by_status = {status: count for status, count in status_result.fetchall()}
 
         # Tasks by priority (for assigned tasks)
         priority_query = (

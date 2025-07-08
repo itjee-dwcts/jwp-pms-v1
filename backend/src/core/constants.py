@@ -571,15 +571,9 @@ class RecurrenceType:
         descriptions = {
             cls.NONE: "One-time event",
             cls.DAILY: f"Every {interval} day(s)" if interval > 1 else "Daily",
-            cls.WEEKLY: (
-                f"Every {interval} week(s)" if interval > 1 else "Weekly"
-            ),
-            cls.MONTHLY: (
-                f"Every {interval} month(s)" if interval > 1 else "Monthly"
-            ),
-            cls.YEARLY: (
-                f"Every {interval} year(s)" if interval > 1 else "Yearly"
-            ),
+            cls.WEEKLY: (f"Every {interval} week(s)" if interval > 1 else "Weekly"),
+            cls.MONTHLY: (f"Every {interval} month(s)" if interval > 1 else "Monthly"),
+            cls.YEARLY: (f"Every {interval} year(s)" if interval > 1 else "Yearly"),
             cls.WEEKDAYS: "Every weekday (Mon-Fri)",
             cls.CUSTOM: "Custom recurrence pattern",
         }

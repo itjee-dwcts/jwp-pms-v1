@@ -20,9 +20,7 @@ import aiofiles
 from fastapi import UploadFile
 
 
-def generate_random_string(
-    length: int = 32, use_alphanumeric: bool = True
-) -> str:
+def generate_random_string(length: int = 32, use_alphanumeric: bool = True) -> str:
     """Generate a random string of specified length"""
     if use_alphanumeric:
         characters = string.ascii_letters + string.digits
@@ -147,9 +145,7 @@ def sanitize_filename(filename: str) -> str:
 
     # Limit length
     if len(filename) > 255:
-        name, ext = (
-            filename.rsplit(".", 1) if "." in filename else (filename, "")
-        )
+        name, ext = filename.rsplit(".", 1) if "." in filename else (filename, "")
         max_name_length = 255 - len(ext) - 1 if ext else 255
         filename = name[:max_name_length] + ("." + ext if ext else "")
 
@@ -241,9 +237,7 @@ def calculate_pagination(
     total_items: int, page_no: int, page_size: int
 ) -> Dict[str, int]:
     """Calculate pagination metadata"""
-    total_pages = (
-        (total_items + page_size - 1) // page_size if total_items > 0 else 0
-    )
+    total_pages = (total_items + page_size - 1) // page_size if total_items > 0 else 0
 
     return {
         "total_items": total_items,
@@ -306,23 +300,17 @@ def parse_filter_params(filter_param: Optional[str]) -> List[Dict[str, Any]]:
             elif "." in value and value.replace(".", "").isdigit():
                 value = float(value)
 
-            filters.append(
-                {"field": field, "operator": operator, "value": value}
-            )
+            filters.append({"field": field, "operator": operator, "value": value})
 
     return filters
 
 
-def format_datetime(
-    dt: datetime, format_str: str = "%Y-%m-%d %H:%M:%S"
-) -> str:
+def format_datetime(dt: datetime, format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
     """Format datetime to string"""
     return dt.strftime(format_str)
 
 
-def parse_datetime(
-    dt_str: str, format_str: str = "%Y-%m-%d %H:%M:%S"
-) -> datetime:
+def parse_datetime(dt_str: str, format_str: str = "%Y-%m-%d %H:%M:%S") -> datetime:
     """Parse datetime string to datetime object"""
     return datetime.strptime(dt_str, format_str)
 
@@ -372,9 +360,7 @@ def get_age_from_date(birth_date: Union[datetime, date]) -> int:
     return age
 
 
-def mask_sensitive_data(
-    data: str, mask_char: str = "*", visible_chars: int = 4
-) -> str:
+def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4) -> str:
     """Mask sensitive data like emails, phone numbers"""
     if len(data) <= visible_chars:
         return mask_char * len(data)
@@ -391,9 +377,7 @@ def mask_sensitive_data(
     )
 
 
-def truncate_text(
-    text: str, max_length: int = 100, suffix: str = "..."
-) -> str:
+def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
     """Truncate text to specified length"""
     if len(text) <= max_length:
         return text
@@ -438,18 +422,12 @@ def url_decode(text: str) -> str:
     return unquote(text)
 
 
-def deep_merge_dicts(
-    dict1: Dict[str, Any], dict2: Dict[str, Any]
-) -> Dict[str, Any]:
+def deep_merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
     """Deep merge two dictionaries"""
     result = dict1.copy()
 
     for key, value in dict2.items():
-        if (
-            key in result
-            and isinstance(result[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = deep_merge_dicts(result[key], value)
         else:
             result[key] = value
@@ -485,9 +463,7 @@ def remove_duplicates(lst: List[Any], key: Optional[str] = None) -> List[Any]:
         seen = set()
         result = []
         for item in lst:
-            item_key = (
-                getattr(item, key) if hasattr(item, key) else item.get(key)
-            )
+            item_key = getattr(item, key) if hasattr(item, key) else item.get(key)
             if item_key not in seen:
                 seen.add(item_key)
                 result.append(item)
@@ -523,9 +499,7 @@ def generate_pagination_info(
     total_items: int, page_no: int, page_size: int
 ) -> Dict[str, Any]:
     """Generate pagination information"""
-    total_pages = (
-        total_items + page_size - 1
-    ) // page_size  # Ceiling division
+    total_pages = (total_items + page_size - 1) // page_size  # Ceiling division
 
     return {
         "total_items": total_items,
@@ -539,9 +513,7 @@ def generate_pagination_info(
     }
 
 
-def build_url(
-    base_url: str, path: str, params: Optional[Dict[str, Any]] = None
-) -> str:
+def build_url(base_url: str, path: str, params: Optional[Dict[str, Any]] = None) -> str:
     """Build URL with path and query parameters"""
 
     url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
@@ -653,9 +625,7 @@ class RateLimitTracker:
 
         # Remove old requests outside the window
         self.requests[key] = [
-            req_time
-            for req_time in self.requests[key]
-            if now - req_time < window
+            req_time for req_time in self.requests[key] if now - req_time < window
         ]
 
         # Check if limit exceeded
@@ -676,9 +646,7 @@ class RateLimitTracker:
 
         # Count requests in current window
         current_requests = [
-            req_time
-            for req_time in self.requests[key]
-            if now - req_time < window
+            req_time for req_time in self.requests[key] if now - req_time < window
         ]
 
         return max(0, limit - len(current_requests))

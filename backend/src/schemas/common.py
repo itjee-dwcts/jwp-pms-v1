@@ -16,13 +16,9 @@ class PaginationParams(BaseModel):
     """Pagination parameters schema"""
 
     page_no: int = Field(default=1, ge=1, description="Page number")
-    page_size: int = Field(
-        default=20, ge=1, le=100, description="Items per page"
-    )
+    page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
     sort_by: Optional[str] = Field(None, description="Sort field")
-    sort_order: str = Field(
-        default="asc", description="Sort order: asc or desc"
-    )
+    sort_order: str = Field(default="asc", description="Sort order: asc or desc")
 
     @field_validator("sort_order")
     @classmethod
@@ -52,12 +48,8 @@ class SearchParams(BaseModel):
     """Search parameters schema"""
 
     query: Optional[str] = Field(None, description="Search query")
-    fields: Optional[List[str]] = Field(
-        None, description="Fields to search in"
-    )
-    filters: Optional[Dict[str, Any]] = Field(
-        None, description="Additional filters"
-    )
+    fields: Optional[List[str]] = Field(None, description="Fields to search in")
+    filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")
 
 
 class FilterParams(BaseModel):
@@ -84,9 +76,7 @@ class FilterParams(BaseModel):
             "ilike",
         ]
         if v not in valid_operators:
-            raise ValueError(
-                f'Operator must be one of: {", ".join(valid_operators)}'
-            )
+            raise ValueError(f"Operator must be one of: {', '.join(valid_operators)}")
         return v
 
 
@@ -136,12 +126,8 @@ class ErrorResponse(BaseModel):
 
     success: bool = False
     error: str = Field(..., description="Error message")
-    details: Optional[Dict[str, Any]] = Field(
-        None, description="Error details"
-    )
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    details: Optional[Dict[str, Any]] = Field(None, description="Error details")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ValidationErrorResponse(BaseModel):
@@ -149,12 +135,8 @@ class ValidationErrorResponse(BaseModel):
 
     success: bool = False
     error: str = "Validation error"
-    details: List[Dict[str, Any]] = Field(
-        ..., description="Validation error details"
-    )
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    details: List[Dict[str, Any]] = Field(..., description="Validation error details")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class FileUploadResponse(BaseModel):
@@ -190,23 +172,17 @@ class BulkOperationResponse(BaseModel):
     total_count: int = Field(..., description="Total items processed")
     success_count: int = Field(..., description="Successfully processed items")
     failure_count: int = Field(..., description="Failed items")
-    errors: List[Dict[str, Any]] = Field(
-        default=[], description="Error details"
-    )
+    errors: List[Dict[str, Any]] = Field(default=[], description="Error details")
 
 
 class HealthCheckResponse(BaseModel):
     """Health check response schema"""
 
     status: str = Field(..., description="Health status")
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     version: str = Field(..., description="Application version")
     environment: str = Field(..., description="Environment name")
-    services: Dict[str, str] = Field(
-        default={}, description="Service health status"
-    )
+    services: Dict[str, str] = Field(default={}, description="Service health status")
     details: Optional[Dict[str, Any]] = Field(
         None, description="Additional health details"
     )
@@ -215,29 +191,19 @@ class HealthCheckResponse(BaseModel):
 class SystemInfoResponse(BaseModel):
     """System information response schema"""
 
-    application: Dict[str, Any] = Field(
-        ..., description="Application information"
-    )
+    application: Dict[str, Any] = Field(..., description="Application information")
     system: Dict[str, Any] = Field(..., description="System information")
-    configuration: Dict[str, Any] = Field(
-        ..., description="Configuration status"
-    )
+    configuration: Dict[str, Any] = Field(..., description="Configuration status")
     features: Dict[str, bool] = Field(..., description="Feature availability")
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class StatsResponse(BaseModel):
     """Statistics response schema"""
 
     total_count: int = Field(..., description="Total items count")
-    counts_by_status: Dict[str, int] = Field(
-        default={}, description="Counts by status"
-    )
-    counts_by_type: Dict[str, int] = Field(
-        default={}, description="Counts by type"
-    )
+    counts_by_status: Dict[str, int] = Field(default={}, description="Counts by status")
+    counts_by_type: Dict[str, int] = Field(default={}, description="Counts by type")
     recent_activity: List[Dict[str, Any]] = Field(
         default=[], description="Recent activity"
     )
@@ -248,9 +214,7 @@ class ExportRequest(BaseModel):
     """Export request schema"""
 
     format: str = Field(..., description="Export format: csv, xlsx, json, pdf")
-    filters: Optional[Dict[str, Any]] = Field(
-        None, description="Export filters"
-    )
+    filters: Optional[Dict[str, Any]] = Field(None, description="Export filters")
     fields: Optional[List[str]] = Field(None, description="Fields to include")
 
     @field_validator("format")
@@ -260,9 +224,7 @@ class ExportRequest(BaseModel):
         # Ensure format is one of the supported types
         valid_formats = ["csv", "xlsx", "json", "pdf"]
         if v not in valid_formats:
-            raise ValueError(
-                f'Format must be one of: {", ".join(valid_formats)}'
-            )
+            raise ValueError(f"Format must be one of: {', '.join(valid_formats)}")
         return v
 
 
@@ -271,15 +233,9 @@ class ExportResponse(BaseModel):
 
     export_id: str = Field(..., description="Export job ID")
     status: str = Field(..., description="Export status")
-    download_url: Optional[str] = Field(
-        None, description="Download URL when ready"
-    )
-    expires_at: Optional[datetime] = Field(
-        None, description="Download expiration"
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    download_url: Optional[str] = Field(None, description="Download URL when ready")
+    expires_at: Optional[datetime] = Field(None, description="Download expiration")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ImportRequest(BaseModel):
@@ -287,12 +243,8 @@ class ImportRequest(BaseModel):
 
     file_path: str = Field(..., description="Uploaded file path")
     format: str = Field(..., description="Import format: csv, xlsx, json")
-    mapping: Optional[Dict[str, str]] = Field(
-        None, description="Field mapping"
-    )
-    options: Optional[Dict[str, Any]] = Field(
-        None, description="Import options"
-    )
+    mapping: Optional[Dict[str, str]] = Field(None, description="Field mapping")
+    options: Optional[Dict[str, Any]] = Field(None, description="Import options")
 
     @field_validator("format", mode="before")
     @classmethod
@@ -301,9 +253,7 @@ class ImportRequest(BaseModel):
         # Ensure format is one of the supported types
         valid_formats = ["csv", "xlsx", "json"]
         if v not in valid_formats:
-            raise ValueError(
-                f'Format must be one of: {", ".join(valid_formats)}'
-            )
+            raise ValueError(f"Format must be one of: {', '.join(valid_formats)}")
         return v
 
 
@@ -312,23 +262,15 @@ class ImportResponse(BaseModel):
 
     import_id: str = Field(..., description="Import job ID")
     status: str = Field(..., description="Import status")
-    total_records: Optional[int] = Field(
-        None, description="Total records to import"
-    )
+    total_records: Optional[int] = Field(None, description="Total records to import")
     processed_records: int = Field(default=0, description="Processed records")
     successful_records: int = Field(
         default=0, description="Successfully imported records"
     )
     failed_records: int = Field(default=0, description="Failed records")
-    errors: List[Dict[str, Any]] = Field(
-        default=[], description="Import errors"
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    completed_at: Optional[datetime] = Field(
-        None, description="Completion timestamp"
-    )
+    errors: List[Dict[str, Any]] = Field(default=[], description="Import errors")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
 
 
 class NotificationPreferences(BaseModel):
@@ -340,21 +282,13 @@ class NotificationPreferences(BaseModel):
     push_notifications: bool = Field(
         default=True, description="Enable push notifications"
     )
-    task_assigned: bool = Field(
-        default=True, description="Notify when task assigned"
-    )
-    task_completed: bool = Field(
-        default=True, description="Notify when task completed"
-    )
-    project_updates: bool = Field(
-        default=True, description="Notify on project updates"
-    )
+    task_assigned: bool = Field(default=True, description="Notify when task assigned")
+    task_completed: bool = Field(default=True, description="Notify when task completed")
+    project_updates: bool = Field(default=True, description="Notify on project updates")
     deadline_reminders: bool = Field(
         default=True, description="Send deadline reminders"
     )
-    event_reminders: bool = Field(
-        default=True, description="Send event reminders"
-    )
+    event_reminders: bool = Field(default=True, description="Send event reminders")
 
 
 class ActivityLogEntry(BaseModel):
@@ -365,9 +299,7 @@ class ActivityLogEntry(BaseModel):
     action: str = Field(..., description="Action performed")
     resource_type: Optional[str] = Field(None, description="Resource type")
     resource_id: Optional[int] = Field(None, description="Resource ID")
-    details: Optional[Dict[str, Any]] = Field(
-        None, description="Action details"
-    )
+    details: Optional[Dict[str, Any]] = Field(None, description="Action details")
     ip_address: Optional[str] = Field(None, description="IP address")
     user_agent: Optional[str] = Field(None, description="User agent")
     timestamp: datetime = Field(..., description="Action timestamp")
@@ -414,16 +346,10 @@ class Coordinates(BaseModel):
 class Address(BaseModel):
     """Address schema"""
 
-    street: Optional[str] = Field(
-        None, max_length=200, description="Street address"
-    )
+    street: Optional[str] = Field(None, max_length=200, description="Street address")
     city: Optional[str] = Field(None, max_length=100, description="City")
-    state: Optional[str] = Field(
-        None, max_length=100, description="State/Province"
-    )
-    postal_code: Optional[str] = Field(
-        None, max_length=20, description="Postal code"
-    )
+    state: Optional[str] = Field(None, max_length=100, description="State/Province")
+    postal_code: Optional[str] = Field(None, max_length=20, description="Postal code")
     country: Optional[str] = Field(None, max_length=100, description="Country")
     coordinates: Optional[Coordinates] = Field(
         None, description="Geographic coordinates"
@@ -434,12 +360,8 @@ class ContactInfo(BaseModel):
     """Contact information schema"""
 
     email: Optional[str] = Field(None, description="Email address")
-    phone: Optional[str] = Field(
-        None, max_length=20, description="Phone number"
-    )
-    website: Optional[str] = Field(
-        None, max_length=200, description="Website URL"
-    )
+    phone: Optional[str] = Field(None, max_length=20, description="Phone number")
+    website: Optional[str] = Field(None, max_length=200, description="Website URL")
     address: Optional[Address] = Field(None, description="Physical address")
 
 
@@ -448,9 +370,7 @@ class Metadata(BaseModel):
 
     created_at: datetime = Field(..., description="Creation timestamp")
     created_by: Optional[int] = Field(None, description="Creator user ID")
-    updated_at: Optional[datetime] = Field(
-        ..., description="Last update timestamp"
-    )
+    updated_at: Optional[datetime] = Field(..., description="Last update timestamp")
     updated_by: Optional[int] = Field(None, description="Last updater user ID")
     version: int = Field(default=1, description="Version number")
     tags: List[str] = Field(default=[], description="Associated tags")

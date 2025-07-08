@@ -198,9 +198,7 @@ class UserService:
         Returns:
             User object if found, None otherwise
         """
-        query = select(User).where(
-            or_(User.email == email, User.name == username)
-        )
+        query = select(User).where(or_(User.email == email, User.name == username))
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -259,24 +257,18 @@ class UserService:
     ) -> bool:
         """Change user password"""
         try:
-            result = await self.db.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await self.db.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
 
             if not user:
                 raise NotFoundError(f"User with ID {user_id} not found")
 
             # Verify current password
-            if not verify_password(
-                password_data.current_password, user.password_hash
-            ):
+            if not verify_password(password_data.current_password, user.password_hash):
                 raise AuthenticationError("Current password is incorrect")
 
             # Update password
-            setattr(
-                user, "password", get_password_hash(password_data.new_password)
-            )
+            setattr(user, "password", get_password_hash(password_data.new_password))
             setattr(user, "password_changed_at", datetime.utcnow())
             setattr(user, "updated_at", datetime.utcnow())
 
@@ -296,9 +288,7 @@ class UserService:
 
         except Exception as e:
             await self.db.rollback()
-            logger.error(
-                "Failed to change password for user %d: %s", user_id, e
-            )
+            logger.error("Failed to change password for user %d: %s", user_id, e)
             raise
 
     async def update_user_password(
@@ -425,9 +415,7 @@ class UserService:
             for soft delete functionality.
         """
         try:
-            result = await self.db.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await self.db.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
 
             if not user:
@@ -508,9 +496,7 @@ class UserService:
             # Apply pagination
             offset = (page_no - 1) * page_size
             query = (
-                query.offset(offset)
-                .limit(page_size)
-                .order_by(desc(User.created_at))
+                query.offset(offset).limit(page_size).order_by(desc(User.created_at))
             )
 
             # Execute query
@@ -623,9 +609,7 @@ class UserService:
                 total_users=total_users if total_users is not None else 0,
                 active_users=active_users if active_users is not None else 0,
                 new_users_this_month=(
-                    new_users_this_month
-                    if new_users_this_month is not None
-                    else 0
+                    new_users_this_month if new_users_this_month is not None else 0
                 ),
                 users_by_role=users_by_role,
                 users_by_status=users_by_status,
@@ -665,9 +649,7 @@ class UserService:
             return False
 
         except Exception as e:
-            logger.error(
-                "Failed to update last login for user %d: %s", user_id, e
-            )
+            logger.error("Failed to update last login for user %d: %s", user_id, e)
             raise
 
     async def verify_user_credentials(

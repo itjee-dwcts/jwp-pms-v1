@@ -149,9 +149,7 @@ async def get_database_info() -> dict:
             version = version_result.scalar()
 
             # Get database name
-            db_name_result = await conn.execute(
-                text("SELECT current_database()")
-            )
+            db_name_result = await conn.execute(text("SELECT current_database()"))
             db_name = db_name_result.scalar()
 
             # Get current user
@@ -236,7 +234,6 @@ def import_all_models():
     Import all models to ensure they are registered with SQLAlchemy
     """
     try:
-
         logger.debug("All models imported successfully")
     except ImportError as e:
         logger.warning("Some models could not be imported: %s", e)
@@ -267,9 +264,7 @@ async def initialize_database():
 
     except OperationalError as e:
         # 데이터베이스 연결 문제
-        logger.error(
-            "❌ Database connection error during initialization: %s", e
-        )
+        logger.error("❌ Database connection error during initialization: %s", e)
         return False
     except IntegrityError as e:
         # 제약 조건 위반 (초기 데이터 삽입 시)
@@ -307,19 +302,14 @@ async def run_initialization_scripts():
     except IntegrityError as e:
         # 중복 데이터 삽입 시도 (이미 존재하는 관리자 등)
         logger.warning(
-            (
-                "⚠️ Integrity constraint during initialization "
-                "(may be expected): %s"
-            ),
+            ("⚠️ Integrity constraint during initialization (may be expected): %s"),
             e,
         )
         # 롤백하고 계속 진행
         await session.rollback()
     except OperationalError as e:
         # 데이터베이스 연결 문제
-        logger.error(
-            "❌ Connection error during initialization scripts: %s", e
-        )
+        logger.error("❌ Connection error during initialization scripts: %s", e)
         await session.rollback()
         raise
     except DatabaseError as e:
@@ -329,9 +319,7 @@ async def run_initialization_scripts():
         raise
     except SQLAlchemyError as e:
         # 기타 SQLAlchemy 오류
-        logger.error(
-            "❌ SQLAlchemy error during initialization scripts: %s", e
-        )
+        logger.error("❌ SQLAlchemy error during initialization scripts: %s", e)
         await session.rollback()
         raise
 
@@ -341,7 +329,6 @@ async def create_default_admin_user(session: AsyncSession):
     Create default admin user if it doesn't exist
     """
     try:
-
         # Check if admin user exists
         result = await session.execute(
             select(User).where(User.email == "jongho.woo@computer.co.kr")
@@ -367,9 +354,7 @@ async def create_default_admin_user(session: AsyncSession):
 
     except IntegrityError as e:
         # 동시 실행으로 인한 중복 생성 시도
-        logger.warning(
-            "⚠️ Admin user already exists (concurrent creation): %s", e
-        )
+        logger.warning("⚠️ Admin user already exists (concurrent creation): %s", e)
         raise  # 상위에서 처리하도록 전파
     except DataError as e:
         # 잘못된 데이터 형식
@@ -483,7 +468,7 @@ async def backup_database(backup_path: str | None = None):
         )
         return {
             "status": "error",
-            "error": ("pg_dump not found. " "Install PostgreSQL client tools"),
+            "error": ("pg_dump not found. Install PostgreSQL client tools"),
         }
 
     except (subprocess.SubprocessError, OSError) as e:
@@ -864,7 +849,6 @@ async def cleanup_old_sessions(days: int = 30) -> int:
     Clean up old user sessions
     """
     try:
-
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         async with AsyncSessionLocal() as session:
@@ -902,7 +886,6 @@ async def cleanup_old_logs(days: int = 90) -> int:
     Clean up old activity logs
     """
     try:
-
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 
         async with AsyncSessionLocal() as session:

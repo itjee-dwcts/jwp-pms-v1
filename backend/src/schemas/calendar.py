@@ -16,18 +16,14 @@ from schemas.user import UserPublic
 class CalendarBase(BaseModel):
     """Base calendar schema"""
 
-    name: str = Field(
-        ..., min_length=1, max_length=100, description="Calendar name"
-    )
+    name: str = Field(..., min_length=1, max_length=100, description="Calendar name")
     description: Optional[str] = Field(
         None, max_length=500, description="Calendar description"
     )
     color: str = Field(
         default="#3b82f6", max_length=7, description="Calendar color (hex)"
     )
-    is_public: bool = Field(
-        default=False, description="Whether the calendar is public"
-    )
+    is_public: bool = Field(default=False, description="Whether the calendar is public")
 
     @field_validator("color")
     @classmethod
@@ -89,9 +85,7 @@ class CalendarResponse(CalendarBase):
 class EventBase(BaseModel):
     """Base event schema"""
 
-    title: str = Field(
-        ..., min_length=1, max_length=200, description="Event title"
-    )
+    title: str = Field(..., min_length=1, max_length=200, description="Event title")
     description: Optional[str] = Field(
         None, max_length=2000, description="Event description"
     )
@@ -112,9 +106,7 @@ class EventBase(BaseModel):
             EventType.REMINDER,
         ]
         if v not in valid_types:
-            raise ValueError(
-                f'Event type must be one of: {", ".join(valid_types)}'
-            )
+            raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
         return v
 
     @field_validator("status")
@@ -130,9 +122,7 @@ class EventBase(BaseModel):
             EventStatus.POSTPONED,
         ]
         if v not in valid_statuses:
-            raise ValueError(
-                f'Status must be one of: {", ".join(valid_statuses)}'
-            )
+            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     class Config:
@@ -145,16 +135,10 @@ class EventCreateRequest(EventBase):
     """Schema for creating an event"""
 
     calendar_id: int = Field(..., description="Calendar ID")
-    start_datetime: datetime = Field(
-        ..., description="Event start date and time"
-    )
+    start_datetime: datetime = Field(..., description="Event start date and time")
     end_datetime: datetime = Field(..., description="Event end date and time")
-    is_all_day: bool = Field(
-        default=False, description="Whether the event is all day"
-    )
-    location: Optional[str] = Field(
-        None, max_length=200, description="Event location"
-    )
+    is_all_day: bool = Field(default=False, description="Whether the event is all day")
+    location: Optional[str] = Field(None, max_length=200, description="Event location")
     recurrence_type: str = Field(default="none", description="Recurrence type")
     recurrence_end_date: Optional[datetime] = Field(
         None, description="Recurrence end date"
@@ -185,7 +169,7 @@ class EventCreateRequest(EventBase):
         valid_types = ["none", "daily", "weekly", "monthly", "yearly"]
         if v not in valid_types:
             raise ValueError(
-                f'Recurrence type must be one of: {", ".join(valid_types)}'
+                f"Recurrence type must be one of: {', '.join(valid_types)}"
             )
         return v
 
@@ -225,9 +209,7 @@ class EventUpdateRequest(BaseModel):
                 EventType.REMINDER,
             ]
             if v not in valid_types:
-                raise ValueError(
-                    f'Event type must be one of: {", ".join(valid_types)}'
-                )
+                raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
         return v
 
     @field_validator("status")
@@ -244,9 +226,7 @@ class EventUpdateRequest(BaseModel):
                 EventStatus.POSTPONED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     @field_validator("recurrence_type")
@@ -264,7 +244,7 @@ class EventUpdateRequest(BaseModel):
             ]
             if v not in valid_types:
                 raise ValueError(
-                    f'Recurrence type must be one of: {", ".join(valid_types)}'
+                    f"Recurrence type must be one of: {', '.join(valid_types)}"
                 )
         return v
 
@@ -376,9 +356,7 @@ class EventSearchRequest(BaseModel):
                 EventType.REMINDER,
             ]
             if v not in valid_types:
-                raise ValueError(
-                    f'Event type must be one of: {", ".join(valid_types)}'
-                )
+                raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
         return v
 
     @field_validator("event_status")
@@ -394,9 +372,7 @@ class EventSearchRequest(BaseModel):
                 EventStatus.POSTPONED,
             ]
             if v not in valid_statuses:
-                raise ValueError(
-                    f'Status must be one of: {", ".join(valid_statuses)}'
-                )
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
     class Config:
@@ -429,9 +405,7 @@ class CalendarViewRequest(BaseModel):
             "year",
         ]
         if v not in valid_types:
-            raise ValueError(
-                f'View type must be one of: {", ".join(valid_types)}'
-            )
+            raise ValueError(f"View type must be one of: {', '.join(valid_types)}")
         return v
 
     @field_validator("end_date")
@@ -484,9 +458,7 @@ class EventDashboardResponse(BaseModel):
 class EventAttendeeRequest(BaseModel):
     """Schema for event attendee request"""
 
-    user_ids: List[int] = Field(
-        ..., description="List of user IDs to add as attendees"
-    )
+    user_ids: List[int] = Field(..., description="List of user IDs to add as attendees")
 
     class Config:
         """Configuration for EventAttendeeRequest"""
@@ -514,7 +486,7 @@ class EventAttendeeResponseUpdate(BaseModel):
         ]
         if v not in valid_statuses:
             raise ValueError(
-                f'Response status must be one of: {", ".join(valid_statuses)}'
+                f"Response status must be one of: {', '.join(valid_statuses)}"
             )
         return v
 

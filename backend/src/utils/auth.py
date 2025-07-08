@@ -131,13 +131,9 @@ def create_token(
         else:
             # Default expiration based on token type
             if token_type == TokenType.ACCESS:
-                expire = now + timedelta(
-                    minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-                )
+                expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             elif token_type == TokenType.REFRESH:
-                expire = now + timedelta(
-                    days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-                )
+                expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
             elif token_type == TokenType.PASSWORD_RESET:
                 expire = now + timedelta(hours=1)
             elif token_type == TokenType.EMAIL_VERIFICATION:
@@ -172,9 +168,7 @@ def create_refresh_token(
     return create_token(data, TokenType.REFRESH, expires_delta)
 
 
-def verify_token(
-    token: str, token_type: str = TokenType.ACCESS
-) -> Optional[TokenData]:
+def verify_token(token: str, token_type: str = TokenType.ACCESS) -> Optional[TokenData]:
     """Verify and decode JWT token"""
     try:
         payload = jwt.decode(
@@ -275,9 +269,7 @@ def create_tokens_for_user(user: User) -> Dict[str, Union[str, int]]:
 
         # Create tokens
         access_token = create_access_token(token_data)
-        refresh_token = create_refresh_token(
-            {"user_id": user.id, "role": role_value}
-        )
+        refresh_token = create_refresh_token({"user_id": user.id, "role": role_value})
 
         return {
             "access_token": access_token,
@@ -404,9 +396,7 @@ def generate_special_token(
         raise
 
 
-def verify_special_token(
-    token: str, token_type: str
-) -> Optional[Dict[str, Any]]:
+def verify_special_token(token: str, token_type: str) -> Optional[Dict[str, Any]]:
     """Verify special purpose tokens and return payload"""
     try:
         payload = jwt.decode(

@@ -23,12 +23,8 @@ router = APIRouter()
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
     page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(
-        50, ge=1, le=100, description="Number of records to return"
-    ),
-    search_text: Optional[str] = Query(
-        None, description="Search by name or email"
-    ),
+    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
+    search_text: Optional[str] = Query(None, description="Search by name or email"),
     user_role: Optional[str] = Query(None, description="Filter by role"),
     user_status: Optional[str] = Query(None, description="Filter by status"),
     current_user: User = Depends(get_current_active_user),
@@ -87,9 +83,7 @@ async def get_user(
         ) from e
 
 
-@router.post(
-    "/", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreateRequest,
     current_user: User = Depends(require_admin),
@@ -152,9 +146,7 @@ async def update_user(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        logger.info(
-            "User updated by admin %s: %s", current_user.name, user.name
-        )
+        logger.info("User updated by admin %s: %s", current_user.name, user.name)
 
         return UserResponse.model_validate(user)
 
@@ -180,9 +172,7 @@ async def delete_user(
     """
     try:
         user_service = UserService(db)
-        success = await user_service.delete_user(
-            user_id, int(str(current_user.id))
-        )
+        success = await user_service.delete_user(user_id, int(str(current_user.id)))
 
         if not success:
             raise HTTPException(

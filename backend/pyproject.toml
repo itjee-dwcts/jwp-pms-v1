@@ -74,9 +74,34 @@ line-length = 88
 profile = "black"
 line_length = 88
 
-[tool.flake8]
-ignore = ["E722"]
-max-line-length = 88
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+# 룰 선택 (flake8, pylint, isort 등의 룰 포함)
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+
+# 무시할 룰
+ignore = [
+    "E501",  # line too long (black이 처리)
+    "B008",  # function calls in argument defaults
+]
+
+# 포맷터 설정
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-source-first-line = false
+line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.13"

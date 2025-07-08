@@ -45,9 +45,7 @@ class SafeFieldUpdater:
         if new_value is None or not hasattr(self.target, field_name):
             return False
 
-        if not isinstance(new_value, int) or not (
-            min_val <= new_value <= max_val
-        ):
+        if not isinstance(new_value, int) or not (min_val <= new_value <= max_val):
             return False
 
         if getattr(self.target, field_name) != new_value:

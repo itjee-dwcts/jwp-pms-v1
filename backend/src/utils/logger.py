@@ -57,9 +57,7 @@ def setup_logging():
         "disable_existing_loggers": False,
         "formatters": {
             "detailed": {
-                "format": (
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-                ),
+                "format": ("%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "simple": {
@@ -218,9 +216,7 @@ class SecurityLogger:
             ip_address,
         )
 
-    def log_password_change(
-        self, username: str, ip_address: Optional[str] = None
-    ):
+    def log_password_change(self, username: str, ip_address: Optional[str] = None):
         """Log password change"""
         self.logger.info(
             "Password changed - Username: %s, IP: %s",
@@ -237,9 +233,7 @@ class SecurityLogger:
             action,
         )
 
-    def log_suspicious_activity(
-        self, description: str, username: Optional[str] = None
-    ):
+    def log_suspicious_activity(self, description: str, username: Optional[str] = None):
         """Log suspicious activity"""
         self.logger.error(
             "Suspicious activity - %s, Username: %s",
@@ -285,9 +279,7 @@ class AuditLogger:
 
     def log_system_event(self, event: str, details: Optional[dict] = None):
         """Log system events"""
-        self.logger.info(
-            "System event - %s, Details: %s", event, details or {}
-        )
+        self.logger.info("System event - %s, Details: %s", event, details or {})
 
 
 # Global logger instances
@@ -376,9 +368,7 @@ def configure_uvicorn_logging():
     # Add our handlers
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
     uvicorn_logger.addHandler(console_handler)
 
@@ -407,9 +397,7 @@ class SensitiveDataFilter(logging.Filter):
                     # Replace sensitive data with asterisks
 
                     pattern = rf"({field}['\"]?\s*[:=]\s*['\"]?)([^'\",\s]+)"
-                    message = re.sub(
-                        pattern, r"\1***", message, flags=re.IGNORECASE
-                    )
+                    message = re.sub(pattern, r"\1***", message, flags=re.IGNORECASE)
                     record.msg = message
         return True
 

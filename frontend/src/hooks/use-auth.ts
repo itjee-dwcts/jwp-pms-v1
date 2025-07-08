@@ -1,60 +1,203 @@
 import { useEffect } from 'react';
-import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authService } from '../services/auth-service';
-import type {
-  AuthActions,
-  AuthState,
-  ChangePasswordRequest,
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  ResetPasswordRequest,
-  UpdateProfileRequest,
-  User
-} from '../types/auth';
-import { tokenStorage } from '../utils/token-storage';
+import { User } from '../types/auth'; // 임시 타입 정의 위치
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, ResetPasswordRequest, ChangePasswordRequest, UpdateProfileRequest } from '../types/auth';
+import { authService } from '../services/auth-service'; // 실제 서비스는 authService로 변경 필요
 
-// Zustand store 타입 (AuthState + AuthActions 결합)
+// ============================================================================
+// 임시 토큰 스토리지 (tokenStorage 대체)
+// ============================================================================
+const tokenStorage = {
+  getAccessToken: (): string | null => {
+    return localStorage.getItem('access_token');
+  },
+  getRefreshToken: (): string | null => {
+    return localStorage.getItem('refresh_token');
+  },
+  setTokens: (accessToken: string, refreshToken: string): void => {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+  },
+  clearTokens: (): void => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  }
+};
+
+// ============================================================================
+// 임시 인증 서비스 (authService 대체)
+// ============================================================================
+const mockAuthService = {
+  // 로그인 (테스트용 mock 구현)
+  login: async (credentials: LoginRequest): Promise<LoginResponse> => {
+    console.log('🔑 Mock 로그인 시도:', credentials);
+    
+    // 간단한 시뮬레이션 지연
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // 테스트 계정 검증
+    if (credentials.username === 'test' || credentials.username === 'testuser') {
+      if (credentials.password.length >= 6) {
+        const mockUser: User = {
+          id: '1',
+          username: credentials.username,
+          email: 'test@example.com',
+          full_name: '테스트',
+          role: 'user',
+          avatar_url: '',
+          is_verified: true,
+          last_login: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active', // 추가
+          is_active: true   // 추가
+        };
+
+        return {
+          access_token: 'mock_access_token_' + Date.now(),
+          refresh_token: 'mock_refresh_token_' + Date.now(),
+          token_type: 'Bearer',
+          user: mockUser,
+          expires_in: 3600
+        };
+      }
+    }
+    
+    throw new Error('사용자명 또는 비밀번호가 올바르지 않습니다');
+  },
+
+  // 회원가입
+  register: async (userData: RegisterRequest): Promise<RegisterResponse> => {
+    console.log('📝 Mock 회원가입:', userData);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const mockUser: User = {
+      id: Math.random().toString(36).substr(2, 9),
+      username: userData.username,
+      email: userData.email,
+      role: 'user',
+      is_verified: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      status: 'active', // 추가
+      is_active: true,  // 추가
+      full_name: userData.full_name ?? '' // 항상 full_name을 포함
+    };
+
+    return {
+      user: mockUser,
+      message: '회원가입이 완료되었습니다.'
+    };
+  },
+
+  // 로그아웃
+  logout: async (): Promise<void> => {
+    console.log('🚪 Mock 로그아웃');
+    await new Promise(resolve => setTimeout(resolve, 300));
+  },
+
+  // 현재 사용자 정보 조회
+  getCurrentUser: async (): Promise<User> => {
+    console.log('👤 Mock 사용자 정보 조회');
+    const token = tokenStorage.getAccessToken();
+    
+    if (!token) {
+      throw new Error('인증 토큰이 없습니다');
+    }
+
+    // Mock 사용자 반환
+    return {
+      id: '1',
+      username: 'testuser',
+      email: 'test@example.com',
+      full_name: '테스트',
+      role: 'user',
+      is_verified: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      status: 'active', // 추가
+      is_active: true   // 추가
+    };
+  },
+
+  // 토큰 갱신
+  refreshToken: async (_refreshToken: string): Promise<{ access_token: string; refresh_token: string }> => {
+    console.log('🔄 Mock 토큰 갱신');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      access_token: 'mock_access_token_refreshed_' + Date.now(),
+      refresh_token: 'mock_refresh_token_refreshed_' + Date.now()
+    };
+  }
+};
+
+// ============================================================================
+// Zustand Store 정의
+// ============================================================================
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface AuthActions {
+  // 상태 설정
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setAuthenticated: (authenticated: boolean) => void;
+  
+  // 인증 액션
+  login: (credentials: LoginRequest) => Promise<LoginResponse>;
+  register: (userData: RegisterRequest) => Promise<RegisterResponse>;
+  logout: () => Promise<void>;
+
+  // 사용자 관리
+  updateProfile: (data: UpdateProfileRequest) => Promise<User>;
+  changePassword: (data: ChangePasswordRequest) => Promise<void>;
+  resetPassword: (data: ResetPasswordRequest) => Promise<void>;
+  
+  // 상태 관리
+  checkAuthStatus: () => Promise<void>;
+  getCurrentUser: () => Promise<User>;
+  clearError: () => void;
+  reset: () => void;
+}
+
 type AuthStore = AuthState & AuthActions;
 
-// Zustand store
+// ============================================================================
+// Zustand Store 생성
+// ============================================================================
 const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
-      // ============================================================================
-      // 초기 상태 (AuthState 구현)
-      // ============================================================================
+    (set, _get) => ({
+      // 초기 상태
       user: null,
       isAuthenticated: false,
-      isLoading: true, // 초기에는 인증 상태 확인 중
+      isLoading: false, // 초기 로딩을 false로 변경 - 중요!
       error: null,
 
-      // ============================================================================
-      // 상태 설정 액션들
-      // ============================================================================
+      // 상태 설정 메서드
       setUser: (user) => set({ user }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
-
-      // ============================================================================
-      // 인증 관련 액션들 (AuthActions 구현)
-      // ============================================================================
 
       // 로그인
       login: async (credentials: LoginRequest): Promise<LoginResponse> => {
         try {
           set({ isLoading: true, error: null });
 
-          const response = await authService.login(credentials);
+          const response = await mockAuthService.login(credentials);
 
           // 토큰 저장
           tokenStorage.setTokens(response.access_token, response.refresh_token);
 
-          // 사용자 정보 설정
+          // 상태 업데이트
           set({
             user: response.user,
             isAuthenticated: true,
@@ -62,17 +205,15 @@ const useAuthStore = create<AuthStore>()(
             error: null
           });
 
-          toast.success('로그인되었습니다.');
           return response;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다.';
+          const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다';
           set({
             error: errorMessage,
             isLoading: false,
             isAuthenticated: false,
             user: null
           });
-          toast.error(errorMessage);
           throw error;
         }
       },
@@ -82,32 +223,16 @@ const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
 
-          const response = await authService.register(userData);
+          const response = await mockAuthService.register(userData);
 
-          // 회원가입 후 자동 로그인 처리 (토큰이 있는 경우)
-          if (response.access_token && response.refresh_token) {
-            tokenStorage.setTokens(response.access_token, response.refresh_token);
-            set({
-              user: response.user,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null
-            });
-            toast.success('회원가입이 완료되었습니다.');
-          } else {
-            // 이메일 인증 등이 필요한 경우
-            set({ isLoading: false });
-            toast.success('회원가입이 완료되었습니다. 이메일을 확인해주세요.');
-          }
-
+          set({ isLoading: false, error: null });
           return response;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '회원가입에 실패했습니다.';
+          const errorMessage = error instanceof Error ? error.message : '회원가입에 실패했습니다';
           set({
             error: errorMessage,
             isLoading: false
           });
-          toast.error(errorMessage);
           throw error;
         }
       },
@@ -117,12 +242,10 @@ const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true });
 
-          // 서버에 로그아웃 요청
-          await authService.logout();
+          await mockAuthService.logout();
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          // 로컬 상태 정리
           tokenStorage.clearTokens();
           set({
             user: null,
@@ -130,45 +253,66 @@ const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null
           });
-          toast.success('로그아웃되었습니다.');
         }
       },
 
-      // 토큰 갱신
-      refreshToken: async (): Promise<void> => {
+      // 인증 상태 확인 (간소화)
+      checkAuthStatus: async (): Promise<void> => {
         try {
-          const refreshToken = tokenStorage.getRefreshToken();
-          if (!refreshToken) {
-            throw new Error('리프레시 토큰이 없습니다.');
+          console.log('🔍 인증 상태 확인 시작');
+          set({ isLoading: true, error: null });
+
+          const token = tokenStorage.getAccessToken();
+          
+          if (!token) {
+            console.log('❌ 토큰 없음 - 미인증 상태');
+            set({
+              isAuthenticated: false,
+              isLoading: false,
+              user: null
+            });
+            return;
           }
 
-          const response = await authService.refreshToken(refreshToken);
-
-          // 새 토큰 저장
-          tokenStorage.setTokens(response.access_token, response.refresh_token);
-
+          // 토큰이 있으면 사용자 정보 조회
+          const user = await mockAuthService.getCurrentUser();
+          console.log('✅ 사용자 정보 조회 성공:', user.username);
+          
           set({
-            error: null
-          });
-        } catch (error) {
-          // 토큰 갱신 실패 시 로그아웃
-          tokenStorage.clearTokens();
-          set({
-            user: null,
-            isAuthenticated: false,
+            user,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
 
-          const errorMessage = error instanceof Error ? error.message : '토큰 갱신에 실패했습니다.';
-          toast.error(errorMessage);
+        } catch (error) {
+          console.error('❌ 인증 상태 확인 실패:', error);
+          tokenStorage.clearTokens();
+          set({
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+            user: null
+          });
+        }
+      },
+
+       // ============================================================================
+      // 사용자 관리
+      // ============================================================================
+
+      // 현재 사용자 정보 조회
+      getCurrentUser: async (): Promise<User> => {
+        try {
+          const user = await mockAuthService.getCurrentUser();
+          set({ user });
+          return user;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : '사용자 정보 조회에 실패했습니다';
+          set({ error: errorMessage });
           throw error;
         }
       },
-
-      // ============================================================================
-      // 사용자 관리
-      // ============================================================================
 
       // 프로필 업데이트
       updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
@@ -183,7 +327,7 @@ const useAuthStore = create<AuthStore>()(
             error: null
           });
 
-          toast.success('프로필이 업데이트되었습니다.');
+          //toast.success('프로필이 업데이트되었습니다.');
           return updatedUser;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '프로필 업데이트에 실패했습니다.';
@@ -191,7 +335,31 @@ const useAuthStore = create<AuthStore>()(
             error: errorMessage,
             isLoading: false
           });
-          toast.error(errorMessage);
+          //toast.error(errorMessage);
+          throw error;
+        }
+      },
+
+       // 비밀번호 재설정
+      resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+        try {
+          set({ isLoading: true, error: null });
+
+          await authService.resetPassword(data);
+
+          set({
+            isLoading: false,
+            error: null
+          });
+
+          // toast.success('비밀번호가 재설정되었습니다.');
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : '비밀번호 재설정에 실패했습니다.';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
+          // toast.error(errorMessage);
           throw error;
         }
       },
@@ -208,317 +376,14 @@ const useAuthStore = create<AuthStore>()(
             error: null
           });
 
-          toast.success('비밀번호가 변경되었습니다.');
+          //toast.success('비밀번호가 변경되었습니다.');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.';
           set({
             error: errorMessage,
             isLoading: false
           });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // ============================================================================
-      // 비밀번호 재설정
-      // ============================================================================
-
-      // 비밀번호 재설정 요청 (이름 통일)
-      requestPasswordReset: async (email: string): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.requestPasswordReset(email);
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '비밀번호 재설정 요청에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // 비밀번호 찾기 (forgotPassword)
-      forgotPassword: async (email: string): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.forgotPassword(email);
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('비밀번호 찾기 이메일이 전송되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '비밀번호 찾기에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // 비밀번호 재설정
-      resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.resetPassword(data);
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('비밀번호가 재설정되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '비밀번호 재설정에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // ============================================================================
-      // 이메일 인증
-      // ============================================================================
-
-      verifyEmail: async (token: string): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.verifyEmail(token);
-
-          // 현재 사용자 정보 새로고침
-          const user = await get().getCurrentUser();
-
-          set({
-            user,
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('이메일이 인증되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '이메일 인증에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      resendVerificationEmail: async (): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.resendVerificationEmail();
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('인증 이메일이 재전송되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '이메일 재전송에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // ============================================================================
-      // OAuth
-      // ============================================================================
-
-      getOAuthUrl: (provider: string): string => {
-        return authService.getOAuthUrl(provider as 'google' | 'github' | 'microsoft');
-      },
-
-      handleOAuthCallback: async (provider: string, code: string, state?: string): Promise<LoginResponse> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          const response = await authService.handleOAuthCallback(provider, code, state);
-
-          // 토큰 저장
-          tokenStorage.setTokens(response.access_token, response.refresh_token);
-
-          // 사용자 정보 설정
-          set({
-            user: response.user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('로그인되었습니다.');
-          return response;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'OAuth 로그인에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false,
-            isAuthenticated: false,
-            user: null
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // ============================================================================
-      // 2FA
-      // ============================================================================
-
-      enable2FA: async () => {
-        try {
-          set({ isLoading: true, error: null });
-
-          const response = await authService.enable2FA();
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          return response;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '2FA 설정에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      disable2FA: async (code: string): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          await authService.disable2FA(code);
-
-          set({
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('2FA가 비활성화되었습니다.');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '2FA 비활성화에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      verify2FA: async (code: string): Promise<LoginResponse> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          const response = await authService.verify2FA({ code });
-
-          // 토큰 저장
-          tokenStorage.setTokens(response.access_token, response.refresh_token);
-
-          // 사용자 정보 설정
-          set({
-            user: response.user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-
-          toast.success('2FA 인증이 완료되었습니다.');
-          return response;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '2FA 인증에 실패했습니다.';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
-          toast.error(errorMessage);
-          throw error;
-        }
-      },
-
-      // ============================================================================
-      // 상태 관리
-      // ============================================================================
-
-      // 인증 상태 확인 (이름 통일)
-      checkAuthStatus: async (): Promise<void> => {
-        try {
-          set({ isLoading: true, error: null });
-
-          const token = tokenStorage.getAccessToken();
-          if (!token) {
-            set({
-              isAuthenticated: false,
-              isLoading: false,
-              user: null
-            });
-            return;
-          }
-
-          // 토큰 유효성 검사 및 사용자 정보 가져오기
-          const user = await authService.getCurrentUser();
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-
-        } catch (error) {
-          console.error('Auth status check failed:', error);
-          tokenStorage.clearTokens();
-          set({
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
-            user: null
-          });
-        }
-      },
-
-      // 현재 사용자 정보 조회
-      getCurrentUser: async (): Promise<User> => {
-        try {
-          const user = await authService.getCurrentUser();
-          set({ user });
-          return user;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '사용자 정보 조회에 실패했습니다.';
-          set({ error: errorMessage });
+          //toast.error(errorMessage);
           throw error;
         }
       },
@@ -547,43 +412,38 @@ const useAuthStore = create<AuthStore>()(
 // ============================================================================
 // 메인 인증 훅
 // ============================================================================
-
 export const useAuth = () => {
   const store = useAuthStore();
 
-  // 앱 시작 시 인증 상태 확인
+  // 최초 1회만 인증 상태 확인 (조건부 실행)
   useEffect(() => {
-    store.checkAuthStatus();
-  }, [store]);
+    let mounted = true;
+    
+    const initAuth = async () => {
+      // 이미 인증되어 있거나 로딩 중이면 스킵
+      if (store.isAuthenticated || store.isLoading) {
+        console.log('⏭️ 인증 상태 확인 스킵 - 이미 처리됨');
+        return;
+      }
 
-  // 토큰 자동 갱신 설정
-  useEffect(() => {
-    if (!store.isAuthenticated) return;
-
-    const checkAndRefreshToken = async () => {
+      console.log('🚀 인증 상태 초기화 시작');
+      
+      // 토큰이 있을 때만 상태 확인
       const token = tokenStorage.getAccessToken();
-      if (!token) return;
-
-      // 토큰 만료 시간 확인 (JWT 디코딩)
-      try {
-        const base64Payload = token.split('.')[1] ?? '';
-        const payload = JSON.parse(atob(base64Payload));
-        const currentTime = Date.now() / 1000;
-
-        // 토큰이 5분 내에 만료되면 갱신
-        if (payload.exp - currentTime < 300) {
-          await store.refreshToken();
-        }
-      } catch (error) {
-        console.error('Token decode error:', error);
+      if (token && mounted) {
+        await store.checkAuthStatus();
+      } else {
+        console.log('📋 토큰 없음 - 인증 상태 false로 설정');
+        store.setLoading(false);
       }
     };
 
-    // 5분마다 토큰 체크
-    const interval = setInterval(checkAndRefreshToken, 5 * 60 * 1000);
+    initAuth();
 
-    return () => clearInterval(interval);
-  }, [store.isAuthenticated, store]);
+    return () => {
+      mounted = false;
+    };
+  }, []); // 빈 의존성 배열로 최초 1회만 실행
 
   return store;
 };
@@ -591,7 +451,6 @@ export const useAuth = () => {
 // ============================================================================
 // 개별 선택자 훅들 (성능 최적화용)
 // ============================================================================
-
 export const useAuthUser = () => useAuthStore(state => state.user);
 export const useIsAuthenticated = () => useAuthStore(state => state.isAuthenticated);
 export const useAuthLoading = () => useAuthStore(state => state.isLoading);
@@ -600,26 +459,16 @@ export const useAuthError = () => useAuthStore(state => state.error);
 // ============================================================================
 // 편의 훅들
 // ============================================================================
-
-// 권한 체크 훅
 export const useIsLoggedIn = () => {
   const { isAuthenticated, user } = useAuth();
   return isAuthenticated && !!user;
 };
 
-// 특정 역할 체크 훅
 export const useHasRole = (role: string) => {
   const { user } = useAuth();
   return user?.role === role;
 };
 
-// 다중 역할 체크 훅
-export const useHasAnyRole = (roles: string[]) => {
-  const { user } = useAuth();
-  return user?.role ? roles.includes(user.role) : false;
-};
-
-// 로딩 상태 체크
 export const useAuthStatus = () => {
   const { isAuthenticated, isLoading, error } = useAuth();
 
