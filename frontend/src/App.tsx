@@ -1,9 +1,12 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import React, { useEffect, useState } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import Layout from './components/layout/Layout';
+import { ChatProvider } from './contexts/chat-context';
 import { useAuth } from './hooks/use-auth';
 import { useTheme } from './hooks/use-theme';
-import { useState } from 'react';
-import Layout from './components/layout/Layout';
 
 // 페이지 지연 로딩
 const DashboardPage = React.lazy(() => import('./pages/dashboard/Dashboard'));
@@ -17,6 +20,8 @@ const CalendarPage = React.lazy(() => import('./pages/calendar/Calendar'));
 const UsersPage = React.lazy(() => import('./pages/user/Users'));
 const ProfilePage = React.lazy(() => import('./pages/user/Profile'));
 const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
+const ChatPage = React.lazy(() => import('./pages/chat/Chat'));
+const ChatPage2 = React.lazy(() => import('./pages/chat/Chat2'));
 
 // 인증 페이지들
 const LoginPage = React.lazy(() => import('./pages/auth/Login'));
@@ -25,6 +30,21 @@ const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPassword'
 
 // 오류 페이지들
 const NotFoundPage = React.lazy(() => import('./pages/error/NotFound'));
+
+// QueryClient 생성
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5분
+      gcTime: 10 * 60 * 1000, // 10분 (이전 cacheTime)
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 // 로딩 컴포넌트
 const AppLoadingSpinner: React.FC = () => (
@@ -92,8 +112,8 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// 메인 앱 컴포넌트
-const App: React.FC = () => {
+// 앱 라우터 컴포넌트 (Context Provider 내부)
+const AppRouter: React.FC = () => {
   const { isDarkMode, initializeTheme } = useTheme();
   const { isAuthenticated, isLoading, checkAuthStatus, user } = useAuth();
   const [isAppInitialized, setIsAppInitialized] = useState(false);
@@ -133,7 +153,7 @@ const App: React.FC = () => {
     initializeApp();
   }, [initializeTheme, checkAuthStatus]);
 
-// 다크 모드 적용
+  // 다크 모드 적용
   useEffect(() => {
     const root = document.documentElement;
     if (isDarkMode) {
@@ -232,6 +252,10 @@ const App: React.FC = () => {
             {/* 캘린더 */}
             <Route path="calendar" element={<CalendarPage />} />
 
+            {/* 채팅 */}
+            <Route path="chat/*" element={<ChatPage />} />
+            <Route path="chat2/*" element={<ChatPage2 />} />
+
             {/* 사용자 관리 (관리자 전용) */}
             <Route
               path="users"
@@ -253,10 +277,50 @@ const App: React.FC = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </React.Suspense>
+
+      {/* 토스트 알림 */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--toast-bg)',
+            color: 'var(--toast-color)',
+            border: '1px solid var(--toast-border)',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#059669',
+              secondary: '#ffffff',
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#DC2626',
+              secondary: '#ffffff',
+            },
+          },
+        }}
+      />
     </div>
   );
 };
 
+// 메인 앱 컴포넌트
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ChatProvider>
+        <AppRouter />
+      </ChatProvider>
+      {/* React Query Devtools (개발 환경에서만) */}
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
+    </QueryClientProvider>
+  );
+};
 
 export default App;
-

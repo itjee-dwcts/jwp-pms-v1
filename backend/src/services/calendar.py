@@ -1,7 +1,7 @@
 """
-Calendar Service
+캘린더 서비스
 
-Business logic for calendar and event management operations.
+캘린더 및 일정 관리 작업을 위한 비즈니스 로직
 """
 
 import logging
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class CalendarService:
-    """Calendar and event management service"""
+    """캘린더 및 일정 관리 서비스"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -45,17 +45,17 @@ class CalendarService:
     async def create_calendar(
         self, calendar_data: CalendarCreateRequest, owner_id: int
     ) -> CalendarResponse:
-        """Create a new calendar"""
+        """새 캘린더 생성"""
         try:
-            # Verify owner exists
+            # 소유자 존재 확인
             owner_result = await self.db.execute(
                 select(User).where(User.id == owner_id)
             )
             owner = owner_result.scalar_one_or_none()
             if not owner:
-                raise NotFoundError(f"Owner with ID {owner_id} not found")
+                raise NotFoundError(f"ID {owner_id}인 소유자를 찾을 수 없습니다")
 
-            # Create calendar
+            # 캘린더 생성
             calendar = Calendar(
                 name=calendar_data.name,
                 description=calendar_data.description,
@@ -67,11 +67,11 @@ class CalendarService:
             )
 
             self.db.add(calendar)
-            await self.db.flush()  # Flush to get the ID
+            await self.db.flush()  # ID를 가져오기 위해 플러시
 
             await self.db.commit()
 
-            # Fetch created calendar with relationships
+            # 관계와 함께 생성된 캘린더 조회
             result = await self.db.execute(
                 select(Calendar)
                 .options(selectinload(Calendar.owner))
@@ -79,20 +79,20 @@ class CalendarService:
             )
             created_calendar = result.scalar_one()
 
-            logger.info("Calendar created successfully: %s", calendar.name)
+            logger.info("캘린더가 성공적으로 생성됨: %s", calendar.name)
             return CalendarResponse.model_validate(created_calendar)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to create calendar: %s", e)
+            logger.error("캘린더 생성 실패: %s", e)
             raise
 
     async def get_calendar_by_id(
         self, calendar_id: int, user_id: Optional[int] = None
     ) -> CalendarResponse:
-        """Get calendar by ID"""
+        """ID로 캘린더 조회"""
         try:
-            # Build query with relationships
+            # 관계와 함께 쿼리 작성
             query = (
                 select(Calendar)
                 .options(selectinload(Calendar.owner))
@@ -103,28 +103,28 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(f"ID {calendar_id}인 캘린더를 찾을 수 없습니다")
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
 
-            # If user_id is provided, check if they are the owner
+            # user_id가 제공된 경우, 소유자인지 확인
             if user_id:
                 if calendar_owner_id == user_id:
                     return CalendarResponse.model_validate(calendar)
 
-            # If calendar is public, no need for user_id check
+            # 캘린더가 공개인 경우, user_id 확인 불필요
             calendar_is_public = getattr(calendar, "is_public", False)
             if calendar_is_public and user_id is None:
                 return CalendarResponse.model_validate(calendar)
 
-            # Check access permissions
+            # 접근 권한 확인
             if user_id and not calendar_is_public and calendar_owner_id != user_id:
-                raise AuthorizationError("Access denied to this calendar")
+                raise AuthorizationError("이 캘린더에 대한 접근이 거부되었습니다")
 
             return CalendarResponse.model_validate(calendar)
 
         except Exception as e:
-            logger.error("Failed to get calendar %d: %s", calendar_id, e)
+            logger.error("캘린더 %d 조회 실패: %s", calendar_id, e)
             raise
 
     async def update_calendar(
@@ -133,7 +133,7 @@ class CalendarService:
         calendar_data: CalendarUpdateRequest,
         user_id: int,
     ) -> CalendarResponse:
-        """Update calendar information"""
+        """캘린더 정보 수정"""
         try:
             result = await self.db.execute(
                 select(Calendar).where(Calendar.id == calendar_id)
@@ -141,35 +141,29 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(f"ID {calendar_id}인 캘린더를 찾을 수 없습니다")
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
-            # Check if user is the owner
+            # 사용자가 소유자인지 확인
             if calendar_owner_id is None:
-                raise NotFoundError(f"Calendar with ID {calendar_id} has no owner")
+                raise NotFoundError(f"ID {calendar_id}인 캘린더에 소유자가 없습니다")
 
-            # Check ownership
+            # 소유권 확인
             if calendar_owner_id != user_id:
-                raise AuthorizationError("Only calendar owner can update calendar")
+                raise AuthorizationError("캘린더 소유자만 캘린더를 수정할 수 있습니다")
 
-            # Update fields
+            # 필드 업데이트
             update_data = calendar_data.dict(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(calendar, field, value)
 
-            # Update metadata
-            # Assuming `updated_by` is a field in Calendar model
-            # This is a common pattern to track who made the last change
-            # You may need to adjust based on your actual model definition
+            # 메타데이터 업데이트
             setattr(calendar, "updated_by", user_id)
             setattr(calendar, "updated_at", datetime.utcnow())
 
-            # calendar.updated_by = user_id
-            # calendar.updated_at = datetime.utcnow()
-
             await self.db.commit()
 
-            # Fetch updated calendar with relationships
+            # 관계와 함께 업데이트된 캘린더 조회
             result = await self.db.execute(
                 select(Calendar)
                 .options(selectinload(Calendar.owner))
@@ -177,16 +171,16 @@ class CalendarService:
             )
             updated_calendar = result.scalar_one()
 
-            logger.info("Calendar updated successfully: %s", calendar.name)
+            logger.info("캘린더가 성공적으로 업데이트됨: %s", calendar.name)
             return CalendarResponse.model_validate(updated_calendar)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to update calendar %d: %s", calendar_id, e)
+            logger.error("캘린더 %d 업데이트 실패: %s", calendar_id, e)
             raise
 
     async def delete_calendar(self, calendar_id: int, user_id: int) -> bool:
-        """Delete calendar"""
+        """캘린더 삭제"""
         try:
             result = await self.db.execute(
                 select(Calendar).where(Calendar.id == calendar_id)
@@ -194,26 +188,26 @@ class CalendarService:
             calendar = result.scalar_one_or_none()
 
             if not calendar:
-                raise NotFoundError(f"Calendar with ID {calendar_id} not found")
+                raise NotFoundError(f"ID {calendar_id}인 캘린더를 찾을 수 없습니다")
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
             if calendar_owner_id is None:
-                raise NotFoundError(f"Calendar with ID {calendar_id} has no owner")
+                raise NotFoundError(f"ID {calendar_id}인 캘린더에 소유자가 없습니다")
 
-            # Check ownership
+            # 소유권 확인
             if calendar_owner_id != user_id:
-                raise AuthorizationError("Only calendar owner can delete calendar")
+                raise AuthorizationError("캘린더 소유자만 캘린더를 삭제할 수 있습니다")
 
-            # Delete calendar (will cascade to events)
+            # 캘린더 삭제 (일정들도 연쇄 삭제됨)
             await self.db.delete(calendar)
             await self.db.commit()
 
-            logger.info("Calendar deleted: %s", calendar.name)
+            logger.info("캘린더 삭제됨: %s", calendar.name)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to delete calendar %d: %s", calendar_id, e)
+            logger.error("캘린더 %d 삭제 실패: %s", calendar_id, e)
             raise
 
     async def list_calendars(
@@ -222,14 +216,14 @@ class CalendarService:
         page_size: int = 20,
         user_id: Optional[int] = None,
     ) -> CalendarListResponse:
-        """List calendars with pagination"""
+        """페이지네이션이 적용된 캘린더 목록 조회"""
         try:
-            # Build base query
+            # 기본 쿼리 작성
             query = select(Calendar).options(selectinload(Calendar.owner))
 
-            # Apply access control
+            # 접근 제어 적용
             if user_id:
-                # User can see public calendars or their own calendars
+                # 사용자는 공개 캘린더 또는 자신의 캘린더를 볼 수 있음
                 query = query.where(
                     or_(
                         Calendar.is_public.is_(True),
@@ -237,15 +231,15 @@ class CalendarService:
                     )
                 )
             else:
-                # Anonymous users can only see public calendars
+                # 익명 사용자는 공개 캘린더만 볼 수 있음
                 query = query.where(Calendar.is_public.is_(True))
 
-            # Get total count
+            # 전체 개수 조회
             count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
-            # Apply pagination and ordering
+            # 페이지네이션 및 정렬 적용
             offset = (page_no - 1) * page_size
             query = (
                 query.offset(offset)
@@ -253,11 +247,11 @@ class CalendarService:
                 .order_by(desc(Calendar.created_at))
             )
 
-            # Execute query
+            # 쿼리 실행
             result = await self.db.execute(query)
             calendars = result.scalars().all()
 
-            # Calculate pagination info
+            # 페이지네이션 정보 계산
             total_pages = (
                 (total_items if total_items is not None else 0) + page_size - 1
             ) // page_size
@@ -273,61 +267,57 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error("Failed to list calendars: %s", e)
+            logger.error("캘린더 목록 조회 실패: %s", e)
             raise
 
     async def list_user_calendars(self, user_id: int) -> List[Calendar]:
-        """
-        list user calendars
-        """
+        """사용자 캘린더 목록 조회"""
         result = await self.db.execute(
-            select(Calendar).where(Calendar.user_id == user_id)
+            select(Calendar).where(Calendar.owner_id == user_id)
         )
         return list(result.scalars().all())
 
     async def create_event(
         self, event_data: EventCreateRequest, creator_id: int
     ) -> EventResponse:
-        """Create a new event"""
+        """새 일정 생성"""
         try:
-            # Verify calendar exists and user has access
+            # 캘린더 존재 및 사용자 접근 권한 확인
             calendar_result = await self.db.execute(
                 select(Calendar).where(Calendar.id == event_data.calendar_id)
             )
             calendar = calendar_result.scalar_one_or_none()
             if not calendar:
                 raise NotFoundError(
-                    f"Calendar with ID {event_data.calendar_id} not found"
+                    f"ID {event_data.calendar_id}인 캘린더를 찾을 수 없습니다"
                 )
 
             calendar_owner_id = getattr(calendar, "owner_id", None)
             if calendar_owner_id is None:
                 raise NotFoundError(
-                    f"Calendar with ID {event_data.calendar_id} has no owner"
+                    f"ID {event_data.calendar_id}인 캘린더에 소유자가 없습니다"
                 )
 
-            # Check permission to create events in this calendar
-            if not calendar_owner_id and calendar_owner_id != creator_id:
-                raise AuthorizationError(
-                    "No permission to create events in this calendar"
-                )
+            # 이 캘린더에서 일정을 생성할 권한 확인
+            if calendar_owner_id != creator_id:
+                raise AuthorizationError("이 캘린더에서 일정을 생성할 권한이 없습니다")
 
-            # Verify related resources if specified
+            # 지정된 관련 리소스 확인
             if event_data.project_id:
                 project_result = await self.db.execute(
                     select(Project).where(Project.id == event_data.project_id)
                 )
                 if not project_result.scalar_one_or_none():
-                    raise NotFoundError("Related project not found")
+                    raise NotFoundError("관련 프로젝트를 찾을 수 없습니다")
 
             if event_data.task_id:
                 task_result = await self.db.execute(
                     select(Task).where(Task.id == event_data.task_id)
                 )
                 if not task_result.scalar_one_or_none():
-                    raise NotFoundError("Related task not found")
+                    raise NotFoundError("관련 작업을 찾을 수 없습니다")
 
-            # Create event
+            # 일정 생성
             event = Event(
                 title=event_data.title,
                 description=event_data.description,
@@ -353,16 +343,16 @@ class CalendarService:
 
             event_id = getattr(event, "id", None)
             if event_id is None:
-                raise ValidationError("Failed to create event, ID is not set")
+                raise ValidationError("일정 생성 실패, ID가 설정되지 않았습니다")
 
-            # Add attendees if specified
+            # 지정된 경우 참석자 추가
             if event_data.attendee_ids:
                 for user_id in event_data.attendee_ids:
                     await self._add_event_attendee(event_id, user_id)
 
             await self.db.commit()
 
-            # Fetch created event with relationships
+            # 관계와 함께 생성된 일정 조회
             result = await self.db.execute(
                 select(Event)
                 .options(
@@ -374,20 +364,20 @@ class CalendarService:
             )
             created_event = result.scalar_one()
 
-            logger.info("Event created successfully: %s", event.title)
+            logger.info("일정이 성공적으로 생성됨: %s", event.title)
             return EventResponse.model_validate(created_event)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to create event: %s", e)
+            logger.error("일정 생성 실패: %s", e)
             raise
 
     async def get_event_by_id(
         self, event_id: int, user_id: Optional[int] = None
     ) -> EventResponse:
-        """Get event by ID"""
+        """ID로 일정 조회"""
         try:
-            # Build query with relationships
+            # 관계와 함께 쿼리 작성
             query = (
                 select(Event)
                 .options(
@@ -402,37 +392,37 @@ class CalendarService:
             event = result.scalar_one_or_none()
 
             if not event:
-                raise NotFoundError(f"Event with ID {event_id} not found")
+                raise NotFoundError(f"ID {event_id}인 일정을 찾을 수 없습니다")
 
-            # Check access permissions
+            # 접근 권한 확인
             if user_id:
                 has_access = await self._check_event_access(event_id, user_id)
                 if not has_access:
-                    raise AuthorizationError("Access denied to this event")
+                    raise AuthorizationError("이 일정에 대한 접근이 거부되었습니다")
 
             return EventResponse.model_validate(event)
 
         except Exception as e:
-            logger.error("Failed to get event %d: %s", event_id, e)
+            logger.error("일정 %d 조회 실패: %s", event_id, e)
             raise
 
     async def update_event(
         self, event_id: int, event_data: EventUpdateRequest, user_id: int
     ) -> EventResponse:
-        """Update event information"""
+        """일정 정보 수정"""
         try:
-            # Check user has permission to update event
+            # 사용자가 일정을 수정할 권한이 있는지 확인
             has_access = await self._check_event_access(event_id, user_id)
             if not has_access:
-                raise AuthorizationError("No permission to update this event")
+                raise AuthorizationError("이 일정을 수정할 권한이 없습니다")
 
             result = await self.db.execute(select(Event).where(Event.id == event_id))
             event = result.scalar_one_or_none()
 
             if not event:
-                raise NotFoundError(f"Event with ID {event_id} not found")
+                raise NotFoundError(f"ID {event_id}인 일정을 찾을 수 없습니다")
 
-            # Update fields
+            # 필드 업데이트
             update_data = event_data.dict(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(event, field, value)
@@ -440,12 +430,9 @@ class CalendarService:
             setattr(event, "updated_by", user_id)
             setattr(event, "updated_at", datetime.utcnow())
 
-            # event.updated_by = user_id
-            # event.updated_at = datetime.utcnow()
-
             await self.db.commit()
 
-            # Fetch updated event with relationships
+            # 관계와 함께 업데이트된 일정 조회
             result = await self.db.execute(
                 select(Event)
                 .options(selectinload(Event.creator), selectinload(Event.calendar))
@@ -453,38 +440,38 @@ class CalendarService:
             )
             updated_event = result.scalar_one()
 
-            logger.info("Event updated successfully: %s", event.title)
+            logger.info("일정이 성공적으로 업데이트됨: %s", event.title)
             return EventResponse.model_validate(updated_event)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to update event %d: %s", event_id, e)
+            logger.error("일정 %d 업데이트 실패: %s", event_id, e)
             raise
 
     async def delete_event(self, event_id: int, user_id: int) -> bool:
-        """Delete event"""
+        """일정 삭제"""
         try:
-            # Check user has permission to delete event
+            # 사용자가 일정을 삭제할 권한이 있는지 확인
             has_access = await self._check_event_access(event_id, user_id)
             if not has_access:
-                raise AuthorizationError("No permission to delete this event")
+                raise AuthorizationError("이 일정을 삭제할 권한이 없습니다")
 
             result = await self.db.execute(select(Event).where(Event.id == event_id))
             event = result.scalar_one_or_none()
 
             if not event:
-                raise NotFoundError(f"Event with ID {event_id} not found")
+                raise NotFoundError(f"ID {event_id}인 일정을 찾을 수 없습니다")
 
-            # Delete event
+            # 일정 삭제
             await self.db.delete(event)
             await self.db.commit()
 
-            logger.info("Event deleted: %s", event.title)
+            logger.info("일정 삭제됨: %s", event.title)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to delete event %d: %s", event_id, e)
+            logger.error("일정 %d 삭제 실패: %s", event_id, e)
             raise
 
     async def list_events(
@@ -494,26 +481,26 @@ class CalendarService:
         user_id: Optional[int] = None,
         search_params: Optional[EventSearchRequest] = None,
     ) -> EventListResponse:
-        """List events with pagination and filters"""
+        """페이지네이션 및 필터가 적용된 일정 목록 조회"""
         try:
-            # Build base query
+            # 기본 쿼리 작성
             query = select(Event).options(
                 selectinload(Event.creator), selectinload(Event.calendar)
             )
 
-            # Apply access control
+            # 접근 제어 적용
             if user_id:
                 accessible_calendars = await self._get_accessible_calendars(user_id)
                 query = query.where(Event.calendar_id.in_(accessible_calendars))
             else:
-                # Anonymous users can only see events in public calendars
+                # 익명 사용자는 공개 캘린더의 일정만 볼 수 있음
                 public_calendars = await self.db.execute(
                     select(Calendar.id).where(Calendar.is_public.is_(True))
                 )
                 public_calendar_ids = [row[0] for row in public_calendars.fetchall()]
                 query = query.where(Event.calendar_id.in_(public_calendar_ids))
 
-            # Apply search filters
+            # 검색 필터 적용
             if search_params:
                 if search_params.query:
                     query = query.where(
@@ -551,20 +538,20 @@ class CalendarService:
                 if search_params.is_all_day is not None:
                     query = query.where(Event.is_all_day == search_params.is_all_day)
 
-            # Get total count
+            # 전체 개수 조회
             count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
-            # Apply pagination and ordering
+            # 페이지네이션 및 정렬 적용
             offset = (page_no - 1) * page_size
             query = query.offset(offset).limit(page_size).order_by(Event.start_datetime)
 
-            # Execute query
+            # 쿼리 실행
             result = await self.db.execute(query)
             events = result.scalars().all()
 
-            # Calculate pagination info
+            # 페이지네이션 정보 계산
             total_pages = (
                 (total_items if total_items is not None else 0) + page_size - 1
             ) // page_size
@@ -578,7 +565,7 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error("Failed to list events: %s", e)
+            logger.error("일정 목록 조회 실패: %s", e)
             raise
 
     async def list_user_events(
@@ -588,11 +575,8 @@ class CalendarService:
         end_date: Optional[date] = None,
         calendar_id: Optional[int] = None,
     ):
-        """
-        List events for a user, optionally filtered by date range and calendar.
-        """
-
-        stmt = select(Event).where(Event.user_id == user_id)
+        """사용자의 일정 목록 조회, 선택적으로 날짜 범위 및 캘린더 필터 적용"""
+        stmt = select(Event).where(Event.creator_id == user_id)
         if start_date:
             stmt = stmt.where(Event.start_datetime >= start_date)
         if end_date:
@@ -605,14 +589,14 @@ class CalendarService:
     async def get_calendar_view(
         self, view_request: CalendarViewRequest, user_id: Optional[int] = None
     ) -> EventListResponse:
-        """Get events for calendar view"""
+        """캘린더 뷰를 위한 일정 조회"""
         try:
-            # Build query
+            # 쿼리 작성
             query = select(Event).options(
                 selectinload(Event.creator), selectinload(Event.calendar)
             )
 
-            # Filter by date range
+            # 날짜 범위로 필터링
             query = query.where(
                 and_(
                     Event.start_datetime >= view_request.start_date,
@@ -620,18 +604,18 @@ class CalendarService:
                 )
             )
 
-            # Filter by calendars if specified
+            # 지정된 경우 캘린더로 필터링
             if view_request.calendar_ids:
                 query = query.where(Event.calendar_id.in_(view_request.calendar_ids))
             elif user_id:
-                # Default to accessible calendars
+                # 기본적으로 접근 가능한 캘린더로 설정
                 accessible_calendars = await self._get_accessible_calendars(user_id)
                 query = query.where(Event.calendar_id.in_(accessible_calendars))
 
-            # Order by start time
+            # 시작 시간으로 정렬
             query = query.order_by(Event.start_datetime)
 
-            # Execute query
+            # 쿼리 실행
             result = await self.db.execute(query)
             events = result.scalars().all()
 
@@ -644,16 +628,13 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error("Failed to get calendar view: %s", e)
+            logger.error("캘린더 뷰 조회 실패: %s", e)
             raise
 
     async def get_event_with_access_check(self, event_id: int, user_id: int):
-        """
-        Retrieve an event by ID and check if the user has access.
-        """
-
+        """ID로 일정을 조회하고 사용자의 접근 권한을 확인"""
         result = await self.db.execute(
-            select(Event).where(Event.id == event_id, Event.user_id == user_id)
+            select(Event).where(Event.id == event_id, Event.creator_id == user_id)
         )
         event = result.scalar_one_or_none()
         return event
@@ -661,9 +642,9 @@ class CalendarService:
     async def get_calendar_stats(
         self, user_id: Optional[int] = None
     ) -> CalendarStatsResponse:
-        """Get calendar statistics"""
+        """캘린더 통계 조회"""
         try:
-            # Build base query with access control
+            # 접근 제어가 적용된 기본 쿼리 작성
             accessible_calendars = []
             if user_id:
                 accessible_calendars = await self._get_accessible_calendars(user_id)
@@ -677,13 +658,13 @@ class CalendarService:
                 Event.calendar_id.in_(accessible_calendars)
             )
 
-            # Total events
+            # 전체 일정 수
             total_result = await self.db.execute(
                 select(count()).select_from(base_query.subquery())
             )
             total_events = total_result.scalar()
 
-            # Upcoming events (next 30 days)
+            # 다가오는 일정 (다음 30일)
             future_date = datetime.now(timezone.utc) + timedelta(days=30)
             upcoming_result = await self.db.execute(
                 select(count()).select_from(
@@ -697,7 +678,7 @@ class CalendarService:
             )
             upcoming_events = upcoming_result.scalar()
 
-            # Overdue events
+            # 지연된 일정
             overdue_result = await self.db.execute(
                 select(count()).select_from(
                     base_query.where(
@@ -710,25 +691,23 @@ class CalendarService:
             )
             overdue_events = overdue_result.scalar()
 
-            # Events by type
+            # 유형별 일정
             type_result = await self.db.execute(
                 select(Event.event_type, count(Event.id))
                 .select_from(base_query.subquery())
                 .group_by(Event.event_type)
             )
-            # events_by_type = dict(type_result.fetchall())
             events_by_type = {row[0]: row[1] for row in type_result.fetchall()}
 
-            # Events by status
+            # 상태별 일정
             status_result = await self.db.execute(
                 select(Event.status, count(Event.id))
                 .select_from(base_query.subquery())
                 .group_by(Event.status)
             )
-            # events_by_status = dict(status_result.fetchall())
             events_by_status = {row[0]: row[1] for row in status_result.fetchall()}
 
-            # Events this week and month
+            # 이번 주 및 이번 달 일정
             week_start = datetime.utcnow() - timedelta(days=datetime.utcnow().weekday())
             month_start = datetime.utcnow().replace(day=1)
 
@@ -761,18 +740,18 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error("Failed to get calendar stats: %s", e)
+            logger.error("캘린더 통계 조회 실패: %s", e)
             raise
 
     async def get_event_dashboard(self, user_id: int) -> EventDashboardResponse:
-        """Get event dashboard data for user"""
+        """사용자를 위한 일정 대시보드 데이터 조회"""
         try:
             accessible_calendars = await self._get_accessible_calendars(user_id)
             base_query = select(Event).where(
                 Event.calendar_id.in_(accessible_calendars)
             )
 
-            # Today's events
+            # 오늘의 일정
             today_start = datetime.utcnow().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
@@ -790,7 +769,7 @@ class CalendarService:
             )
             today_events = today_result.scalars().all()
 
-            # Upcoming events (next 7 days)
+            # 다가오는 일정 (다음 7일)
             week_end = today_end + timedelta(days=7)
             upcoming_result = await self.db.execute(
                 base_query.options(selectinload(Event.creator))
@@ -805,7 +784,7 @@ class CalendarService:
             )
             upcoming_events = upcoming_result.scalars().all()
 
-            # Recent events (last 7 days)
+            # 최근 일정 (지난 7일)
             week_start = today_start - timedelta(days=7)
             recent_result = await self.db.execute(
                 base_query.options(selectinload(Event.creator))
@@ -820,7 +799,7 @@ class CalendarService:
             )
             recent_events = recent_result.scalars().all()
 
-            # Overdue events
+            # 지연된 일정
             overdue_result = await self.db.execute(
                 base_query.options(selectinload(Event.creator))
                 .where(
@@ -834,7 +813,7 @@ class CalendarService:
             )
             overdue_events = overdue_result.scalars().all()
 
-            # Get stats
+            # 통계 조회
             event_stats = await self.get_calendar_stats(user_id)
 
             return EventDashboardResponse(
@@ -850,52 +829,52 @@ class CalendarService:
             )
 
         except Exception as e:
-            logger.error("Failed to get event dashboard: %s", e)
+            logger.error("일정 대시보드 조회 실패: %s", e)
             raise
 
     async def add_event_attendees(
         self, event_id: int, user_ids: List[int], added_by: int
     ) -> bool:
-        """Add attendees to an event"""
+        """일정에 참석자 추가"""
         try:
-            # Check permission
+            # 권한 확인
             has_access = await self._check_event_access(event_id, added_by)
             if not has_access:
-                raise AuthorizationError("No permission to modify this event")
+                raise AuthorizationError("이 일정을 수정할 권한이 없습니다")
 
-            # Verify event exists
+            # 일정 존재 확인
             event_result = await self.db.execute(
                 select(Event).where(Event.id == event_id)
             )
             event = event_result.scalar_one_or_none()
             if not event:
-                raise NotFoundError("Event not found")
+                raise NotFoundError("일정을 찾을 수 없습니다")
 
-            # Add attendees
+            # 참석자 추가
             for user_id in user_ids:
                 await self._add_event_attendee(event_id, user_id)
 
             await self.db.commit()
 
-            logger.info("Attendees added to event %d: %s", event_id, user_ids)
+            logger.info("일정 %d에 참석자 추가됨: %s", event_id, user_ids)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to add attendees to event %d: %s", event_id, e)
+            logger.error("일정 %d에 참석자 추가 실패: %s", event_id, e)
             raise
 
     async def remove_event_attendee(
         self, event_id: int, user_id: int, removed_by: int
     ) -> bool:
-        """Remove attendee from an event"""
+        """일정에서 참석자 제거"""
         try:
-            # Check permission
+            # 권한 확인
             has_access = await self._check_event_access(event_id, removed_by)
             if not has_access:
-                raise AuthorizationError("No permission to modify this event")
+                raise AuthorizationError("이 일정을 수정할 권한이 없습니다")
 
-            # Find and remove attendee
+            # 참석자 찾아서 제거
             attendee_result = await self.db.execute(
                 select(EventAttendee).where(
                     and_(
@@ -909,18 +888,18 @@ class CalendarService:
             if attendee:
                 await self.db.delete(attendee)
                 await self.db.commit()
-                logger.info("Attendee %d removed from event %d", user_id, event_id)
+                logger.info("일정 %d에서 참석자 %d 제거됨", event_id, user_id)
                 return True
 
             return False
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to remove attendee from event %d: %s", event_id, e)
+            logger.error("일정 %d에서 참석자 제거 실패: %s", event_id, e)
             raise
 
     async def _check_event_access(self, event_id: int, user_id: int) -> bool:
-        """Check if user has access to event"""
+        """사용자가 일정에 접근할 수 있는지 확인"""
         try:
             event_result = await self.db.execute(
                 select(Event)
@@ -934,21 +913,21 @@ class CalendarService:
 
             event_creator_id = getattr(event, "creator_id", None)
             if event_creator_id is None:
-                raise NotFoundError(f"Event with ID {event_id} has no creator")
+                raise NotFoundError(f"ID {event_id}인 일정에 생성자가 없습니다")
 
-            # Event creator has access
+            # 일정 생성자는 접근 권한 있음
             if event_creator_id == user_id:
                 return True
 
-            # Calendar owner has access
+            # 캘린더 소유자는 접근 권한 있음
             if event.calendar.owner_id == user_id:
                 return True
 
-            # Public calendar events are accessible
+            # 공개 캘린더의 일정은 접근 가능
             if event.calendar.is_public:
                 return True
 
-            # Check if user is an attendee
+            # 사용자가 참석자인지 확인
             attendee_result = await self.db.execute(
                 select(EventAttendee).where(
                     and_(
@@ -961,40 +940,40 @@ class CalendarService:
             return attendee_result.scalar_one_or_none() is not None
 
         except Exception as e:
-            logger.error("Failed to check event access: %s", e)
+            logger.error("일정 접근 권한 확인 실패: %s", e)
             return False
 
     async def _get_accessible_calendars(self, user_id: int) -> List[int]:
-        """Get list of calendar IDs user has access to"""
+        """사용자가 접근할 수 있는 캘린더 ID 목록 조회"""
         try:
-            # Get public calendars
+            # 공개 캘린더 조회
             public_result = await self.db.execute(
                 select(Calendar.id).where(Calendar.is_public.is_(True))
             )
             public_calendars = [row[0] for row in public_result.fetchall()]
 
-            # Get calendars owned by user
+            # 사용자가 소유한 캘린더 조회
             owned_result = await self.db.execute(
                 select(Calendar.id).where(Calendar.owner_id == user_id)
             )
             owned_calendars = [row[0] for row in owned_result.fetchall()]
 
-            # Combine and deduplicate
+            # 합치고 중복 제거
             return list(set(public_calendars + owned_calendars))
 
         except Exception as e:
-            logger.error("Failed to get accessible calendars: %s", e)
+            logger.error("접근 가능한 캘린더 조회 실패: %s", e)
             return []
 
     async def _add_event_attendee(self, event_id: int, user_id: int):
-        """Add an attendee to an event"""
+        """일정에 참석자 추가"""
         try:
-            # Verify user exists
+            # 사용자 존재 확인
             user_result = await self.db.execute(select(User).where(User.id == user_id))
             if not user_result.scalar_one_or_none():
-                raise NotFoundError(f"User with ID {user_id} not found")
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
 
-            # Check if already attending
+            # 이미 참석 중인지 확인
             existing_result = await self.db.execute(
                 select(EventAttendee).where(
                     and_(
@@ -1004,9 +983,9 @@ class CalendarService:
                 )
             )
             if existing_result.scalar_one_or_none():
-                return  # Already attending
+                return  # 이미 참석 중
 
-            # Create attendee
+            # 참석자 생성
             attendee = EventAttendee(
                 event_id=event_id, user_id=user_id, response_status="pending"
             )
@@ -1016,9 +995,9 @@ class CalendarService:
 
         except Exception as e:
             logger.error(
-                "Failed to add attendee %s to event %s: %s",
-                user_id,
+                "일정 %s에 참석자 %s 추가 실패: %s",
                 event_id,
+                user_id,
                 e,
             )
             raise
@@ -1027,7 +1006,7 @@ class CalendarService:
 async def get_calendar_service(
     db: Optional[AsyncSession] = None,
 ) -> CalendarService:
-    """Get calendar service instance"""
+    """캘린더 서비스 인스턴스 조회"""
     if db is None:
         async for session in get_async_session():
             return CalendarService(session)

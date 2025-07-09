@@ -1,36 +1,36 @@
 """
-Project Pydantic Schemas
+프로젝트 Pydantic 스키마
 
-Request/Response schemas for project management.
+프로젝트 관리를 위한 요청/응답 스키마
 """
 
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
+from constants.project import ProjectMemberRole, ProjectPriority, ProjectStatus
 from pydantic import BaseModel, Field, field_validator
 from schemas.user import UserPublic
 
 
 class ProjectBase(BaseModel):
-    """Base project schema"""
+    """기본 프로젝트 스키마"""
 
-    name: str = Field(..., min_length=1, max_length=200, description="Project name")
+    name: str = Field(..., min_length=1, max_length=200, description="프로젝트 이름")
     description: Optional[str] = Field(
-        None, max_length=2000, description="Project description"
+        None, max_length=2000, description="프로젝트 설명"
     )
-    status: str = Field(default=ProjectStatus.PLANNING, description="Project status")
+    status: str = Field(default=ProjectStatus.PLANNING, description="프로젝트 상태")
     priority: str = Field(
-        default=ProjectPriority.MEDIUM, description="Project priority"
+        default=ProjectPriority.MEDIUM, description="프로젝트 우선순위"
     )
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
-        """Validate project status"""
+        """프로젝트 상태 검증"""
 
-        # Ensure status is one of the defined constants
+        # 정의된 상수 중 하나인지 확인
         valid_statuses = [
             ProjectStatus.PLANNING,
             ProjectStatus.ACTIVE,
@@ -39,17 +39,19 @@ class ProjectBase(BaseModel):
             ProjectStatus.CANCELLED,
         ]
 
-        # Check if the provided status is valid
+        # 제공된 상태가 유효한지 확인
         if v not in valid_statuses:
-            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            raise ValueError(
+                f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+            )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v) -> str:
-        """Validate project priority"""
+        """프로젝트 우선순위 검증"""
 
-        # Ensure priority is one of the defined constants
+        # 정의된 상수 중 하나인지 확인
         valid_priorities = [
             ProjectPriority.LOW,
             ProjectPriority.MEDIUM,
@@ -57,63 +59,75 @@ class ProjectBase(BaseModel):
             ProjectPriority.CRITICAL,
         ]
         if v not in valid_priorities:
-            raise ValueError(f"Priority must be one of: {', '.join(valid_priorities)}")
+            raise ValueError(
+                f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
+            )
         return v
 
 
 class ProjectCreateRequest(ProjectBase):
-    """Schema for creating a project"""
+    """프로젝트 생성 스키마"""
 
-    start_date: Optional[datetime] = Field(None, description="Project start date")
-    end_date: Optional[datetime] = Field(None, description="Project end date")
-    budget: Optional[Decimal] = Field(None, ge=0, description="Project budget")
+    start_date: Optional[datetime] = Field(None, description="프로젝트 시작일")
+    end_date: Optional[datetime] = Field(None, description="프로젝트 종료일")
+    budget: Optional[Decimal] = Field(None, ge=0, description="프로젝트 예산")
     repository_url: Optional[str] = Field(
-        None, max_length=500, description="Git repository URL"
+        None, max_length=500, description="Git 저장소 URL"
     )
     documentation_url: Optional[str] = Field(
-        None, max_length=500, description="Documentation URL"
+        None, max_length=500, description="문서 URL"
     )
     tags: Optional[str] = Field(
-        None, max_length=500, description="Project tags (comma-separated)"
+        None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
     )
-    is_public: bool = Field(default=False, description="Whether the project is public")
+    is_public: bool = Field(default=False, description="프로젝트 공개 여부")
 
     @field_validator("end_date")
     @classmethod
     def validate_end_date(cls, v: Optional[datetime], values) -> Optional[datetime]:
-        """Validate end date is after start date if both are provided"""
+        """종료일이 시작일 이후인지 검증"""
         if (
             v
             and "start_date" in values
             and values["start_date"]
             and v < values["start_date"]
         ):
-            raise ValueError("End date must be after start date")
+            raise ValueError("종료일은 시작일 이후여야 합니다")
         return v
 
 
 class ProjectUpdateRequest(BaseModel):
-    """Schema for updating a project"""
+    """프로젝트 업데이트 스키마"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=2000)
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    budget: Optional[Decimal] = Field(None, ge=0)
-    actual_cost: Optional[Decimal] = Field(None, ge=0)
-    progress: Optional[int] = Field(None, ge=0, le=100)
-    repository_url: Optional[str] = Field(None, max_length=500)
-    documentation_url: Optional[str] = Field(None, max_length=500)
-    tags: Optional[str] = Field(None, max_length=500)
-    is_public: Optional[bool] = None
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=200, description="프로젝트 이름"
+    )
+    description: Optional[str] = Field(
+        None, max_length=2000, description="프로젝트 설명"
+    )
+    status: Optional[str] = Field(None, description="프로젝트 상태")
+    priority: Optional[str] = Field(None, description="프로젝트 우선순위")
+    start_date: Optional[datetime] = Field(None, description="프로젝트 시작일")
+    end_date: Optional[datetime] = Field(None, description="프로젝트 종료일")
+    budget: Optional[Decimal] = Field(None, ge=0, description="프로젝트 예산")
+    actual_cost: Optional[Decimal] = Field(None, ge=0, description="실제 비용")
+    progress: Optional[int] = Field(None, ge=0, le=100, description="진행률 (0-100%)")
+    repository_url: Optional[str] = Field(
+        None, max_length=500, description="Git 저장소 URL"
+    )
+    documentation_url: Optional[str] = Field(
+        None, max_length=500, description="문서 URL"
+    )
+    tags: Optional[str] = Field(
+        None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
+    )
+    is_public: Optional[bool] = Field(None, description="프로젝트 공개 여부")
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: Optional[str]) -> Optional[str]:
-        """Validate project status"""
-        # Ensure status is one of the defined constants
+        """프로젝트 상태 검증"""
+        # 정의된 상수 중 하나인지 확인
         if v is not None:
             valid_statuses = [
                 ProjectStatus.PLANNING,
@@ -123,14 +137,16 @@ class ProjectUpdateRequest(BaseModel):
                 ProjectStatus.CANCELLED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v):
-        """Validate project priority"""
-        # Ensure priority is one of the defined constants
+        """프로젝트 우선순위 검증"""
+        # 정의된 상수 중 하나인지 확인
         if v is not None:
             valid_priorities = [
                 ProjectPriority.LOW,
@@ -140,22 +156,22 @@ class ProjectUpdateRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f"Priority must be one of: {', '.join(valid_priorities)}"
+                    f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
                 )
         return v
 
 
 class ProjectMemberBase(BaseModel):
-    """Base project member schema"""
+    """기본 프로젝트 멤버 스키마"""
 
-    user_id: int = Field(..., description="User ID")
-    role: str = Field(default="developer", description="Member role")
+    user_id: int = Field(..., description="사용자 ID")
+    role: str = Field(default="developer", description="멤버 역할")
 
     @field_validator("role")
     @classmethod
     def validate_role(cls, v):
-        """Validate project member role"""
-        # Ensure role is one of the defined constants
+        """프로젝트 멤버 역할 검증"""
+        # 정의된 상수 중 하나인지 확인
         valid_roles = [
             ProjectMemberRole.OWNER,
             ProjectMemberRole.MANAGER,
@@ -164,24 +180,28 @@ class ProjectMemberBase(BaseModel):
             ProjectMemberRole.VIEWER,
         ]
         if v not in valid_roles:
-            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
+            raise ValueError(
+                f"역할은 다음 중 하나여야 합니다: {', '.join(valid_roles)}"
+            )
         return v
 
 
 class ProjectMemberCreateRequest(ProjectMemberBase):
-    """Schema for adding project member"""
+    """프로젝트 멤버 추가 스키마"""
+
+    pass
 
 
 class ProjectMemberUpdateRequest(BaseModel):
-    """Schema for updating project member"""
+    """프로젝트 멤버 업데이트 스키마"""
 
-    role: str = Field(..., description="Member role")
+    role: str = Field(..., description="멤버 역할")
 
     @field_validator("role")
     @classmethod
     def validate_role(cls, v):
-        """Validate project member role"""
-        # Ensure role is one of the defined constants
+        """프로젝트 멤버 역할 검증"""
+        # 정의된 상수 중 하나인지 확인
         valid_roles = [
             ProjectMemberRole.OWNER,
             ProjectMemberRole.MANAGER,
@@ -190,12 +210,14 @@ class ProjectMemberUpdateRequest(BaseModel):
             ProjectMemberRole.VIEWER,
         ]
         if v not in valid_roles:
-            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
+            raise ValueError(
+                f"역할은 다음 중 하나여야 합니다: {', '.join(valid_roles)}"
+            )
         return v
 
 
 class ProjectMemberResponse(BaseModel):
-    """Schema for project member response"""
+    """프로젝트 멤버 응답 스키마"""
 
     id: int
     project_id: int
@@ -205,35 +227,31 @@ class ProjectMemberResponse(BaseModel):
     user: UserPublic
 
     class Config:
-        """Configuration for ProjectMemberResponse"""
+        """ProjectMemberResponse 설정"""
 
         from_attributes = True
 
 
 class ProjectCommentBase(BaseModel):
-    """Base project comment schema"""
+    """기본 프로젝트 댓글 스키마"""
 
-    content: str = Field(
-        ..., min_length=1, max_length=2000, description="Comment content"
-    )
+    content: str = Field(..., min_length=1, max_length=2000, description="댓글 내용")
 
 
 class ProjectCommentCreateRequest(ProjectCommentBase):
-    """Schema for creating project comment"""
+    """프로젝트 댓글 생성 스키마"""
 
-    parent_id: Optional[int] = Field(None, description="Parent comment ID for replies")
+    parent_id: Optional[int] = Field(None, description="답글을 위한 부모 댓글 ID")
 
 
 class ProjectCommentUpdateRequest(BaseModel):
-    """Schema for updating project comment"""
+    """프로젝트 댓글 업데이트 스키마"""
 
-    content: str = Field(
-        ..., min_length=1, max_length=2000, description="Comment content"
-    )
+    content: str = Field(..., min_length=1, max_length=2000, description="댓글 내용")
 
 
 class ProjectCommentResponse(BaseModel):
-    """Schema for project comment response"""
+    """프로젝트 댓글 응답 스키마"""
 
     id: int
     project_id: int
@@ -246,17 +264,17 @@ class ProjectCommentResponse(BaseModel):
     replies: List["ProjectCommentResponse"] = []
 
     class Config:
-        """Configuration for ProjectCommentResponse"""
+        """ProjectCommentResponse 설정"""
 
         from_attributes = True
 
 
 class ProjectAttachmentResponse(BaseModel):
-    """Schema for project attachment response"""
+    """프로젝트 첨부파일 응답 스키마"""
 
     id: int
     project_id: int
-    filename: str
+    file_name: str
     file_path: str
     file_size: int
     mime_type: Optional[str] = None
@@ -266,16 +284,16 @@ class ProjectAttachmentResponse(BaseModel):
     uploader: UserPublic
 
     class Config:
-        """Configuration for ProjectAttachmentResponse"""
+        """ProjectAttachmentResponse 설정"""
 
         from_attributes = True
 
 
 class ProjectResponse(ProjectBase):
-    """Schema for project response"""
+    """프로젝트 응답 스키마"""
 
     id: int
-    creator_id: int
+    owner_id: int
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     budget: Optional[Decimal] = None
@@ -287,19 +305,19 @@ class ProjectResponse(ProjectBase):
     is_public: bool = False
     created_at: datetime
     updated_at: datetime
-    creator: UserPublic
+    owner: UserPublic
     members: List[ProjectMemberResponse] = []
     comments: List[ProjectCommentResponse] = []
     attachments: List[ProjectAttachmentResponse] = []
 
     class Config:
-        """Configuration for ProjectResponse"""
+        """ProjectResponse 설정"""
 
         from_attributes = True
 
 
 class ProjectListResponse(BaseModel):
-    """Schema for project list response"""
+    """프로젝트 목록 응답 스키마"""
 
     projects: List[ProjectResponse]
     total_items: int
@@ -309,7 +327,7 @@ class ProjectListResponse(BaseModel):
 
 
 class ProjectStatsResponse(BaseModel):
-    """Schema for project statistics"""
+    """프로젝트 통계 스키마"""
 
     total_projects: int
     active_projects: int
@@ -320,24 +338,24 @@ class ProjectStatsResponse(BaseModel):
 
 
 class ProjectSearchRequest(BaseModel):
-    """Schema for project search request"""
+    """프로젝트 검색 요청 스키마"""
 
-    search_text: Optional[str] = Field(None, description="Search query")
-    project_status: Optional[str] = None
-    priority: Optional[str] = None
-    creator_id: Optional[int] = None
-    tags: Optional[List[str]] = None
-    start_date_from: Optional[datetime] = None
-    start_date_to: Optional[datetime] = None
-    end_date_from: Optional[datetime] = None
-    end_date_to: Optional[datetime] = None
-    is_public: Optional[bool] = None
+    search_text: Optional[str] = Field(None, description="검색 쿼리")
+    project_status: Optional[str] = Field(None, description="프로젝트 상태")
+    priority: Optional[str] = Field(None, description="우선순위")
+    owner_id: Optional[int] = Field(None, description="소유자 ID")
+    tags: Optional[List[str]] = Field(None, description="태그 목록")
+    start_date_from: Optional[datetime] = Field(None, description="시작일 범위 시작")
+    start_date_to: Optional[datetime] = Field(None, description="시작일 범위 끝")
+    end_date_from: Optional[datetime] = Field(None, description="종료일 범위 시작")
+    end_date_to: Optional[datetime] = Field(None, description="종료일 범위 끝")
+    is_public: Optional[bool] = Field(None, description="공개 여부")
 
     @field_validator("project_status")
     @classmethod
     def validate_status(cls, v):
-        """Validate project status"""
-        # Ensure status is one of the defined constants
+        """프로젝트 상태 검증"""
+        # 정의된 상수 중 하나인지 확인
         if v is not None:
             valid_statuses = [
                 ProjectStatus.PLANNING,
@@ -347,14 +365,16 @@ class ProjectSearchRequest(BaseModel):
                 ProjectStatus.CANCELLED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v):
-        """Validate project priority"""
-        # Ensure priority is one of the defined constants
+        """프로젝트 우선순위 검증"""
+        # 정의된 상수 중 하나인지 확인
         if v is not None:
             valid_priorities = [
                 ProjectPriority.LOW,
@@ -364,13 +384,13 @@ class ProjectSearchRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f"Priority must be one of: {', '.join(valid_priorities)}"
+                    f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
                 )
         return v
 
 
 class ProjectDashboardResponse(BaseModel):
-    """Schema for project dashboard response"""
+    """프로젝트 대시보드 응답 스키마"""
 
     total_projects: int
     active_projects: int
@@ -382,5 +402,5 @@ class ProjectDashboardResponse(BaseModel):
     upcoming_deadlines: List[ProjectResponse]
 
 
-# Update forward references
+# 전방 참조 업데이트
 ProjectCommentResponse.model_rebuild()

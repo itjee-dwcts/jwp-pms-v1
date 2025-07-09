@@ -1,7 +1,7 @@
 """
-Tasks API Routes
+작업 API Routes
 
-Task management endpoints.
+작업 관리 엔드포인트
 """
 
 import logging
@@ -27,20 +27,18 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
-    page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
-    project_id: Optional[int] = Query(None, description="Filter by project"),
-    assignee_id: Optional[int] = Query(None, description="Filter by assignee"),
-    task_status: Optional[str] = Query(None, description="Filter by status"),
-    priority: Optional[str] = Query(None, description="Filter by priority"),
-    search_text: Optional[str] = Query(
-        None, description="Search by title or description"
-    ),
+    page_no: int = Query(0, ge=0, description="건너뛸 레코드 수"),
+    page_size: int = Query(50, ge=1, le=100, description="반환할 레코드 수"),
+    project_id: Optional[int] = Query(None, description="프로젝트별 필터"),
+    assignee_id: Optional[int] = Query(None, description="담당자별 필터"),
+    task_status: Optional[str] = Query(None, description="상태별 필터"),
+    priority: Optional[str] = Query(None, description="우선순위별 필터"),
+    search_text: Optional[str] = Query(None, description="제목 또는 설명으로 검색"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    List tasks accessible to current user
+    현재 사용자가 접근 가능한 작업 목록 조회
     """
     try:
         task_service = TaskService(db)
@@ -60,10 +58,10 @@ async def list_tasks(
         return [TaskResponse.model_validate(task) for task in tasks]
 
     except Exception as e:
-        logger.error("Error listing tasks: %s", e)
+        logger.error("작업 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve tasks",
+            detail="작업 목록을 조회할 수 없습니다",
         ) from e
 
 
@@ -74,7 +72,7 @@ async def get_task(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Get task by ID
+    ID로 작업 조회
     """
     try:
         task_service = TaskService(db)
@@ -82,7 +80,7 @@ async def get_task(
 
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="작업을 찾을 수 없습니다"
             )
 
         return TaskResponse.model_validate(task)
@@ -90,10 +88,10 @@ async def get_task(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting task %s: %s", task_id, e)
+        logger.error("작업 %s 조회 오류: %s", task_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve task",
+            detail="작업을 조회할 수 없습니다",
         ) from e
 
 
@@ -104,22 +102,22 @@ async def create_task(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Create a new task
+    새 작업 생성
     """
     try:
         task_service = TaskService(db)
         task = await task_service.create_task(task_data, int(str(current_user.id)))
 
-        logger.info("Task created by %s: %s", current_user.name, task.title)
+        logger.info("작업이 %s에 의해 생성됨: %s", current_user.name, task.title)
 
         return TaskResponse.model_validate(task)
 
     except Exception as e:
-        logger.error("Error creating task: %s", e)
+        logger.error("작업 생성 오류: %s", e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create task",
+            detail="작업을 생성할 수 없습니다",
         ) from e
 
 
@@ -131,7 +129,7 @@ async def update_task(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Update task
+    작업 수정
     """
     try:
         task_service = TaskService(db)
@@ -141,21 +139,21 @@ async def update_task(
 
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="작업을 찾을 수 없습니다"
             )
 
-        logger.info("Task updated by %s: %s", current_user.name, task.title)
+        logger.info("작업이 %s에 의해 수정됨: %s", current_user.name, task.title)
 
         return TaskResponse.model_validate(task)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating task %s: %s", task_id, e)
+        logger.error("작업 %s 수정 오류: %s", task_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update task",
+            detail="작업을 수정할 수 없습니다",
         ) from e
 
 
@@ -166,7 +164,7 @@ async def delete_task(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Delete task
+    작업 삭제
     """
     try:
         task_service = TaskService(db)
@@ -174,21 +172,21 @@ async def delete_task(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="작업을 찾을 수 없습니다"
             )
 
-        logger.info("Task deleted by %s: %s", current_user.name, task_id)
+        logger.info("작업이 %s에 의해 삭제됨: %s", current_user.name, task_id)
 
-        return {"message": "Task deleted successfully"}
+        return {"message": "작업이 성공적으로 삭제되었습니다"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting task %s: %s", task_id, e)
+        logger.error("작업 %s 삭제 오류: %s", task_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete task",
+            detail="작업을 삭제할 수 없습니다",
         ) from e
 
 
@@ -199,7 +197,7 @@ async def list_task_comments(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    List task comments
+    작업 댓글 목록 조회
     """
     try:
         task_service = TaskService(db)
@@ -210,8 +208,8 @@ async def list_task_comments(
         return [TaskCommentResponse.model_validate(comment) for comment in comments]
 
     except Exception as e:
-        logger.error("Error listing task comments: %s", e)
+        logger.error("작업 댓글 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve task comments",
+            detail="작업 댓글 목록을 조회할 수 없습니다",
         ) from e

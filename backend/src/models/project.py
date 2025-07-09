@@ -1,7 +1,7 @@
 """
-Project Models
+프로젝트 모델
 
-SQLAlchemy models for project management.
+프로젝트 관리를 위한 SQLAlchemy 모델
 """
 
 import uuid
@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from constants.project import ProjectMemberRole, ProjectPriority, ProjectStatus
+from core.base import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -24,121 +26,116 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from core.base import Base
-from core.constants import ProjectMemberRole, ProjectPriority, ProjectStatus
-
 if TYPE_CHECKING:
     pass
 
 
 class Project(Base):
     """
-    Project model for project management
+    프로젝트 관리를 위한 프로젝트 모델
     """
 
     __tablename__ = "projects"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Unique identifier for the project",
+        doc="프로젝트의 고유 식별자",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Project creation timestamp",
+        doc="프로젝트 생성 타임스탬프",
     )
     created_by = Column(
         Integer,
         nullable=True,
-        doc="User who created the project",
+        doc="프로젝트를 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Project last update timestamp",
+        doc="프로젝트 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         Integer,
         nullable=True,
-        doc="User who last updated the project",
+        doc="프로젝트를 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
-    name = Column(String(200), nullable=False, index=True, doc="Project name")
-    description = Column(Text, nullable=True, doc="Project description")
+    # 기본 정보
+    name = Column(String(200), nullable=False, index=True, doc="프로젝트 이름")
+    description = Column(Text, nullable=True, doc="프로젝트 설명")
 
-    # Status and Priority
+    # 상태 및 우선순위
     status = Column(
         String(20),  # Enum(ProjectStatus),
         default=ProjectStatus.PLANNING,
         nullable=False,
-        doc="Project status",
+        doc="프로젝트 상태",
     )
     priority = Column(
         String(20),  # Enum(ProjectPriority),
         default=ProjectPriority.MEDIUM,
         nullable=False,
-        doc="Project priority",
+        doc="프로젝트 우선순위",
     )
 
-    # Timeline
-    start_date = Column(
-        DateTime(timezone=True), nullable=True, doc="Project start date"
-    )
-    end_date = Column(DateTime(timezone=True), nullable=True, doc="Project end date")
+    # 일정
+    start_date = Column(DateTime(timezone=True), nullable=True, doc="프로젝트 시작일")
+    end_date = Column(DateTime(timezone=True), nullable=True, doc="프로젝트 종료일")
     actual_start_date = Column(
-        DateTime(timezone=True), nullable=True, doc="Actual project start date"
+        DateTime(timezone=True), nullable=True, doc="실제 프로젝트 시작일"
     )
     actual_end_date = Column(
-        DateTime(timezone=True), nullable=True, doc="Actual project end date"
+        DateTime(timezone=True), nullable=True, doc="실제 프로젝트 종료일"
     )
 
-    # Progress and Budget
+    # 진행률 및 예산
     progress = Column(
         Integer,
         default=0,
         nullable=False,
-        doc="Project progress percentage (0-100)",
+        doc="프로젝트 진행률 (0-100%)",
     )
-    budget = Column(Numeric(15, 2), nullable=True, doc="Project budget")
+    budget = Column(Numeric(15, 2), nullable=True, doc="프로젝트 예산")
     actual_cost = Column(
         Numeric(15, 2),
         default=Decimal("0.00"),
         nullable=False,
-        doc="Actual project cost",
+        doc="실제 프로젝트 비용",
     )
 
-    # Ownership and Visibility
+    # 소유권 및 가시성
     owner_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
-        doc="User who created the project",
+        doc="프로젝트를 생성한 사용자",
     )
     is_active = Column(
         Boolean,
         default=True,
         nullable=False,
-        doc="Whether the project is active",
+        doc="프로젝트 활성화 여부",
     )
     is_public = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the project is public",
+        doc="프로젝트 공개 여부",
     )
 
-    # Additional Information
-    repository_url = Column(String(500), nullable=True, doc="Git repository URL")
-    documentation_url = Column(String(500), nullable=True, doc="Documentation URL")
-    tags = Column(Text, nullable=True, doc="Project tags (comma-separated)")
+    # 추가 정보
+    repository_url = Column(String(500), nullable=True, doc="Git 저장소 URL")
+    documentation_url = Column(String(500), nullable=True, doc="문서 URL")
+    tags = Column(Text, nullable=True, doc="프로젝트 태그 (쉼표로 구분)")
 
-    # Relationships
+    # 관계
     owner = relationship(
         "User", back_populates="created_projects", foreign_keys=[owner_id]
     )
@@ -163,7 +160,7 @@ class Project(Base):
 
     events = relationship("Event", back_populates="project")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         CheckConstraint(
             "progress >= 0 AND progress <= 100", name="ck_project_progress"
@@ -177,7 +174,7 @@ class Project(Base):
         return f"<Project(id={self.id}, name='{self.name}', status='{self.status}')>"
 
     def update_progress(self):
-        """Update project progress based on completed tasks"""
+        """완료된 작업을 기반으로 프로젝트 진행률 업데이트"""
         if not self.tasks:
             self.progress = 0
             return
@@ -189,70 +186,70 @@ class Project(Base):
 
 class ProjectMember(Base):
     """
-    Project member association model
+    프로젝트 멤버 연관 모델
     """
 
     __tablename__ = "project_members"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Unique identifier for the project member",
+        doc="프로젝트 멤버의 고유 식별자",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Project member creation timestamp",
+        doc="프로젝트 멤버 생성 타임스탬프",
     )
     created_by = Column(
         Integer,
         nullable=True,
-        doc="User who created the project member association",
+        doc="프로젝트 멤버 연관을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Project member last update timestamp",
+        doc="프로젝트 멤버 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         Integer,
         nullable=True,
-        doc="User who last updated the project member association",
+        doc="프로젝트 멤버 연관을 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
+    # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
+        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="User ID")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="사용자 ID")
     role = Column(
         String(20),  # Enum(ProjectMemberRole),
         default=ProjectMemberRole.DEVELOPER,
         nullable=False,
-        doc="Member role in the project",
+        doc="프로젝트에서의 멤버 역할",
     )
     joined_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="When the user joined the project",
+        doc="사용자가 프로젝트에 참여한 시점",
     )
     is_active = Column(
         Boolean,
         default=True,
         nullable=False,
-        doc="Whether the membership is active",
+        doc="멤버십 활성화 여부",
     )
 
-    # Relationships
+    # 관계
     project = relationship("Project", back_populates="members")
     user = relationship("User", back_populates="project_memberships")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         UniqueConstraint(
             "project_id", "user_id", name="ux_project_members__project_user"
@@ -266,14 +263,14 @@ class ProjectMember(Base):
         )
 
     def can_manage_project(self) -> bool:
-        """Check if member can manage the project"""
+        """멤버가 프로젝트를 관리할 수 있는지 확인"""
         return self.role in [
             ProjectMemberRole.OWNER,
             ProjectMemberRole.MANAGER,
         ]
 
     def can_assign_tasks(self) -> bool:
-        """Check if member can assign tasks"""
+        """멤버가 작업을 할당할 수 있는지 확인"""
         return self.role in [
             ProjectMemberRole.OWNER,
             ProjectMemberRole.MANAGER,
@@ -282,73 +279,72 @@ class ProjectMember(Base):
 
 class ProjectComment(Base):
     """
-    Project comment model
+    프로젝트 댓글 모델
     """
 
     __tablename__ = "project_comments"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Unique identifier for the project comment",
+        doc="프로젝트 댓글의 고유 식별자",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Comment creation timestamp",
+        doc="댓글 생성 타임스탬프",
     )
     created_by = Column(
         Integer,
         nullable=True,
-        doc="User who created the comment",
+        doc="댓글을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Comment last update timestamp",
+        doc="댓글 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         Integer,
         nullable=True,
-        doc="User who last updated the comment",
+        doc="댓글을 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
+    # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
+        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
     author_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
-        doc="Comment author ID",
+        doc="댓글 작성자 ID",
     )
-    content = Column(Text, nullable=False, doc="Comment content")
+    content = Column(Text, nullable=False, doc="댓글 내용")
     parent_id = Column(
         Integer,
         ForeignKey("project_comments.id"),
         nullable=True,
-        doc="Parent comment ID for replies",
+        doc="답글을 위한 부모 댓글 ID",
     )
     is_edited = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the comment has been edited",
+        doc="댓글 편집 여부",
     )
 
-    # Relationships
+    # 관계
     project = relationship("Project", back_populates="comments")
     author = relationship("User")
-    # parent = relationship("ProjectComment", remote_side=[Base.id])
     parent = relationship(
         "ProjectComment",
         remote_side=lambda: ProjectComment.id,
-        back_populates="recurring_instances",
+        back_populates="replies",
     )
     replies = relationship(
         "ProjectComment", back_populates="parent", cascade="all, delete-orphan"
@@ -363,58 +359,58 @@ class ProjectComment(Base):
 
 class ProjectAttachment(Base):
     """
-    Project attachment model
+    프로젝트 첨부파일 모델
     """
 
     __tablename__ = "project_attachments"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Unique identifier for the project attachment",
+        doc="프로젝트 첨부파일의 고유 식별자",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Attachment creation timestamp",
+        doc="첨부파일 생성 타임스탬프",
     )
     created_by = Column(
         Integer,
         nullable=True,
-        doc="User who created the attachment",
+        doc="첨부파일을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Attachment last update timestamp",
+        doc="첨부파일 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         Integer,
         nullable=True,
-        doc="User who last updated the attachment",
+        doc="첨부파일을 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
+    # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="Project ID"
+        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
-    file_name = Column(String(255), nullable=False, doc="Original file name")
-    file_path = Column(String(500), nullable=False, doc="File storage path")
-    file_size = Column(Integer, nullable=False, doc="File size in bytes")
-    mime_type = Column(String(100), nullable=True, doc="MIME type of the file")
+    file_name = Column(String(255), nullable=False, doc="원본 파일명")
+    file_path = Column(String(500), nullable=False, doc="파일 저장 경로")
+    file_size = Column(Integer, nullable=False, doc="파일 크기 (바이트)")
+    mime_type = Column(String(100), nullable=True, doc="파일의 MIME 타입")
     uploaded_by = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
-        doc="User who uploaded the file",
+        doc="파일을 업로드한 사용자",
     )
-    description = Column(Text, nullable=True, doc="File description")
+    description = Column(Text, nullable=True, doc="파일 설명")
 
-    # Relationships
+    # 관계
     project = relationship("Project", back_populates="attachments")
     uploader = relationship("User")
 

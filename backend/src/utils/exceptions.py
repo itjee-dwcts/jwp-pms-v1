@@ -1,19 +1,18 @@
-# backend/src/utils/exceptions.py
 """
-Custom Exception Classes
+사용자 정의 예외 클래스
 
-Application-specific exceptions for better error handling and API responses.
+API 에러 처리 및 응답을 위한 애플리케이션별 예외들
 """
 
 from typing import Any, Dict, Optional
 
 
 class BaseAPIException(Exception):
-    """Base exception class for API errors"""
+    """API 오류를 위한 기본 예외 클래스"""
 
     def __init__(
         self,
-        message: str = "An error occurred",
+        message: str = "오류가 발생했습니다",
         status_code: int = 500,
         error_code: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
@@ -26,11 +25,11 @@ class BaseAPIException(Exception):
 
 
 class ValidationError(BaseAPIException):
-    """Raised when input validation fails"""
+    """입력 유효성 검증 실패 시 발생"""
 
     def __init__(
         self,
-        message: str = "Validation error",
+        message: str = "유효성 검증 오류",
         field: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
     ):
@@ -47,11 +46,11 @@ class ValidationError(BaseAPIException):
 
 
 class AuthenticationError(BaseAPIException):
-    """Raised when authentication fails"""
+    """인증 실패 시 발생"""
 
     def __init__(
         self,
-        message: str = "Authentication failed",
+        message: str = "인증에 실패했습니다",
         details: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
@@ -63,11 +62,11 @@ class AuthenticationError(BaseAPIException):
 
 
 class AuthorizationError(BaseAPIException):
-    """Raised when authorization fails"""
+    """권한 부족 시 발생"""
 
     def __init__(
         self,
-        message: str = "Access denied",
+        message: str = "접근이 거부되었습니다",
         resource: Optional[str] = None,
         action: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
@@ -87,11 +86,11 @@ class AuthorizationError(BaseAPIException):
 
 
 class NotFoundError(BaseAPIException):
-    """Raised when a requested resource is not found"""
+    """요청한 리소스를 찾을 수 없을 때 발생"""
 
     def __init__(
         self,
-        message: str = "Resource not found",
+        message: str = "리소스를 찾을 수 없습니다",
         resource_type: Optional[str] = None,
         resource_id: Optional[Any] = None,
         details: Optional[Dict[str, Any]] = None,
@@ -111,11 +110,11 @@ class NotFoundError(BaseAPIException):
 
 
 class ConflictError(BaseAPIException):
-    """Raised when a resource conflict occurs"""
+    """리소스 충돌이 발생했을 때 발생"""
 
     def __init__(
         self,
-        message: str = "Resource conflict",
+        message: str = "리소스 충돌이 발생했습니다",
         details: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
@@ -127,11 +126,11 @@ class ConflictError(BaseAPIException):
 
 
 class DatabaseError(BaseAPIException):
-    """Raised when database operations fail"""
+    """데이터베이스 작업 실패 시 발생"""
 
     def __init__(
         self,
-        message: str = "Database error",
+        message: str = "데이터베이스 오류가 발생했습니다",
         operation: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
     ):
@@ -147,13 +146,16 @@ class DatabaseError(BaseAPIException):
         )
 
 
-class BusinessLogicError(BaseAPIException):
-    """Raised when business logic rules are violated"""
+class BusinessException(BaseAPIException):
+    """비즈니스 로직 규칙 위반 시 발생"""
 
     def __init__(
-        self, message: str = "Business logic error", rule: Optional[str] = None
+        self,
+        message: str = "비즈니스 로직 오류가 발생했습니다",
+        rule: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
+        details = details or {}
         if rule:
             details["rule"] = rule
 
@@ -166,15 +168,16 @@ class BusinessLogicError(BaseAPIException):
 
 
 class ExternalServiceError(BaseAPIException):
-    """Raised when external service calls fail"""
+    """외부 서비스 호출 실패 시 발생"""
 
     def __init__(
         self,
-        message: str = "External service error",
+        message: str = "외부 서비스 오류가 발생했습니다",
         service_name: Optional[str] = None,
         service_error: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
+        details = details or {}
         if service_name:
             details["service_name"] = service_name
         if service_error:
@@ -189,11 +192,11 @@ class ExternalServiceError(BaseAPIException):
 
 
 class FileError(BaseAPIException):
-    """Raised when file operations fail"""
+    """파일 작업 실패 시 발생"""
 
     def __init__(
         self,
-        message: str = "File operation failed",
+        message: str = "파일 작업에 실패했습니다",
         filename: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
     ):
@@ -202,99 +205,23 @@ class FileError(BaseAPIException):
             details["filename"] = filename
         super().__init__(
             message=message,
-            status_code=4132,
+            status_code=413,
             error_code="FILE_ERROR",
             details=details,
         )
 
 
-class FileSizeError(FileError):
-    """Raised when file size exceeds limits"""
-
-    def __init__(
-        self,
-        message: str = "File size exceeds limit",
-        max_size: Optional[int] = None,
-        actual_size: Optional[int] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        details = details or {}
-        if max_size:
-            details["max_size"] = max_size
-        if actual_size:
-            details["actual_size"] = actual_size
-        super().__init__(message, details=details)
-
-
-class FileTypeError(FileError):
-    """Raised when file type is not supported"""
-
-    def __init__(
-        self,
-        message: str = "File type not supported",
-        file_type: Optional[str] = None,
-        allowed_types: Optional[list[str]] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        details = details or {}
-        if file_type:
-            details["file_type"] = file_type
-        if allowed_types:
-            details["allowed_types"] = allowed_types
-        super().__init__(message, details=details)
-
-
-class FileUploadError(BaseAPIException):
-    """Raised when file upload operations fail"""
-
-    def __init__(
-        self,
-        message: str = "File upload error",
-        filename: Optional[str] = None,
-        file_size: Optional[int] = None,
-        max_size: Optional[int] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        if filename:
-            details["filename"] = filename
-        if file_size:
-            details["file_size"] = file_size
-        if max_size:
-            details["max_size"] = max_size
-
-        super().__init__(
-            message=message,
-            status_code=413,
-            error_code="FILE_UPLOAD_ERROR",
-            details=details,
-        )
-
-
-class EmailError(BaseAPIException):
-    """Raised when email operations fail"""
-
-    def __init__(
-        self,
-        message: str = "Email operation failed",
-        email_address: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        details = details or {}
-        if email_address:
-            details["email_address"] = email_address
-        super().__init__(message, error_code="EMAIL_ERROR", details=details)
-
-
 class RateLimitError(BaseAPIException):
-    """Raised when rate limits are exceeded"""
+    """요청 속도 제한을 초과했을 때 발생"""
 
     def __init__(
         self,
-        message: str = "Rate limit exceeded",
+        message: str = "요청 속도 제한을 초과했습니다",
         limit: Optional[int] = None,
         reset_time: Optional[int] = None,
+        details: Optional[Dict[str, Any]] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
+        details = details or {}
         if limit:
             details["limit"] = limit
         if reset_time:
@@ -309,14 +236,15 @@ class RateLimitError(BaseAPIException):
 
 
 class ConfigurationError(BaseAPIException):
-    """Raised when configuration is invalid or missing"""
+    """설정이 잘못되었거나 누락되었을 때 발생"""
 
     def __init__(
         self,
-        message: str = "Configuration error",
+        message: str = "설정 오류가 발생했습니다",
         config_key: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
+        details = details or {}
         if config_key:
             details["config_key"] = config_key
 
@@ -328,64 +256,42 @@ class ConfigurationError(BaseAPIException):
         )
 
 
-class PermissionDeniedError(AuthorizationError):
-    """Raised when specific permissions are denied"""
-
-    def __init__(
-        self,
-        message: str = "Permission denied",
-        resource: Optional[str] = None,
-        action: Optional[str] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        if resource:
-            details["resource"] = resource
-        if action:
-            details["action"] = action
-
-        super().__init__(
-            message=message,
-            details=details,
-        )
-
-
-# User-specific exceptions
+# 사용자 관련 예외들
 class UserNotFoundError(NotFoundError):
-    """Raised when user is not found"""
+    """사용자를 찾을 수 없을 때 발생"""
 
     def __init__(self, user_id: Optional[str] = None, email: Optional[str] = None):
-        identifier = user_id or email or "unknown"
-        message = f"User not found: {identifier}"
+        identifier = user_id or email or "알 수 없음"
+        message = "사용자를 찾을 수 없습니다: %s" % identifier
         super().__init__(message, "user", identifier)
 
 
 class UserAlreadyExistsError(ConflictError):
-    """Raised when trying to create a user that already exists"""
+    """이미 존재하는 사용자를 생성하려고 할 때 발생"""
 
     def __init__(self, email: str):
-        message = f"User already exists with email: {email}"
+        message = "이미 존재하는 이메일입니다: %s" % email
         super().__init__(message, {"email": email})
 
 
 class InvalidPasswordError(ValidationError):
-    """Raised when password is invalid"""
+    """비밀번호가 유효하지 않을 때 발생"""
 
     def __init__(self, requirements: Optional[list[str]] = None):
-        message = "Password does not meet requirements"
+        message = "비밀번호가 요구사항을 충족하지 않습니다"
         details = {"requirements": requirements or []}
         super().__init__(message, "password", details)
 
 
 class UserNotActiveError(AuthenticationError):
-    """Raised when user account is not active"""
+    """사용자 계정이 비활성 상태일 때 발생"""
 
     def __init__(
         self,
-        message: str = "User account is not active",
+        message: str = "사용자 계정이 활성화되지 않았습니다",
         user_status: Optional[str] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
-        details["auth_type"] = "USER_NOT_ACTIVE"
+        details = {"auth_type": "USER_NOT_ACTIVE"}
         if user_status:
             details["user_status"] = user_status
 
@@ -393,15 +299,14 @@ class UserNotActiveError(AuthenticationError):
 
 
 class TokenExpiredError(AuthenticationError):
-    """Raised when authentication token has expired"""
+    """인증 토큰이 만료되었을 때 발생"""
 
     def __init__(
         self,
-        message: str = "Token has expired",
+        message: str = "토큰이 만료되었습니다",
         token_type: Optional[str] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
-        details["auth_type"] = "TOKEN_EXPIRED"
+        details = {"auth_type": "TOKEN_EXPIRED"}
         if token_type:
             details["token_type"] = token_type
 
@@ -409,193 +314,48 @@ class TokenExpiredError(AuthenticationError):
 
 
 class InvalidTokenError(AuthenticationError):
-    """Raised when authentication token is invalid"""
+    """유효하지 않은 토큰일 때 발생"""
 
     def __init__(
-        self, message: str = "Invalid token", token_type: Optional[str] = None
+        self,
+        message: str = "유효하지 않은 토큰입니다",
+        token_type: Optional[str] = None,
     ):
-        details: Optional[Dict[str, Any]] = {}
-        details["auth_type"] = "INVALID_TOKEN"
+        details = {"auth_type": "INVALID_TOKEN"}
         if token_type:
             details["token_type"] = token_type
 
         super().__init__(message=message, details=details)
 
 
-class EmailSendError(ExternalServiceError):
-    """Raised when email sending fails"""
-
-    def __init__(
-        self,
-        message: str = "Failed to send email",
-        recipient: Optional[str] = None,
-        email_type: Optional[str] = None,
-    ):
-        details = {}
-        if recipient:
-            details["recipient"] = recipient
-        if email_type:
-            details["email_type"] = email_type
-
-        super().__init__(message=message, service_name="email_service")
-
-
-class DuplicateResourceError(ConflictError):
-    """Raised when trying to create a duplicate resource"""
-
-    def __init__(
-        self,
-        message: str = "Resource already exists",
-        resource_type: Optional[str] = None,
-        identifier: Optional[str] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        details["conflicting_field"] = "IDENTIFIER"
-        if resource_type:
-            details["resource_type"] = resource_type
-        if identifier:
-            details["identifier"] = identifier
-
-        super().__init__(message=message, details=details)
-
-
-class InvalidOperationError(BusinessLogicError):
-    """Raised when an invalid operation is attempted"""
-
-    def __init__(
-        self,
-        message: str = "Invalid operation",
-        operation: Optional[str] = None,
-        reason: Optional[str] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        if operation:
-            details["operation"] = operation
-        if reason:
-            details["reason"] = reason
-
-        super().__init__(
-            message=message,
-            rule=(
-                f"invalid_operation_{operation}" if operation else "invalid_operation"
-            ),
-        )
-
-
-class ResourceLimitExceededError(BusinessLogicError):
-    """Raised when resource limits are exceeded"""
-
-    def __init__(
-        self,
-        message: str = "Resource limit exceeded",
-        resource_type: Optional[str] = None,
-        current_count: Optional[int] = None,
-        max_limit: Optional[int] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        if resource_type:
-            details["resource_type"] = resource_type
-        if current_count:
-            details["current_count"] = current_count
-        if max_limit:
-            details["max_limit"] = max_limit
-
-        super().__init__(
-            message=message,
-            rule=(
-                f"resource_limit_{resource_type}" if resource_type else "resource_limit"
-            ),
-        )
-
-
-# Project-specific exceptions
+# 프로젝트 관련 예외들
 class ProjectNotFoundError(NotFoundError):
-    """Raised when project is not found"""
+    """프로젝트를 찾을 수 없을 때 발생"""
 
     def __init__(self, project_id: str):
-        message = f"Project not found: {project_id}"
+        message = "프로젝트를 찾을 수 없습니다: %s" % project_id
         super().__init__(message, "project", project_id)
 
 
-class ProjectAccessDeniedError(AuthorizationError):
-    """Raised when project access is denied"""
-
-    def __init__(
-        self,
-        message: str = "Project access denied",
-        project_id: Optional[int] = None,
-        required_role: Optional[str] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        details["auth_type"] = "PROJECT_ACCESS_DENIED"
-        if project_id:
-            details["project_id"] = project_id
-        if required_role:
-            details["required_role"] = required_role
-
-        super().__init__(message=message, details=details)
-
-
-# Task-specific exceptions
 class TaskNotFoundError(NotFoundError):
-    """Raised when task is not found"""
+    """작업을 찾을 수 없을 때 발생"""
 
     def __init__(self, task_id: str):
-        message = f"Task not found: {task_id}"
+        message = "작업을 찾을 수 없습니다: %s" % task_id
         super().__init__(message, "task", task_id)
 
 
-class TaskAssignmentError(ValidationError):
-    """Raised when task assignment fails"""
-
-    def __init__(self, message: str, task_id: Optional[str] = None):
-        details: Optional[Dict[str, Any]] = {}
-        if task_id:
-            details["task_id"] = task_id
-        super().__init__(message, "assignment", details)
-
-
-class TaskAccessDeniedError(AuthorizationError):
-    """Raised when task access is denied"""
-
-    def __init__(
-        self,
-        message: str = "Task access denied",
-        task_id: Optional[int] = None,
-        required_permission: Optional[str] = None,
-    ):
-        details: Optional[Dict[str, Any]] = {}
-        details["auth_type"] = "TASK_ACCESS_DENIED"
-        if task_id:
-            details["task_id"] = task_id
-        if required_permission:
-            details["required_permission"] = required_permission
-
-        super().__init__(message=message, details=details)
-
-
-# Calendar-specific exceptions
 class EventNotFoundError(NotFoundError):
-    """Raised when event is not found"""
+    """이벤트를 찾을 수 없을 때 발생"""
 
     def __init__(self, event_id: str):
-        message = f"Event not found: {event_id}"
+        message = "이벤트를 찾을 수 없습니다: %s" % event_id
         super().__init__(message, "event", event_id)
 
 
-class EventConflictError(ConflictError):
-    """Raised when there's a scheduling conflict"""
-
-    def __init__(self, message: str, conflicting_events: Optional[list[str]] = None):
-        details: Optional[Dict[str, Any]] = {}
-        if conflicting_events:
-            details["conflicting_events"] = conflicting_events
-        super().__init__(message, details)
-
-
-# Utility functions for exception handling
+# 유틸리티 함수들
 def create_error_response(exception: BaseAPIException) -> Dict[str, Any]:
-    """Create standardized error response from exception"""
+    """예외로부터 표준화된 오류 응답 생성"""
     return {
         "error": {
             "message": exception.message,
@@ -606,7 +366,7 @@ def create_error_response(exception: BaseAPIException) -> Dict[str, Any]:
 
 
 def is_client_error(exception: Exception) -> bool:
-    """Check if exception is a client error (4xx)"""
+    """클라이언트 오류(4xx)인지 확인"""
     client_errors = (
         ValidationError,
         AuthenticationError,
@@ -619,11 +379,10 @@ def is_client_error(exception: Exception) -> bool:
 
 
 def is_server_error(exception: Exception) -> bool:
-    """Check if exception is a server error (5xx)"""
+    """서버 오류(5xx)인지 확인"""
     server_errors = (
         DatabaseError,
         FileError,
-        EmailError,
         ExternalServiceError,
         ConfigurationError,
     )
@@ -631,8 +390,11 @@ def is_server_error(exception: Exception) -> bool:
 
 
 def get_http_status_code(exception: Exception) -> int:
-    """Get appropriate HTTP status code for exception"""
-    status_mapping: Dict[Any, int] = {
+    """예외에 적절한 HTTP 상태 코드 반환"""
+    if isinstance(exception, BaseAPIException):
+        return exception.status_code
+
+    status_mapping = {
         ValidationError: 400,
         AuthenticationError: 401,
         AuthorizationError: 403,
@@ -640,8 +402,7 @@ def get_http_status_code(exception: Exception) -> int:
         ConflictError: 409,
         RateLimitError: 429,
         DatabaseError: 500,
-        FileError: 500,
-        EmailError: 500,
+        FileError: 413,
         ExternalServiceError: 502,
         ConfigurationError: 500,
     }
@@ -650,4 +411,4 @@ def get_http_status_code(exception: Exception) -> int:
         if isinstance(exception, exception_type):
             return status_code
 
-    return 500  # Default to internal server error
+    return 500  # 기본값: 내부 서버 오류

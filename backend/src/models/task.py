@@ -1,13 +1,15 @@
 """
-Task Models
+작업 모델
 
-SQLAlchemy models for task management.
+작업 관리를 위한 SQLAlchemy 모델
 """
 
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from constants.task import TaskPriority, TaskStatus, TaskType
+from core.base import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -22,122 +24,116 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from core.base import Base
-from core.constants import TaskPriority, TaskStatus, TaskType
-
 if TYPE_CHECKING:
     from models.user import User
 
 
 class Task(Base):
     """
-    Task model for task management
+    작업 관리를 위한 작업 모델
     """
 
     __tablename__ = "tasks"
 
-    # Unique identifier and timestamps
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Task ID")
+    # 고유 식별자 및 타임스탬프
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="작업 ID")
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Task creation timestamp",
+        doc="작업 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the task",
+        doc="작업을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Task last update timestamp",
+        doc="작업 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the task",
+        doc="작업을 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
-    title = Column(String(200), nullable=False, index=True, doc="Task title")
-    description = Column(Text, nullable=True, doc="Task description")
+    # 기본 정보
+    title = Column(String(200), nullable=False, index=True, doc="작업 제목")
+    description = Column(Text, nullable=True, doc="작업 설명")
 
-    # Status and Priority
-    # Enum(TaskStatus)
+    # 상태 및 우선순위
     status = Column(
         String(20),
         default=TaskStatus.TODO,
         nullable=False,
         index=True,
-        doc="Task status",
+        doc="작업 상태",
     )
     priority = Column(
         String(20),
         default=TaskPriority.MEDIUM,
         nullable=False,
         index=True,
-        doc="Task priority",
+        doc="작업 우선순위",
     )
     task_type = Column(
-        String(20), default=TaskType.FEATURE, nullable=False, doc="Task type"
+        String(20), default=TaskType.FEATURE, nullable=False, doc="작업 유형"
     )
 
-    # Project Association
+    # 프로젝트 연관
     project_id = Column(
         UUID,
         ForeignKey("projects.id"),
         nullable=False,
         index=True,
-        doc="Associated project ID",
+        doc="연관된 프로젝트 ID",
     )
 
-    # Task Hierarchy
+    # 작업 계층구조
     parent_id = Column(
         UUID,
         ForeignKey("tasks.id"),
         nullable=True,
-        doc="Parent task ID for subtasks",
+        doc="하위 작업을 위한 상위 작업 ID",
     )
 
-    # Time Tracking
-    estimated_hours = Column(Integer, nullable=True, doc="Estimated hours to complete")
-    actual_hours = Column(Integer, default=0, nullable=False, doc="Actual hours spent")
+    # 시간 추적
+    estimated_hours = Column(Integer, nullable=True, doc="완료까지 예상 시간")
+    actual_hours = Column(Integer, default=0, nullable=False, doc="실제 소요 시간")
 
-    # Timeline
-    start_date = Column(DateTime(timezone=True), nullable=True, doc="Task start date")
+    # 일정
+    start_date = Column(DateTime(timezone=True), nullable=True, doc="작업 시작일")
     due_date = Column(
-        DateTime(timezone=True), nullable=True, index=True, doc="Task due date"
+        DateTime(timezone=True), nullable=True, index=True, doc="작업 마감일"
     )
     completed_at = Column(
-        DateTime(timezone=True), nullable=True, doc="Task completion timestamp"
+        DateTime(timezone=True), nullable=True, doc="작업 완료 타임스탬프"
     )
 
-    # Ownership
+    # 소유권
     owner_id = Column(
         UUID,
         ForeignKey("users.id"),
         nullable=False,
-        doc="User who created the task",
+        doc="작업을 생성한 사용자",
     )
 
-    # Additional Information
+    # 추가 정보
     story_points = Column(
-        Integer, nullable=True, doc="Story points for agile estimation"
+        Integer, nullable=True, doc="애자일 추정을 위한 스토리 포인트"
     )
-    acceptance_criteria = Column(
-        Text, nullable=True, doc="Acceptance criteria for task completion"
-    )
+    acceptance_criteria = Column(Text, nullable=True, doc="작업 완료를 위한 수락 기준")
     external_id = Column(
         String(100),
         nullable=True,
         index=True,
-        doc="External system ID (e.g., Jira ticket)",
+        doc="외부 시스템 ID (예: Jira 티켓)",
     )
 
-    # Relationships
+    # 관계
     project = relationship("Project", back_populates="tasks")
 
     owner = relationship(
@@ -146,8 +142,6 @@ class Task(Base):
     creator = relationship("User")
     updater = relationship("User")
 
-    # parent_task = relationship
-    # ("Task", remote_side=[Base.id], back_populates="subtasks")
     parent_task = relationship(
         "Task",
         remote_side=lambda: Task.id,
@@ -178,7 +172,7 @@ class Task(Base):
 
     events = relationship("Event", back_populates="task")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         CheckConstraint(
             "estimated_hours >= 0", name="ck_task_estimated_hours_positive"
@@ -192,8 +186,8 @@ class Task(Base):
         return f"<Task(id={self.id}, title='{self.title}', status='{self.status}')>"
 
     def assign_to(self, user: "User", assigned_by: "User"):
-        """Assign task to a user"""
-        # Check if already assigned
+        """사용자에게 작업 할당"""
+        # 이미 할당되었는지 확인
         existing = next(
             (a for a in self.assignments if a.user_id == user.id and a.is_active),
             None,
@@ -201,7 +195,7 @@ class Task(Base):
         if existing:
             return existing
 
-        # Create new assignment
+        # 새 할당 생성
         assignment = TaskAssignment(
             task_id=self.id,
             user_id=user.id,
@@ -211,18 +205,18 @@ class Task(Base):
         return assignment
 
     def unassign_from(self, user: "User"):
-        """Unassign task from a user"""
+        """사용자에게서 작업 할당 해제"""
         for assignment in self.assignments:
             if assignment.user_id == user.id and assignment.is_active:
                 assignment.is_active = False
 
     def mark_completed(self):
-        """Mark task as completed"""
+        """작업을 완료로 표시"""
         self.status = TaskStatus.DONE
         self.completed_at = datetime.now(timezone.utc)
 
     def calculate_actual_hours(self) -> int:
-        """Calculate actual hours from time logs"""
+        """시간 로그에서 실제 시간 계산"""
         if not self.time_logs:
             return 0
         return sum(log.hours for log in self.time_logs)
@@ -230,54 +224,54 @@ class Task(Base):
 
 class TaskAssignment(Base):
     """
-    Task assignment model
+    작업 할당 모델
     """
 
     __tablename__ = "task_assignments"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Assignment ID",
+        doc="할당 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Assignment creation timestamp",
+        doc="할당 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the assignment",
+        doc="할당을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Assignment last update timestamp",
+        doc="할당 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the assignment",
+        doc="할당을 마지막으로 업데이트한 사용자",
     )
 
-    # Task and User Association
-    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
+    # 작업 및 사용자 연관
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
     user_id = Column(
-        UUID, ForeignKey("users.id"), nullable=False, doc="Assigned user ID"
+        UUID, ForeignKey("users.id"), nullable=False, doc="할당된 사용자 ID"
     )
     is_active = Column(
         Boolean,
         default=True,
         nullable=False,
-        doc="Whether the assignment is active",
+        doc="할당이 활성화되어 있는지 여부",
     )
 
-    # Relationships
+    # 관계
     task = relationship("Task", back_populates="assignments")
     assignee = relationship(
         "User", back_populates="task_assignments", foreign_keys=[user_id]
@@ -285,7 +279,7 @@ class TaskAssignment(Base):
     creator = relationship("User")
     updater = relationship("User")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         UniqueConstraint("task_id", "user_id", name="uq_task_assignments_task_user"),
     )
@@ -296,73 +290,72 @@ class TaskAssignment(Base):
 
 class TaskComment(Base):
     """
-    Task comment model
+    작업 댓글 모델
     """
 
     __tablename__ = "task_comments"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Comment ID",
+        doc="댓글 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Comment creation timestamp",
+        doc="댓글 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the comment",
+        doc="댓글을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Comment last update timestamp",
+        doc="댓글 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the comment",
+        doc="댓글을 마지막으로 업데이트한 사용자",
     )
 
-    # Task and User Association
-    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
+    # 작업 및 사용자 연관
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
     author_id = Column(
         UUID,
         ForeignKey("users.id"),
         nullable=False,
-        doc="Comment author ID",
+        doc="댓글 작성자 ID",
     )
-    content = Column(Text, nullable=False, doc="Comment content")
+    content = Column(Text, nullable=False, doc="댓글 내용")
     parent_id = Column(
         UUID,
         ForeignKey("task_comments.id"),
         nullable=True,
-        doc="Parent comment ID for replies",
+        doc="답글을 위한 부모 댓글 ID",
     )
     is_edited = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the comment has been edited",
+        doc="댓글이 편집되었는지 여부",
     )
 
-    # Relationships
+    # 관계
     task = relationship("Task", back_populates="comments")
     author = relationship("User")
     creator = relationship("User")
     updater = relationship("User")
-    # parent = relationship("TaskComment", remote_side=[Base.id])
     parent = relationship(
         "TaskComment",
         remote_side=lambda: TaskComment.id,
-        back_populates="recurring_instances",
+        back_populates="replies",
     )
     replies = relationship(
         "TaskComment", back_populates="parent", cascade="all, delete-orphan"
@@ -380,50 +373,50 @@ class TaskComment(Base):
 
 class TaskAttachment(Base):
     """
-    Task attachment model
+    작업 첨부파일 모델
     """
 
     __tablename__ = "task_attachments"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Attachment ID",
+        doc="첨부파일 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Attachment creation timestamp",
+        doc="첨부파일 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the attachment",
+        doc="첨부파일을 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Attachment last update timestamp",
+        doc="첨부파일 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the attachment",
+        doc="첨부파일을 마지막으로 업데이트한 사용자",
     )
 
-    # Task and User Association
-    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
-    file_name = Column(String(255), nullable=False, doc="Original filename")
-    file_path = Column(String(500), nullable=False, doc="File storage path")
-    file_size = Column(Integer, nullable=False, doc="File size in bytes")
-    mime_type = Column(String(100), nullable=True, doc="MIME type of the file")
-    description = Column(Text, nullable=True, doc="File description")
+    # 작업 및 사용자 연관
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
+    file_name = Column(String(255), nullable=False, doc="원본 파일명")
+    file_path = Column(String(500), nullable=False, doc="파일 저장 경로")
+    file_size = Column(Integer, nullable=False, doc="파일 크기 (바이트)")
+    mime_type = Column(String(100), nullable=True, doc="파일의 MIME 타입")
+    description = Column(Text, nullable=True, doc="파일 설명")
 
-    # Relationships
+    # 관계
     task = relationship("Task", back_populates="attachments")
     creator = relationship("User")
     updater = relationship("User")
@@ -437,65 +430,65 @@ class TaskAttachment(Base):
 
 class TaskTimeLog(Base):
     """
-    Task time tracking model
+    작업 시간 추적 모델
     """
 
     __tablename__ = "task_time_logs"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Time log ID",
+        doc="시간 로그 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Time log creation timestamp",
+        doc="시간 로그 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the time log",
+        doc="시간 로그를 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Time log last update timestamp",
+        doc="시간 로그 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the time log",
+        doc="시간 로그를 마지막으로 업데이트한 사용자",
     )
 
-    # Task and User Association
-    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
+    # 작업 및 사용자 연관
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
     user_id = Column(
         UUID,
         ForeignKey("users.id"),
         nullable=False,
-        doc="User who logged the time",
+        doc="시간을 기록한 사용자",
     )
-    hours = Column(Integer, nullable=False, doc="Hours worked")
-    description = Column(Text, nullable=True, doc="Work description")
+    hours = Column(Integer, nullable=False, doc="작업한 시간")
+    description = Column(Text, nullable=True, doc="작업 설명")
     work_date = Column(
         DateTime(timezone=True),
         default=datetime.utcnow,
         nullable=False,
-        doc="Date when work was performed",
+        doc="작업이 수행된 날짜",
     )
 
-    # Relationships
+    # 관계
     task = relationship("Task", back_populates="time_logs")
     user = relationship("User")
     creator = relationship("User")
     updater = relationship("User")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         CheckConstraint("hours > 0", name="ck_task_time_log_hours_positive"),
     )
@@ -508,42 +501,44 @@ class TaskTimeLog(Base):
 
 class Tag(Base):
     """
-    Tag model for categorizing tasks
+    작업 분류를 위한 태그 모델
     """
 
     __tablename__ = "tags"
 
-    # Unique identifier and timestamps
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="Tag ID")
+    # 고유 식별자 및 타임스탬프
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, doc="태그 ID")
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="Tag creation timestamp",
+        doc="태그 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the tag",
+        doc="태그를 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Tag last update timestamp",
+        doc="태그 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the tag",
+        doc="태그를 마지막으로 업데이트한 사용자",
     )
 
-    # Basic Information
-    name = Column(String(50), unique=True, nullable=False, index=True, doc="Tag name")
-    color = Column(String(7), default="#3B82F6", nullable=False, doc="Tag color (hex)")
-    description = Column(Text, nullable=True, doc="Tag description")
+    # 기본 정보
+    name = Column(String(50), unique=True, nullable=False, index=True, doc="태그 이름")
+    color = Column(
+        String(7), default="#3B82F6", nullable=False, doc="태그 색상 (16진수)"
+    )
+    description = Column(Text, nullable=True, doc="태그 설명")
 
-    # Relationships
+    # 관계
     task_tags = relationship(
         "TaskTag", back_populates="tag", cascade="all, delete-orphan"
     )
@@ -556,52 +551,52 @@ class Tag(Base):
 
 class TaskTag(Base):
     """
-    Task-Tag association model
+    작업-태그 연관 모델
     """
 
     __tablename__ = "task_tags"
 
-    # Unique identifier and timestamps
+    # 고유 식별자 및 타임스탬프
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="TaskTag ID",
+        doc="작업태그 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         nullable=False,
-        doc="TaskTag creation timestamp",
+        doc="작업태그 생성 타임스탬프",
     )
     created_by = Column(
         UUID,
         nullable=True,
-        doc="User who created the tag",
+        doc="태그를 생성한 사용자",
     )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="TaskTag last update timestamp",
+        doc="작업태그 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated the tag",
+        doc="태그를 마지막으로 업데이트한 사용자",
     )
 
-    # Task and Tag Association
-    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="Task ID")
-    tag_id = Column(UUID, ForeignKey("tags.id"), nullable=False, doc="Tag ID")
+    # 작업 및 태그 연관
+    task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
+    tag_id = Column(UUID, ForeignKey("tags.id"), nullable=False, doc="태그 ID")
 
-    # Relationships
+    # 관계
     task = relationship("Task", back_populates="tags")
     tag = relationship("Tag", back_populates="task_tags")
     creator = relationship("User")
     updater = relationship("User")
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         UniqueConstraint("task_id", "tag_id", name="ux_task_tags_task_tag"),
     )

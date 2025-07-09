@@ -1,7 +1,7 @@
 """
-Projects API Routes
+프로젝트 API Routes
 
-Project management endpoints.
+프로젝트 관리 엔드포인트
 """
 
 import logging
@@ -27,17 +27,15 @@ router = APIRouter()
 
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
-    page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
-    search_text: Optional[str] = Query(
-        None, description="Search by name or description"
-    ),
-    project_status: Optional[str] = Query(None, description="Filter by status"),
+    page_no: int = Query(0, ge=0, description="건너뛸 레코드 수"),
+    page_size: int = Query(50, ge=1, le=100, description="반환할 레코드 수"),
+    search_text: Optional[str] = Query(None, description="이름 또는 설명으로 검색"),
+    project_status: Optional[str] = Query(None, description="상태별 필터"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    List projects accessible to current user
+    현재 사용자가 접근 가능한 프로젝트 목록 조회
     """
     try:
         project_service = ProjectService(db)
@@ -53,10 +51,10 @@ async def list_projects(
         return [ProjectResponse.model_validate(project) for project in projects]
 
     except Exception as e:
-        logger.error("Error listing projects: %s", e)
+        logger.error("프로젝트 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve projects",
+            detail="프로젝트 목록을 조회할 수 없습니다",
         ) from e
 
 
@@ -67,7 +65,7 @@ async def get_project(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Get project by ID
+    ID로 프로젝트 조회
     """
     try:
         project_service = ProjectService(db)
@@ -78,7 +76,7 @@ async def get_project(
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="프로젝트를 찾을 수 없습니다",
             )
 
         return ProjectResponse.model_validate(project)
@@ -86,10 +84,10 @@ async def get_project(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting project %s: %s", project_id, e)
+        logger.error("프로젝트 %s 조회 오류: %s", project_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve project",
+            detail="프로젝트를 조회할 수 없습니다",
         ) from e
 
 
@@ -100,7 +98,7 @@ async def create_project(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Create a new project
+    새 프로젝트 생성
     """
     try:
         project_service = ProjectService(db)
@@ -108,16 +106,16 @@ async def create_project(
             project_data, int(str(current_user.id))
         )
 
-        logger.info("Project created by %s: %s", current_user.name, project.name)
+        logger.info("프로젝트가 %s에 의해 생성됨: %s", current_user.name, project.name)
 
         return ProjectResponse.model_validate(project)
 
     except Exception as e:
-        logger.error("Error creating project: %s", e)
+        logger.error("프로젝트 생성 오류: %s", e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create project",
+            detail="프로젝트를 생성할 수 없습니다",
         ) from e
 
 
@@ -129,7 +127,7 @@ async def update_project(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Update project
+    프로젝트 수정
     """
     try:
         project_service = ProjectService(db)
@@ -140,21 +138,21 @@ async def update_project(
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="프로젝트를 찾을 수 없습니다",
             )
 
-        logger.info("Project updated by %s: %s", current_user.name, project.name)
+        logger.info("프로젝트가 %s에 의해 수정됨: %s", current_user.name, project.name)
 
         return ProjectResponse.model_validate(project)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating project %s: %s", project_id, e)
+        logger.error("프로젝트 %s 수정 오류: %s", project_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update project",
+            detail="프로젝트를 수정할 수 없습니다",
         ) from e
 
 
@@ -165,7 +163,7 @@ async def delete_project(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Delete project
+    프로젝트 삭제
     """
     try:
         project_service = ProjectService(db)
@@ -176,21 +174,21 @@ async def delete_project(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="프로젝트를 찾을 수 없습니다",
             )
 
-        logger.info("Project deleted by %s: %s", current_user.name, project_id)
+        logger.info("프로젝트가 %s에 의해 삭제됨: %s", current_user.name, project_id)
 
-        return {"message": "Project deleted successfully"}
+        return {"message": "프로젝트가 성공적으로 삭제되었습니다"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting project %s: %s", project_id, e)
+        logger.error("프로젝트 %s 삭제 오류: %s", project_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete project",
+            detail="프로젝트를 삭제할 수 없습니다",
         ) from e
 
 
@@ -201,7 +199,7 @@ async def list_project_members(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    List project members
+    프로젝트 멤버 목록 조회
     """
     try:
         project_service = ProjectService(db)
@@ -212,8 +210,8 @@ async def list_project_members(
         return [ProjectMemberResponse.model_validate(member) for member in members]
 
     except Exception as e:
-        logger.error("Error listing project members: %s", e)
+        logger.error("프로젝트 멤버 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve project members",
+            detail="프로젝트 멤버 목록을 조회할 수 없습니다",
         ) from e

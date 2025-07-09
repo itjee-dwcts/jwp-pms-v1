@@ -1,27 +1,27 @@
 """
-FastAPI Dependencies
+FastAPI 의존성
 
-Common dependencies for authentication, database, and permissions.
+인증, 데이터베이스, 권한을 위한 공통 의존성
 """
 
 import logging
+import time
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from core.constants import UserRole
+from constants.user import UserRole
 from core.database import get_async_session
 from core.security import TokenData, decode_access_token
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from models.project import ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-# HTTP Bearer token scheme
+# HTTP Bearer 토큰 스키마
 security = HTTPBearer(auto_error=False)
 
 
@@ -30,39 +30,39 @@ async def get_current_user(
     db: AsyncSession = Depends(get_async_session),
 ) -> Optional[User]:
     """
-    Get current user from JWT token
+    JWT 토큰에서 현재 사용자 조회
     """
     if not credentials:
         return None
 
     try:
-        # Decode JWT token
+        # JWT 토큰 디코딩
         token_data: TokenData = decode_access_token(credentials.credentials)
 
         if token_data.sub is None:
-            raise ValueError("Token data is missing 'sub' claim")
+            raise ValueError("토큰 데이터에 'sub' 클레임이 없습니다")
 
-        # Get user from database
+        # 데이터베이스에서 사용자 조회
         result = await db.execute(select(User).where(User.id == int(token_data.sub)))
         user = result.scalar_one_or_none()
 
         if not user:
-            logger.warning("User not found for token subject: %s", token_data.sub)
+            logger.warning("토큰 주체에 대한 사용자를 찾을 수 없음: %s", token_data.sub)
             return None
 
         user_is_active = getattr(user, "is_active", False)
         if not user_is_active:
-            logger.warning("Inactive user attempted access: %s", user.id)
+            logger.warning("비활성 사용자가 접근을 시도함: %s", user.id)
             return None
 
-        # Update last active timestamp
+        # 마지막 활성 타임스탬프 업데이트
         user.update_last_active()
         await db.commit()
 
         return user
 
-    except Exception as e:
-        logger.warning("Token validation failed: %s", e)
+    except Exception as e:  # pylint: disable=broad-except
+        logger.warning("토큰 검증 실패: %s", e)
         return None
 
 
@@ -70,12 +70,12 @@ async def get_current_active_user(
     current_user: Optional[User] = Depends(get_current_user),
 ) -> User:
     """
-    Get current active user (raises exception if not authenticated)
+    현재 활성 사용자 조회 (인증되지 않은 경우 예외 발생)
     """
     if not current_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="인증되지 않았습니다",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -86,13 +86,13 @@ async def get_current_admin_user(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """
-    Get current admin user (raises exception if not admin)
+    현재 관리자 사용자 조회 (관리자가 아닌 경우 예외 발생)
     """
     current_user_role = getattr(current_user, "role", UserRole.GUEST)
     if current_user_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
+            detail="관리자 권한이 필요합니다",
         )
 
     return current_user
@@ -100,7 +100,7 @@ async def get_current_admin_user(
 
 def require_role(required_role: str):
     """
-    Dependency factory for role-based access control
+    역할 기반 접근 제어를 위한 의존성 팩토리
     """
 
     async def role_checker(
@@ -109,7 +109,7 @@ def require_role(required_role: str):
         if not has_role(current_user, required_role):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{required_role}' required",
+                detail=f"'{required_role}' 역할이 필요합니다",
             )
         return current_user
 
@@ -118,7 +118,7 @@ def require_role(required_role: str):
 
 def require_any_role(*required_roles: str):
     """
-    Dependency factory for multiple role-based access control
+    다중 역할 기반 접근 제어를 위한 의존성 팩토리
     """
 
     async def role_checker(
@@ -128,7 +128,7 @@ def require_any_role(*required_roles: str):
             roles_str = ", ".join(required_roles)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"One of these roles required: {roles_str}",
+                detail=f"다음 역할 중 하나가 필요합니다: {roles_str}",
             )
         return current_user
 
@@ -137,9 +137,9 @@ def require_any_role(*required_roles: str):
 
 def has_role(user: User, required_role: str) -> bool:
     """
-    Check if user has the required role
+    사용자가 필요한 역할을 가지고 있는지 확인
     """
-    # Role hierarchy: Admin > Project Manager > Developer > Viewer
+    # 역할 계층: 관리자 > 프로젝트 매니저 > 개발자 > 뷰어
     role_hierarchy = {
         UserRole.ADMIN: 0,
         UserRole.MANAGER: 1,
@@ -158,14 +158,14 @@ def require_admin(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """
-    Dependency to require admin role
+    관리자 역할을 요구하는 의존성
     """
 
     current_user_role = getattr(current_user, "role", UserRole.GUEST)
     if current_user_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
+            detail="관리자 권한이 필요합니다",
         )
     return current_user
 
@@ -174,12 +174,12 @@ def require_project_manager(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """
-    Dependency to require project manager role or higher
+    프로젝트 매니저 역할 이상을 요구하는 의존성
     """
     if not has_role(current_user, UserRole.MANAGER):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Project manager privileges required",
+            detail="프로젝트 매니저 권한이 필요합니다",
         )
     return current_user
 
@@ -188,12 +188,12 @@ def require_developer(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """
-    Dependency to require developer role or higher
+    개발자 역할 이상을 요구하는 의존성
     """
     if not has_role(current_user, UserRole.DEVELOPER):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Developer privileges required",
+            detail="개발자 권한이 필요합니다",
         )
     return current_user
 
@@ -203,14 +203,14 @@ async def get_optional_current_user(
     db: AsyncSession = Depends(get_async_session),
 ) -> Optional[User]:
     """
-    Get current user optionally (doesn't raise exception if not authenticated)
+    현재 사용자를 선택적으로 조회 (인증되지 않은 경우 예외 발생하지 않음)
     """
     return await get_current_user(credentials, db)
 
 
 class RateLimiter:
     """
-    Simple rate limiter dependency
+    간단한 속도 제한 의존성
     """
 
     def __init__(self, calls: int, period: int):
@@ -219,36 +219,34 @@ class RateLimiter:
         self.requests = {}
 
     async def __call__(self, request):
-        import time
-
         client_ip = request.client.host
         current_time = time.time()
 
         if client_ip not in self.requests:
             self.requests[client_ip] = []
 
-        # Remove old requests
+        # 오래된 요청 제거
         self.requests[client_ip] = [
             req_time
             for req_time in self.requests[client_ip]
             if current_time - req_time < self.period
         ]
 
-        # Check rate limit
+        # 속도 제한 확인
         if len(self.requests[client_ip]) >= self.calls:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Rate limit exceeded",
+                detail="요청 속도 제한을 초과했습니다",
             )
 
-        # Add current request
+        # 현재 요청 추가
         self.requests[client_ip].append(current_time)
 
 
-# Predefined rate limiters
-rate_limit_auth = RateLimiter(calls=10, period=60)  # 10 calls per minute
-rate_limit_api = RateLimiter(calls=100, period=60)  # 100 calls per minute
-rate_limit_upload = RateLimiter(calls=5, period=60)  # 5 uploads per minute
+# 미리 정의된 속도 제한기
+rate_limit_auth = RateLimiter(calls=10, period=60)  # 분당 10회 호출
+rate_limit_api = RateLimiter(calls=100, period=60)  # 분당 100회 호출
+rate_limit_upload = RateLimiter(calls=5, period=60)  # 분당 5회 업로드
 
 
 async def verify_project_access(
@@ -257,15 +255,15 @@ async def verify_project_access(
     db: AsyncSession = Depends(get_async_session),
 ) -> bool:
     """
-    Verify user has access to a specific project
+    사용자가 특정 프로젝트에 접근할 수 있는지 확인
     """
 
     current_user_role = getattr(current_user, "role", UserRole.GUEST)
-    # Admin users have access to all projects
+    # 관리자는 모든 프로젝트에 접근 가능
     if current_user_role == UserRole.ADMIN:
         return True
 
-    # Check if user is a member of the project
+    # 사용자가 프로젝트 멤버인지 확인
     result = await db.execute(
         select(ProjectMember).where(
             ProjectMember.project_id == project_id,
@@ -283,23 +281,23 @@ async def verify_task_access(
     db: AsyncSession = Depends(get_async_session),
 ) -> bool:
     """
-    Verify user has access to a specific task
+    사용자가 특정 작업에 접근할 수 있는지 확인
     """
 
     current_user_role = getattr(current_user, "role", UserRole.GUEST)
 
-    # Admin users have access to all tasks
+    # 관리자는 모든 작업에 접근 가능
     if current_user_role == UserRole.ADMIN:
         return True
 
-    # Get task and check project membership
+    # 작업 조회 및 프로젝트 멤버십 확인
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         return False
 
-    # Check if user is assigned to the task
+    # 사용자가 작업에 할당되었는지 확인
     assignment_result = await db.execute(
         select(TaskAssignment).where(
             TaskAssignment.task_id == task_id,
@@ -311,7 +309,7 @@ async def verify_task_access(
     if assignment:
         return True
 
-    # Check if user is a member of the project
+    # 사용자가 프로젝트 멤버인지 확인
     member_result = await db.execute(
         select(ProjectMember).where(
             ProjectMember.project_id == task.project_id,
@@ -325,7 +323,7 @@ async def verify_task_access(
 
 def create_access_checker(resource_type: str):
     """
-    Factory function to create resource-specific access checkers
+    리소스별 접근 검사기를 생성하는 팩토리 함수
     """
 
     async def access_checker(
@@ -338,14 +336,14 @@ def create_access_checker(resource_type: str):
         elif resource_type == "task":
             return await verify_task_access(resource_id, current_user, db)
         else:
-            # Default: only allow access if user is admin
+            # 기본값: 관리자만 접근 허용
             current_user_role = getattr(current_user, "role", UserRole.GUEST)
             return current_user_role == UserRole.ADMIN
 
     return access_checker
 
 
-# Convenience dependencies
+# 편의 의존성
 require_project_access = create_access_checker("project")
 require_task_access = create_access_checker("task")
 
@@ -355,7 +353,7 @@ async def get_pagination_params(
     page_size: int = 20,
 ) -> dict:
     """
-    Get pagination parameters with validation
+    검증이 포함된 페이지네이션 매개변수 조회
     """
     if page_no < 1:
         page_no = 1
@@ -372,7 +370,7 @@ async def get_sort_params(
     sort_order: str = "desc",
 ) -> dict:
     """
-    Get sorting parameters with validation
+    검증이 포함된 정렬 매개변수 조회
     """
     if sort_order.lower() not in ["asc", "desc"]:
         sort_order = "desc"

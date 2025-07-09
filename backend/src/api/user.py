@@ -1,7 +1,7 @@
 """
-Users API Routes
+사용자 API Routes
 
-User management endpoints for administrators.
+관리자용 사용자 관리 엔드포인트
 """
 
 import logging
@@ -22,16 +22,16 @@ router = APIRouter()
 
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
-    page_no: int = Query(0, ge=0, description="Number of records to skip"),
-    page_size: int = Query(50, ge=1, le=100, description="Number of records to return"),
-    search_text: Optional[str] = Query(None, description="Search by name or email"),
-    user_role: Optional[str] = Query(None, description="Filter by role"),
-    user_status: Optional[str] = Query(None, description="Filter by status"),
+    page_no: int = Query(0, ge=0, description="건너뛸 레코드 수"),
+    page_size: int = Query(50, ge=1, le=100, description="반환할 레코드 수"),
+    search_text: Optional[str] = Query(None, description="이름 또는 이메일로 검색"),
+    user_role: Optional[str] = Query(None, description="역할별 필터"),
+    user_status: Optional[str] = Query(None, description="상태별 필터"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    List users with optional filtering and pagination
+    필터링 및 페이지네이션을 지원하는 사용자 목록 조회
     """
     try:
         user_service = UserService(db)
@@ -46,10 +46,10 @@ async def list_users(
         return [UserResponse.model_validate(user) for user in users]
 
     except Exception as e:
-        logger.error("Error listing users: %s", e)
+        logger.error("사용자 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve users",
+            detail="사용자 목록을 조회할 수 없습니다",
         ) from e
 
 
@@ -60,7 +60,7 @@ async def get_user(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Get user by ID
+    ID로 사용자 조회
     """
     try:
         user_service = UserService(db)
@@ -68,7 +68,8 @@ async def get_user(
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="사용자를 찾을 수 없습니다",
             )
 
         return UserResponse.model_validate(user)
@@ -76,10 +77,10 @@ async def get_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting user %s: %s", user_id, e)
+        logger.error("사용자 %s 조회 오류: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve user",
+            detail="사용자를 조회할 수 없습니다",
         ) from e
 
 
@@ -90,12 +91,12 @@ async def create_user(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Create a new user (admin only)
+    새 사용자 생성 (관리자 전용)
     """
     try:
         user_service = UserService(db)
 
-        # Check if user already exists
+        # 사용자가 이미 존재하는지 확인
         existing_user = await user_service.get_user_by_email_or_username(
             user_data.email, user_data.username
         )
@@ -103,25 +104,27 @@ async def create_user(
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email or username already exists",
+                detail="이미 존재하는 이메일 또는 사용자명입니다",
             )
 
         user = await user_service.create_user(
             user_data, created_by=int(str(current_user.id))
         )
 
-        logger.info(f"User created by admin {current_user.name}: {user.name}")
+        logger.info(
+            "관리자 %s에 의해 사용자가 생성됨: %s", current_user.name, user.name
+        )
 
         return UserResponse.model_validate(user)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating user: %s", e)
+        logger.error("사용자 생성 오류: %s", e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create user",
+            detail="사용자를 생성할 수 없습니다",
         ) from e
 
 
@@ -133,7 +136,7 @@ async def update_user(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Update user (admin only)
+    사용자 수정 (관리자 전용)
     """
     try:
         user_service = UserService(db)
@@ -143,21 +146,24 @@ async def update_user(
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="사용자를 찾을 수 없습니다",
             )
 
-        logger.info("User updated by admin %s: %s", current_user.name, user.name)
+        logger.info(
+            "관리자 %s에 의해 사용자가 수정됨: %s", current_user.name, user.name
+        )
 
         return UserResponse.model_validate(user)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating user %s: %s", user_id, e)
+        logger.error("사용자 %s 수정 오류: %s", user_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update user",
+            detail="사용자를 수정할 수 없습니다",
         ) from e
 
 
@@ -168,7 +174,7 @@ async def delete_user(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Delete user (admin only)
+    사용자 삭제 (관리자 전용)
     """
     try:
         user_service = UserService(db)
@@ -176,21 +182,22 @@ async def delete_user(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="사용자를 찾을 수 없습니다",
             )
 
-        logger.info("User deleted by admin %s: %s", current_user.name, user_id)
+        logger.info("관리자 %s에 의해 사용자가 삭제됨: %s", current_user.name, user_id)
 
-        return {"message": "User deleted successfully"}
+        return {"message": "사용자가 성공적으로 삭제되었습니다"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting user %s: %s", user_id, e)
+        logger.error("사용자 %s 삭제 오류: %s", user_id, e)
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete user",
+            detail="사용자를 삭제할 수 없습니다",
         ) from e
 
 
@@ -198,5 +205,5 @@ async def delete_user(
 async def get_my_profile(
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get current user profile"""
+    """현재 사용자 프로필 조회"""
     return UserResponse.model_validate(current_user)

@@ -8,7 +8,7 @@ Request/Response schemas for calendar and event management.
 from datetime import datetime
 from typing import List, Optional
 
-from core.constants import EventStatus, EventType, RecurrenceType
+from constants.calendar import EventStatus, EventType, RecurrenceType
 from pydantic import BaseModel, Field, field_validator
 from schemas.user import UserPublic
 

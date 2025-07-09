@@ -1,7 +1,7 @@
 """
-Health Check API Routes
+헬스 체크 API Routes
 
-System health and monitoring endpoints.
+시스템 상태 확인 및 모니터링 엔드포인트
 """
 
 import logging
@@ -11,10 +11,9 @@ from typing import Any, Dict
 
 import psutil
 from core.config import settings
-from core.database import get_async_session, get_database_health
-from fastapi import APIRouter, Depends, HTTPException
+from core.database import get_database_health
+from fastapi import APIRouter, HTTPException
 from schemas.common import HealthCheckResponse, SystemInfoResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -23,7 +22,7 @@ router = APIRouter()
 @router.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """
-    Basic health check endpoint
+    기본 헬스 체크 엔드포인트
     """
     try:
         return HealthCheckResponse(
@@ -31,17 +30,20 @@ async def health_check():
             timestamp=datetime.utcnow(),
             version=settings.VERSION,
             environment=settings.ENVIRONMENT,
+            uptime_seconds=0,
             details={},
         )
     except Exception as e:
-        logger.error("Health check failed: %s", e)
-        raise HTTPException(status_code=503, detail="Service unavailable") from e
+        logger.error("헬스 체크 실패: %s", e)
+        raise HTTPException(
+            status_code=503, detail="서비스를 사용할 수 없습니다"
+        ) from e
 
 
 @router.get("/health/detailed")
-async def detailed_health_check(db: AsyncSession = Depends(get_async_session)):
+async def detailed_health_check():
     """
-    Detailed health check with database and system information
+    데이터베이스 및 시스템 정보를 포함한 상세 헬스 체크
     """
     health_data: Dict[str, Any] = {
         "status": "healthy",
@@ -52,31 +54,33 @@ async def detailed_health_check(db: AsyncSession = Depends(get_async_session)):
     }
 
     try:
-        # Database health
+        # 데이터베이스 상태 확인
         try:
             db_health = await get_database_health()
             health_data["database"] = db_health
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             health_data["database"] = {"status": "error", "error": str(e)}
             health_data["status"] = "degraded"
 
-        # System information
+        # 시스템 정보
         try:
             health_data["system"] = get_system_info()
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             health_data["system"] = {"error": str(e)}
 
         return health_data
 
     except Exception as e:
-        logger.error("Detailed health check failed: %s", e)
-        raise HTTPException(status_code=503, detail="Service unavailable") from e
+        logger.error("상세 헬스 체크 실패: %s", e)
+        raise HTTPException(
+            status_code=503, detail="서비스를 사용할 수 없습니다"
+        ) from e
 
 
 @router.get("/health/database")
 async def database_health_check():
     """
-    Database-specific health check
+    데이터베이스 전용 헬스 체크
     """
     try:
         db_health = await get_database_health()
@@ -87,14 +91,16 @@ async def database_health_check():
             raise HTTPException(status_code=503, detail=db_health)
 
     except Exception as e:
-        logger.error("Database health check failed: %s", e)
-        raise HTTPException(status_code=503, detail="Database unavailable") from e
+        logger.error("데이터베이스 헬스 체크 실패: %s", e)
+        raise HTTPException(
+            status_code=503, detail="데이터베이스를 사용할 수 없습니다"
+        ) from e
 
 
 @router.get("/system/info", response_model=SystemInfoResponse)
 async def get_system_info_endpoint():
     """
-    Get system information
+    시스템 정보 조회
     """
     try:
         system_info = get_system_info()
@@ -106,7 +112,7 @@ async def get_system_info_endpoint():
                 "environment": settings.ENVIRONMENT,
             },
             system={
-                "uptime": system_info.get("uptime", "unknown"),
+                "uptime": system_info.get("uptime", "알 수 없음"),
                 "memory": system_info.get("memory", {}),
                 "cpu_percent": system_info.get("cpu_percent", 0.0),
                 "disk": system_info.get("disk", {}),
@@ -116,22 +122,22 @@ async def get_system_info_endpoint():
         )
 
     except Exception as e:
-        logger.error("System info retrieval failed: %s", e)
+        logger.error("시스템 정보 조회 실패: %s", e)
         raise HTTPException(
-            status_code=500, detail="Failed to retrieve system information"
+            status_code=500, detail="시스템 정보를 조회할 수 없습니다"
         ) from e
 
 
 def get_system_info() -> Dict[str, Any]:
     """
-    Get system information
+    시스템 정보 조회
     """
     try:
-        # CPU information
+        # CPU 정보
         cpu_percent = psutil.cpu_percent(interval=1)
         cpu_count = psutil.cpu_count()
 
-        # Memory information
+        # 메모리 정보
         memory = psutil.virtual_memory()
         memory_info = {
             "total": memory.total,
@@ -140,7 +146,7 @@ def get_system_info() -> Dict[str, Any]:
             "percentage": memory.percent,
         }
 
-        # Disk information
+        # 디스크 정보
         disk = psutil.disk_usage("/")
         disk_info = {
             "total": disk.total,
@@ -149,7 +155,7 @@ def get_system_info() -> Dict[str, Any]:
             "percentage": (disk.used / disk.total) * 100,
         }
 
-        # System uptime
+        # 시스템 가동 시간
         boot_time = psutil.boot_time()
         uptime_seconds = datetime.now().timestamp() - boot_time
         uptime_str = format_uptime(uptime_seconds)
@@ -167,14 +173,14 @@ def get_system_info() -> Dict[str, Any]:
             "uptime_seconds": uptime_seconds,
         }
 
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error("Failed to get system info: %s", e)
+    except Exception as e:
+        logger.error("시스템 정보 조회 실패: %s", e)
         return {"error": str(e)}
 
 
 def format_uptime(seconds: float) -> str:
     """
-    Format uptime seconds into human-readable string
+    가동 시간(초)을 사람이 읽기 쉬운 문자열로 변환
     """
     try:
         days = int(seconds // 86400)
@@ -183,28 +189,28 @@ def format_uptime(seconds: float) -> str:
 
         parts = []
         if days > 0:
-            parts.append(f"{days} day{'s' if days != 1 else ''}")
+            parts.append(f"{days}일")
         if hours > 0:
-            parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            parts.append(f"{hours}시간")
         if minutes > 0:
-            parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+            parts.append(f"{minutes}분")
 
         if not parts:
-            return "less than a minute"
+            return "1분 미만"
 
         return ", ".join(parts)
 
-    except Exception:  # pylint: disable=broad-except
-        return "unknown"
+    except Exception:
+        return "알 수 없음"
 
 
 @router.get("/health/readiness")
 async def readiness_check():
     """
-    Kubernetes readiness probe endpoint
+    Kubernetes readiness probe 엔드포인트
     """
     try:
-        # Check if the application is ready to serve requests
+        # 애플리케이션이 요청을 처리할 준비가 되었는지 확인
         db_health = await get_database_health()
 
         if db_health.get("status") == "healthy":
@@ -213,31 +219,31 @@ async def readiness_check():
                 "timestamp": datetime.utcnow().isoformat(),
             }
         else:
-            raise HTTPException(status_code=503, detail="Not ready")
+            raise HTTPException(status_code=503, detail="준비되지 않음")
 
     except Exception as e:
-        logger.error("Readiness check failed: %s", e)
-        raise HTTPException(status_code=503, detail="Not ready") from e
+        logger.error("준비 상태 확인 실패: %s", e)
+        raise HTTPException(status_code=503, detail="준비되지 않음") from e
 
 
 @router.get("/health/liveness")
 async def liveness_check():
     """
-    Kubernetes liveness probe endpoint
+    Kubernetes liveness probe 엔드포인트
     """
     try:
-        # Basic check to see if the application is alive
+        # 애플리케이션이 살아있는지 기본 확인
         return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
 
     except Exception as e:
-        logger.error("Liveness check failed: %s", e)
-        raise HTTPException(status_code=503, detail="Not alive") from e
+        logger.error("생존 상태 확인 실패: %s", e)
+        raise HTTPException(status_code=503, detail="응답하지 않음") from e
 
 
 @router.get("/metrics")
 async def get_metrics():
     """
-    Basic metrics endpoint (Prometheus-compatible format could be added)
+    기본 메트릭 엔드포인트 (Prometheus 호환 형식 추가 가능)
     """
     try:
         system_info = get_system_info()
@@ -253,7 +259,7 @@ async def get_metrics():
                 "disk_usage_percent": system_info.get("disk", {}).get("percentage", 0),
             },
             "database": {
-                "status": db_health.get("status", "unknown"),
+                "status": db_health.get("status", "알 수 없음"),
                 "connection_count": db_health.get("performance", {}).get(
                     "active_connections", 0
                 ),
@@ -267,5 +273,7 @@ async def get_metrics():
         return metrics
 
     except Exception as e:
-        logger.error("Metrics retrieval failed: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve metrics") from e
+        logger.error("메트릭 조회 실패: %s", e)
+        raise HTTPException(
+            status_code=500, detail="메트릭을 조회할 수 없습니다"
+        ) from e

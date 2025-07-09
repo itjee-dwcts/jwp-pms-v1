@@ -1,7 +1,7 @@
 """
-System Information API Routes
+시스템 정보 API Routes
 
-System and application information endpoints.
+시스템 및 애플리케이션 정보 엔드포인트
 """
 
 import platform
@@ -9,10 +9,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from core.config import settings
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-
-from core.config import settings
 
 router = APIRouter()
 
@@ -20,7 +19,7 @@ router = APIRouter()
 @router.get("/info")
 async def system_info():
     """
-    Get system and application information
+    시스템 및 애플리케이션 정보 조회
     """
     return JSONResponse(
         {
@@ -62,14 +61,14 @@ async def system_info():
 @router.get("/version")
 async def version_info():
     """
-    Get application version information
+    애플리케이션 버전 정보 조회
     """
     return JSONResponse(
         {
             "version": settings.VERSION,
             "api_version": "v1",
-            "build_date": "2024-01-01",  # Can be set during build
-            "commit_hash": "development",  # Can be set during build
+            "build_date": "2024-01-01",  # 빌드 시 설정 가능
+            "commit_hash": "development",  # 빌드 시 설정 가능
             "environment": settings.ENVIRONMENT,
         }
     )
@@ -78,9 +77,9 @@ async def version_info():
 @router.get("/status")
 async def application_status():
     """
-    Get current application status
+    현재 애플리케이션 상태 조회
     """
-    # Check if critical directories exist
+    # 중요한 디렉토리가 존재하는지 확인
     uploads_dir = Path(settings.UPLOAD_PATH)
 
     status = {
@@ -88,13 +87,13 @@ async def application_status():
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
             "api": "healthy",
-            "database": "checking...",  # Will be updated by health check
+            "database": "checking...",  # 헬스 체크에 의해 업데이트됨
             "file_system": "healthy" if uploads_dir.exists() else "degraded",
         },
         "metrics": {
-            "uptime": "Just started",  # Can be enhanced
-            "total_requests": "N/A",  # Can be enhanced with middleware
-            "active_connections": "N/A",  # Can be enhanced
+            "uptime": "방금 시작됨",  # 향후 개선 가능
+            "total_requests": "N/A",  # 미들웨어로 향후 개선 가능
+            "active_connections": "N/A",  # 향후 개선 가능
         },
     }
 
@@ -104,14 +103,16 @@ async def application_status():
 @router.get("/endpoints")
 async def list_endpoints():
     """
-    List available API endpoints
+    사용 가능한 API 엔드포인트 목록 조회
     """
     endpoints = {
         "documentation": {
-            "swagger_ui": "/docs" if settings.DEBUG else "Disabled",
-            "redoc": "/redoc" if settings.DEBUG else "Disabled",
+            "swagger_ui": "/docs" if settings.DEBUG else "비활성화됨",
+            "redoc": "/redoc" if settings.DEBUG else "비활성화됨",
             "openapi_spec": (
-                f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else "Disabled"
+                f"{settings.API_V1_STR}/openapi.json"
+                if settings.DEBUG
+                else "비활성화됨"
             ),
         },
         "health": {

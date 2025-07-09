@@ -17,7 +17,7 @@ from typing import AsyncGenerator
 # 서드파티 라이브러리 imports
 import strawberry
 import uvicorn
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -60,11 +60,79 @@ def setup_python_path():
 # Python 경로 설정 실행
 src_dir, backend_dir, project_root = setup_python_path()
 
+
+# 기본 함수들을 먼저 정의 (import 실패에 대비)
+def default_setup_logging():
+    """
+    기본 로깅 설정 함수
+    utils.logger import가 실패할 경우 사용되는 대체 함수
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    print("⚠️ 기본 로깅 설정을 사용합니다.")
+
+
+async def default_check_database_connection() -> bool:
+    """
+    기본 데이터베이스 연결 확인 함수 (항상 False 반환)
+    """
+    return False
+
+
+async def default_create_tables() -> None:
+    """
+    기본 테이블 생성 함수 (아무것도 하지 않음)
+    """
+
+
+# 기본값으로 설정
+setup_logging = default_setup_logging
+check_database_connection = default_check_database_connection
+create_tables = default_create_tables
+
+
+# 기본 설정 클래스 정의 (전역으로 이동)
+class DefaultSettings:
+    """
+    기본 설정 클래스
+    개발 환경에서 사용할 기본 설정을 정의합니다.
+    이 클래스는 실제 설정 파일이 없을 때 사용됩니다.
+    """
+
+    PROJECT_NAME = "PMS Backend API"
+    VERSION = "0.1.0"
+    ENVIRONMENT = "development"
+    DEBUG = True
+    API_V1_STR = "/api/v1"
+    BACKEND_CORS_ORIGINS = ["http://localhost:3000"]
+    UPLOAD_PATH = "uploads"
+
+
+# 기본 라우터들을 전역으로 정의 (import 실패에 대비)
+auth_router = APIRouter()
+calendar_router = APIRouter()
+dashboard_router = APIRouter()
+health_router = APIRouter()
+projects_router = APIRouter()
+system_router = APIRouter()
+tasks_router = APIRouter()
+uploads_router = APIRouter()
+users_router = APIRouter()
+chat_router = APIRouter()
+
+# 기본 설정으로 시작
+settings = DefaultSettings()
+IMPORT_SUCCESS = False
+
 # 로컬 모듈 imports (경로 설정 후)
 try:
     # API 라우터 imports
     from api.auth import router as auth_router
     from api.calendar import router as calendar_router
+    from api.chat import router as chat_router
     from api.dashboard import router as dashboard_router
     from api.health import router as health_router
     from api.project import router as projects_router
@@ -74,9 +142,15 @@ try:
     from api.user import router as users_router
 
     # 핵심 모듈 imports
-    from core.config import settings
+    from core.config import get_settings
     from core.database import check_database_connection, create_tables
     from utils.logger import setup_logging
+
+    # 성공적으로 import된 경우 settings 가져오기
+    settings = get_settings()
+    IMPORT_SUCCESS = True
+
+    print("✅ 모든 모듈이 성공적으로 import되었습니다.")
 
 except ImportError as e:
     print(f"❌ Import 오류 발생: {e}")
@@ -90,13 +164,7 @@ except ImportError as e:
 
         # 모듈 경로를 직접 지정해서 import
         def import_module_from_path(module_name: str, file_path: Path):
-            """주어진 파일 경로에서 모듈을 동적으로 로드하는 함수
-            Args:
-                module_name (str): 모듈 이름
-                file_path (Path): 모듈 파일 경로
-            Returns:
-                module: 로드된 모듈 객체
-            """
+            """주어진 파일 경로에서 모듈을 동적으로 로드하는 함수"""
             spec = importlib.util.spec_from_file_location(module_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
@@ -104,72 +172,32 @@ except ImportError as e:
                 return module
             raise ImportError(f"Could not load {module_name} from {file_path}")
 
-        # 필수 모듈들을 직접 로드
-        settings_module = import_module_from_path(
-            "settings", src_dir / "core" / "config.py"
-        )
-        settings = settings_module.settings
+        # 설정 모듈 로드 시도
+        config_path = src_dir / "core" / "config.py"
+        if config_path.exists():
+            settings_module = import_module_from_path("settings", config_path)
+            settings = settings_module.get_settings()
+            print("✅ 설정 모듈을 직접 로드했습니다.")
+        else:
+            raise ImportError("설정 파일을 찾을 수 없습니다.") from e
 
     except ImportError as fallback_error:
         print(f"❌ 대체 import도 실패: {fallback_error}")
         print("⚠️ 기본 설정으로 실행을 시도합니다...")
 
-        # 최소한의 기본 설정
-        class DefaultSettings:
-            """
-            기본 설정 클래스
-            개발 환경에서 사용할 기본 설정을 정의합니다.
-            이 클래스는 실제 설정 파일이 없을 때 사용됩니다.
-            """
-
-            PROJECT_NAME = "PMS Backend API"
-            VERSION = "0.1.0"
-            ENVIRONMENT = "development"
-            DEBUG = True
-            API_V1_STR = "/api/v1"
-            BACKEND_CORS_ORIGINS = ["http://localhost:3000"]
-            UPLOAD_PATH = "uploads"
-
-        settings = DefaultSettings()
-
-        # 빈 라우터 생성 (오류 방지용)
-        from fastapi import APIRouter
-
-        auth_router = APIRouter()
-        calendar_router = APIRouter()
-        dashboard_router = APIRouter()
-        health_router = APIRouter()
-        projects_router = APIRouter()
-        system_router = APIRouter()
-        tasks_router = APIRouter()
-        uploads_router = APIRouter()
-        users_router = APIRouter()
-
-        # 기본 데이터베이스 함수들
-        async def check_database_connection() -> bool:
-            """
-            데이터베이스 연결을 확인하는 함수
-            개발 환경에서만 연결을 시도합니다.
-            """
-            return False
-
-        async def create_tables() -> None:
-            """
-            데이터베이스 테이블을 생성하는 함수
-            개발 환경에서만 테이블을 생성합니다.
-            """
-
-        def setup_logging():
-            """
-            로깅 설정 함수
-            기본 로깅 설정을 구성합니다.
-            """
-            logging.basicConfig(level=logging.INFO)
+        # 기본 설정 사용 (이미 위에서 정의됨)
+        print("⚠️ 기본 설정과 빈 라우터를 사용합니다.")
 
 
-# 로깅 설정
+# 로깅 설정 (이제 안전하게 호출 가능)
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# import 결과 로그
+if IMPORT_SUCCESS:
+    logger.info("✅ 모든 모듈 import 성공")
+else:
+    logger.warning("⚠️ 일부 모듈 import 실패 - 기본 설정으로 실행")
 
 
 @asynccontextmanager
@@ -183,22 +211,25 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🌍 실행 환경: %s", getattr(settings, "ENVIRONMENT", "unknown"))
     logger.info("🔧 디버그 모드: %s", getattr(settings, "DEBUG", False))
 
-    # 데이터베이스 연결 확인
-    try:
-        db_connected = await check_database_connection()
-        if db_connected:
-            logger.info("✅ 데이터베이스 연결 확인됨")
+    # 데이터베이스 연결 확인 (import 성공 시만)
+    if IMPORT_SUCCESS:
+        try:
+            db_connected = await check_database_connection()
+            if db_connected:
+                logger.info("✅ 데이터베이스 연결 확인됨")
 
-            # 개발 환경에서만 테이블 생성
-            if getattr(settings, "ENVIRONMENT", "") == "development":
-                await create_tables()
-                logger.info("✅ 데이터베이스 테이블 생성/확인 완료")
-        else:
-            logger.warning(
-                "⚠️ 데이터베이스 연결 실패 - 일부 기능이 작동하지 않을 수 있습니다"
-            )
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error("❌ 데이터베이스 설정 오류: %s", e)
+                # 개발 환경에서만 테이블 생성
+                if getattr(settings, "ENVIRONMENT", "") == "development":
+                    await create_tables()
+                    logger.info("✅ 데이터베이스 테이블 생성/확인 완료")
+            else:
+                logger.warning(
+                    "⚠️ 데이터베이스 연결 실패 - 일부 기능이 작동하지 않을 수 있습니다"
+                )
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("❌ 데이터베이스 설정 오류: %s", e)
+    else:
+        logger.warning("⚠️ 모듈 import 실패로 데이터베이스 연결을 확인하지 않습니다")
 
     logger.info("📊 API 문서: /docs")
     logger.info("🔧 상태 확인: /health")
@@ -264,8 +295,8 @@ if cors_origins:
     logger.info("🌐 CORS가 다음 도메인에 대해 활성화되었습니다: %s", cors_origins)
 
 # 정적 파일 설정
-upload_path = getattr(settings, "UPLOAD_PATH", "uploads")
-uploads_dir = Path(upload_path)
+UPLOAD_PATH = getattr(settings, "UPLOAD_PATH", "uploads")
+uploads_dir = Path(UPLOAD_PATH)
 uploads_dir.mkdir(exist_ok=True)
 
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
@@ -285,6 +316,7 @@ async def root():
             "version": getattr(settings, "VERSION", "0.1.0"),
             "environment": getattr(settings, "ENVIRONMENT", "development"),
             "status": "정상",
+            "import_status": "완전" if IMPORT_SUCCESS else "제한적",
             "endpoints": {
                 "health": "/health",
                 "docs": (
@@ -298,13 +330,14 @@ async def root():
                     else "운영 환경에서는 비활성화됨"
                 ),
                 "api": getattr(settings, "API_V1_STR", "/api/v1"),
+                "graphql": "/graphql",
             },
             "features": {
-                "user_management": "✅ 사용 가능",
-                "project_management": "✅ 사용 가능",
-                "task_management": "✅ 사용 가능",
-                "calendar": "✅ 사용 가능",
-                "file_upload": "✅ 사용 가능",
+                "user_management": "✅ 사용 가능" if IMPORT_SUCCESS else "⚠️ 제한적",
+                "project_management": "✅ 사용 가능" if IMPORT_SUCCESS else "⚠️ 제한적",
+                "task_management": "✅ 사용 가능" if IMPORT_SUCCESS else "⚠️ 제한적",
+                "calendar": "✅ 사용 가능" if IMPORT_SUCCESS else "⚠️ 제한적",
+                "file_upload": "✅ 사용 가능" if IMPORT_SUCCESS else "⚠️ 제한적",
             },
         }
     )
@@ -317,8 +350,8 @@ async def health_check():
     시스템 상태와 각 구성 요소의 동작 상태를 점검합니다.
     """
     try:
-        # 데이터베이스 연결 확인
-        db_status = await check_database_connection()
+        # 데이터베이스 연결 확인 (import 성공 시만)
+        db_status = await check_database_connection() if IMPORT_SUCCESS else False
 
         return JSONResponse(
             {
@@ -326,10 +359,12 @@ async def health_check():
                 "version": getattr(settings, "VERSION", "0.1.0"),
                 "environment": getattr(settings, "ENVIRONMENT", "development"),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
+                "import_status": "완전" if IMPORT_SUCCESS else "제한적",
                 "checks": {
                     "database": ("✅ 연결됨" if db_status else "❌ 연결 끊김"),
                     "api": "✅ 실행 중",
                     "uploads": "✅ 사용 가능",
+                    "modules": "✅ 완전 로드됨" if IMPORT_SUCCESS else "⚠️ 부분 로드됨",
                 },
                 "uptime": "방금 시작됨",
             }
@@ -346,20 +381,26 @@ async def health_check():
         )
 
 
-# API 라우터 포함
-api_v1_str = getattr(settings, "API_V1_STR", "/api/v1")
+# API 라우터 포함 (이제 안전하게 사용 가능)
+API_V1_STR = getattr(settings, "API_V1_STR", "/api/v1")
 
-app.include_router(health_router, prefix=api_v1_str, tags=["상태확인"])
-app.include_router(system_router, prefix=api_v1_str, tags=["시스템"])
-app.include_router(auth_router, prefix=f"{api_v1_str}/auth", tags=["인증"])
-app.include_router(users_router, prefix=f"{api_v1_str}/users", tags=["사용자"])
-app.include_router(projects_router, prefix=f"{api_v1_str}/projects", tags=["프로젝트"])
-app.include_router(tasks_router, prefix=f"{api_v1_str}/tasks", tags=["작업"])
-app.include_router(calendar_router, prefix=f"{api_v1_str}/calendar", tags=["캘린더"])
+# 기본 상태 확인은 항상 포함
+app.include_router(health_router, prefix=API_V1_STR, tags=["상태확인"])
+app.include_router(system_router, prefix=API_V1_STR, tags=["시스템"])
+
+# 나머지 라우터들 포함
+app.include_router(auth_router, prefix=f"{API_V1_STR}/auth", tags=["인증"])
+app.include_router(users_router, prefix=f"{API_V1_STR}/users", tags=["사용자"])
+app.include_router(projects_router, prefix=f"{API_V1_STR}/projects", tags=["프로젝트"])
+app.include_router(tasks_router, prefix=f"{API_V1_STR}/tasks", tags=["작업"])
+app.include_router(calendar_router, prefix=f"{API_V1_STR}/calendar", tags=["캘린더"])
 app.include_router(
-    dashboard_router, prefix=f"{api_v1_str}/dashboard", tags=["대시보드"]
+    dashboard_router, prefix=f"{API_V1_STR}/dashboard", tags=["대시보드"]
 )
-app.include_router(uploads_router, prefix=f"{api_v1_str}/uploads", tags=["파일업로드"])
+app.include_router(uploads_router, prefix=f"{API_V1_STR}/uploads", tags=["파일업로드"])
+app.include_router(chat_router, prefix=f"{API_V1_STR}/chat", tags=["채팅"])
+
+logger.info("📋 API 라우터 등록 완료")
 
 
 # Strawberry를 사용한 GraphQL 엔드포인트 추가
@@ -385,7 +426,8 @@ class Query:
         """
         project_name = getattr(settings, "PROJECT_NAME", "PMS")
         version = getattr(settings, "VERSION", "0.1.0")
-        return f"{project_name} v{version}"
+        import_status = "완전" if IMPORT_SUCCESS else "제한적"
+        return f"{project_name} v{version} (모듈 로드: {import_status})"
 
 
 schema = strawberry.Schema(Query)
@@ -420,7 +462,7 @@ def main():
     개발 서버를 시작하고 필요한 정보를 로그에 출력합니다.
     """
     # 사용 가능한 포트 찾기
-    port = find_free_port(8000)
+    port = find_free_port(8001)
     host = "127.0.0.1"
 
     project_name = getattr(settings, "PROJECT_NAME", "PMS Backend API")
@@ -431,6 +473,9 @@ def main():
     logger.info("📖 API 문서: http://%s:%s/docs", host, port)
     logger.info("🔧 상태 확인: http://%s:%s/health", host, port)
     logger.info("🔗 GraphQL 플레이그라운드: http://%s:%s/graphql", host, port)
+
+    if not IMPORT_SUCCESS:
+        logger.warning("⚠️ 일부 모듈이 로드되지 않았습니다. 제한된 기능으로 실행됩니다.")
 
     uvicorn.run(
         "main:app",
