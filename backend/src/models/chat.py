@@ -60,7 +60,7 @@ class ChatSession(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     # 메타데이터
-    metadata = Column(JSON, nullable=True, comment="추가 설정 정보")
+    chat_meta = Column(JSON, nullable=True, comment="추가 설정 정보")
     tags = Column(JSON, nullable=True, comment="태그 목록")
 
     # 통계 정보
@@ -148,7 +148,7 @@ class ChatMessage(Base):
     attachments = Column(JSON, nullable=True, comment="첨부파일 정보")
 
     # 메타데이터
-    metadata = Column(JSON, nullable=True, comment="추가 정보")
+    chat_meta = Column(JSON, nullable=True, comment="추가 정보")
     parent_message_id = Column(
         UUID(as_uuid=True),
         ForeignKey("chat_messages.id"),
