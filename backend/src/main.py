@@ -381,6 +381,8 @@ async def health_check():
         )
 
 
+logger.info("📋 API 라우터 등록 시작")
+
 # API 라우터 포함 (이제 안전하게 사용 가능)
 API_V1_STR = getattr(settings, "API_V1_STR", "/api/v1")
 

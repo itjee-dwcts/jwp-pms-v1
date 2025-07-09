@@ -1,114 +1,113 @@
 # backend/src/schemas/user.py
 """
-User Pydantic Schemas
+사용자 Pydantic 스키마
 
-Request/Response schemas for user management.
+사용자 관리를 위한 요청/응답 스키마
 """
 
 from datetime import datetime
 from typing import List, Optional
 
+from constants.user import UserRole, UserStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator
-
-from core.constants import UserRole, UserStatus
 
 
 class UserBase(BaseModel):
-    """Base user schema"""
+    """기본 사용자 스키마"""
 
-    email: EmailStr = Field(..., description="Email address")
-    username: str = Field(..., min_length=3, max_length=50, description="Username")
-    password: str = Field(..., min_length=8, description="Password")
-    full_name: Optional[str] = Field(None, max_length=200, description="Full name")
-    role: str = Field(UserRole.DEVELOPER, description="User role")
-    status: str = Field(UserStatus.ACTIVE, description="User status")
-    is_active: bool = Field(True, description="User active status")
+    email: EmailStr = Field(..., description="이메일 주소")
+    username: str = Field(..., min_length=3, max_length=50, description="사용자명")
+    password: str = Field(..., min_length=8, description="비밀번호")
+    full_name: Optional[str] = Field(None, max_length=200, description="전체 이름")
+    role: str = Field(UserRole.DEVELOPER, description="사용자 역할")
+    status: str = Field(UserStatus.ACTIVE, description="사용자 상태")
+    is_active: bool = Field(True, description="사용자 활성 상태")
 
     @field_validator("username")
     @classmethod
     def name_alphanumeric(cls, v):
-        """Validate that username is alphanumeric with optional _ or -"""
+        """사용자명이 영숫자와 선택적 _ 또는 -인지 검증"""
         if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Username must be alphanumeric with optional _ or -")
+            raise ValueError("사용자명은 영숫자와 _ 또는 - 문자만 포함할 수 있습니다")
         return v
 
 
 class UserCreateRequest(UserBase):
-    """Schema for creating a user"""
+    """사용자 생성 스키마"""
 
-    password: str = Field(..., min_length=8, description="Password")
-    confirm_password: str = Field(..., description="Password confirmation")
+    password: str = Field(..., min_length=8, description="비밀번호")
+    confirm_password: str = Field(..., description="비밀번호 확인")
 
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v, values):
-        """Validate that password and confirm_password match"""
+        """비밀번호와 비밀번호 확인이 일치하는지 검증"""
         if "password" in values and v != values["password"]:
-            raise ValueError("Passwords do not match")
+            raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v):
-        """Validate password strength"""
+        """비밀번호 강도 검증"""
         if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
+            raise ValueError("비밀번호는 최소 8자 이상이어야 합니다")
         if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
+            raise ValueError("비밀번호는 최소 하나의 대문자를 포함해야 합니다")
         if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
+            raise ValueError("비밀번호는 최소 하나의 소문자를 포함해야 합니다")
         if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
+            raise ValueError("비밀번호는 최소 하나의 숫자를 포함해야 합니다")
         return v
 
 
 class UserUpdateRequest(BaseModel):
-    """Schema for updating a user"""
+    """사용자 업데이트 스키마"""
 
-    full_name: Optional[str] = Field(None, max_length=100)
-    bio: Optional[str] = Field(None, max_length=500)
-    phone: Optional[str] = Field(None, max_length=20)
-    department: Optional[str] = None
-    position: Optional[str] = None
-    timezone: Optional[str] = Field(None, max_length=50)
-    language: Optional[str] = Field(None, max_length=10)
-    status: str = Field(UserStatus.ACTIVE, description="User account status")
-    role: str = Field(UserRole.DEVELOPER, description="User role")
-    is_active: bool = Field(True, description="User active status")
+    full_name: Optional[str] = Field(None, max_length=100, description="전체 이름")
+    bio: Optional[str] = Field(None, max_length=500, description="자기소개")
+    phone: Optional[str] = Field(None, max_length=20, description="전화번호")
+    department: Optional[str] = Field(None, description="부서")
+    position: Optional[str] = Field(None, description="직급")
+    timezone: Optional[str] = Field(None, max_length=50, description="시간대")
+    language: Optional[str] = Field(None, max_length=10, description="언어")
+    status: str = Field(UserStatus.ACTIVE, description="사용자 계정 상태")
+    role: str = Field(UserRole.DEVELOPER, description="사용자 역할")
+    is_active: bool = Field(True, description="사용자 활성 상태")
 
 
 class UserPasswordChangeRequest(BaseModel):
-    """Schema for changing user password"""
+    """사용자 비밀번호 변경 스키마"""
 
-    current_password: str = Field(..., description="Current password")
-    new_password: str = Field(..., min_length=8, description="New password")
-    confirm_password: str = Field(..., description="New password confirmation")
+    current_password: str = Field(..., description="현재 비밀번호")
+    new_password: str = Field(..., min_length=8, description="새 비밀번호")
+    confirm_password: str = Field(..., description="새 비밀번호 확인")
 
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v, values):
-        """Validate that password and confirm_password match"""
+        """비밀번호와 비밀번호 확인이 일치하는지 검증"""
         if "new_password" in values and v != values["new_password"]:
-            raise ValueError("Passwords do not match")
+            raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, v):
-        """Validate new password strength"""
+        """새 비밀번호 강도 검증"""
         if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
+            raise ValueError("비밀번호는 최소 8자 이상이어야 합니다")
         if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
+            raise ValueError("비밀번호는 최소 하나의 대문자를 포함해야 합니다")
         if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
+            raise ValueError("비밀번호는 최소 하나의 소문자를 포함해야 합니다")
         if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
+            raise ValueError("비밀번호는 최소 하나의 숫자를 포함해야 합니다")
         return v
 
 
 class UserResponse(UserBase):
-    """Schema for user response"""
+    """사용자 응답 스키마"""
 
     id: int
     role: str
@@ -124,13 +123,13 @@ class UserResponse(UserBase):
     updated_at: datetime
 
     class Config:
-        """Configuration for model serialization"""
+        """모델 직렬화 설정"""
 
         from_attributes = True
 
 
 class UserPublic(BaseModel):
-    """Public user information schema"""
+    """공개 사용자 정보 스키마"""
 
     id: int
     name: str
@@ -138,21 +137,21 @@ class UserPublic(BaseModel):
     avatar_url: Optional[str] = None
 
     class Config:
-        """Configuration for model serialization"""
+        """모델 직렬화 설정"""
 
         from_attributes = True
 
 
 class UserLoginRequest(BaseModel):
-    """Schema for user login"""
+    """사용자 로그인 스키마"""
 
-    username: str = Field(..., description="Username or email")
-    password: str = Field(..., description="Password")
-    remember_me: bool = Field(default=False, description="Remember login")
+    username: str = Field(..., description="사용자명 또는 이메일")
+    password: str = Field(..., description="비밀번호")
+    remember_me: bool = Field(default=False, description="로그인 유지")
 
 
 class UserLoginResponse(BaseModel):
-    """Schema for login response"""
+    """로그인 응답 스키마"""
 
     access_token: str
     refresh_token: str
@@ -162,13 +161,13 @@ class UserLoginResponse(BaseModel):
 
 
 class UserRefreshToken(BaseModel):
-    """Schema for token refresh"""
+    """토큰 갱신 스키마"""
 
-    refresh_token: str = Field(..., description="Refresh token")
+    refresh_token: str = Field(..., description="갱신 토큰")
 
 
 class UserActivityLogResponse(BaseModel):
-    """Schema for user activity log response"""
+    """사용자 활동 로그 응답 스키마"""
 
     id: int
     user_id: int
@@ -180,13 +179,13 @@ class UserActivityLogResponse(BaseModel):
     timestamp: datetime
 
     class Config:
-        """Configuration for model serialization"""
+        """모델 직렬화 설정"""
 
         from_attributes = True
 
 
 class UserListResponse(BaseModel):
-    """Schema for user list response"""
+    """사용자 목록 응답 스키마"""
 
     users: List[UserResponse]
     total_items: int
@@ -196,7 +195,7 @@ class UserListResponse(BaseModel):
 
 
 class UserStatsResponse(BaseModel):
-    """Schema for user statistics"""
+    """사용자 통계 스키마"""
 
     total_users: int
     active_users: int
@@ -206,60 +205,60 @@ class UserStatsResponse(BaseModel):
 
 
 class UserProfileUpdateRequest(BaseModel):
-    """Schema for updating user profile"""
+    """사용자 프로필 업데이트 스키마"""
 
-    full_name: Optional[str] = Field(None, max_length=100)
-    bio: Optional[str] = Field(None, max_length=500)
-    phone: Optional[str] = Field(None, max_length=20)
-    timezone: Optional[str] = Field(None, max_length=50)
-    language: Optional[str] = Field(None, max_length=10)
-    avatar_url: Optional[str] = Field(None, max_length=500)
+    full_name: Optional[str] = Field(None, max_length=100, description="전체 이름")
+    bio: Optional[str] = Field(None, max_length=500, description="자기소개")
+    phone: Optional[str] = Field(None, max_length=20, description="전화번호")
+    timezone: Optional[str] = Field(None, max_length=50, description="시간대")
+    language: Optional[str] = Field(None, max_length=10, description="언어")
+    avatar_url: Optional[str] = Field(None, max_length=500, description="아바타 URL")
 
 
 class UserEmailVerification(BaseModel):
-    """Schema for email verification"""
+    """이메일 인증 스키마"""
 
-    token: str = Field(..., description="Email verification token")
+    token: str = Field(..., description="이메일 인증 토큰")
 
 
 class UserPasswordReset(BaseModel):
-    """Schema for password reset request"""
+    """비밀번호 재설정 요청 스키마"""
 
-    email: EmailStr = Field(..., description="User email address")
+    email: EmailStr = Field(..., description="사용자 이메일 주소")
 
 
 class UserPasswordResetConfirm(BaseModel):
-    """Schema for password reset confirmation"""
+    """비밀번호 재설정 확인 스키마"""
 
-    token: str = Field(..., description="Password reset token")
-    new_password: str = Field(..., min_length=8, description="New password")
-    confirm_password: str = Field(..., description="New password confirmation")
+    token: str = Field(..., description="비밀번호 재설정 토큰")
+    new_password: str = Field(..., min_length=8, description="새 비밀번호")
+    confirm_password: str = Field(..., description="새 비밀번호 확인")
 
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v, values):
-        """Validate that password and confirm_password match"""
+        """비밀번호와 비밀번호 확인이 일치하는지 검증"""
         if "new_password" in values and v != values["new_password"]:
-            raise ValueError("Passwords do not match")
+            raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, v):
-        """Validate new password strength"""
+        """새 비밀번호 강도 검증"""
         if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
+            raise ValueError("비밀번호는 최소 8자 이상이어야 합니다")
         if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
+            raise ValueError("비밀번호는 최소 하나의 대문자를 포함해야 합니다")
         if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
+            raise ValueError("비밀번호는 최소 하나의 소문자를 포함해야 합니다")
         if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
+            raise ValueError("비밀번호는 최소 하나의 숫자를 포함해야 합니다")
         return v
 
 
 class UserSessionResponse(BaseModel):
-    """Schema for user session response"""
+    """사용자 세션 응답 스키마"""
 
     id: int
     user_id: int
@@ -272,6 +271,6 @@ class UserSessionResponse(BaseModel):
     expires_at: datetime
 
     class Config:
-        """Configuration for model serialization"""
+        """모델 직렬화 설정"""
 
         from_attributes = True

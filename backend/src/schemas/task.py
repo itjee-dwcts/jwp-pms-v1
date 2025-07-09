@@ -1,34 +1,31 @@
 """
-Task Pydantic Schemas
+작업 Pydantic 스키마
 
-Request/Response schemas for task management.
+작업 관리를 위한 요청/응답 스키마
 """
 
 from datetime import datetime
 from typing import Any, List, Optional
 
+from constants.task import TaskPriority, TaskStatus, TaskType
 from pydantic import BaseModel, Field, field_validator
-
-from core.constants import TaskPriority, TaskStatus, TaskType
 from schemas.user import UserPublic
 
 
 class TaskBase(BaseModel):
-    """Base task schema"""
+    """기본 작업 스키마"""
 
-    title: str = Field(..., min_length=1, max_length=200, description="Task title")
-    description: Optional[str] = Field(
-        None, max_length=5000, description="Task description"
-    )
-    status: str = Field(default="todo", description="Task status")
-    priority: str = Field(default="medium", description="Task priority")
-    task_type: str = Field(default="feature", description="Task type")
+    title: str = Field(..., min_length=1, max_length=200, description="작업 제목")
+    description: Optional[str] = Field(None, max_length=5000, description="작업 설명")
+    status: str = Field(default="todo", description="작업 상태")
+    priority: str = Field(default="medium", description="작업 우선순위")
+    task_type: str = Field(default="feature", description="작업 유형")
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
-        """Validate task status"""
-        # Ensure status is one of the defined statuses
+        """작업 상태 검증"""
+        # 정의된 상태 중 하나인지 확인
         valid_statuses = [
             TaskStatus.TODO,
             TaskStatus.IN_PROGRESS,
@@ -38,22 +35,26 @@ class TaskBase(BaseModel):
             TaskStatus.BLOCKED,
         ]
         if v not in valid_statuses:
-            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            raise ValueError(
+                f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+            )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v: str):
-        """Validate task priority"""
+        """작업 우선순위 검증"""
         valid_priorities = ["low", "medium", "high", "urgent"]
         if v not in valid_priorities:
-            raise ValueError(f"Priority must be one of: {', '.join(valid_priorities)}")
+            raise ValueError(
+                f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
+            )
         return v
 
     @field_validator("task_type")
     @classmethod
     def validate_task_type(cls, v: str):
-        """Validate task type"""
+        """작업 유형 검증"""
         valid_types = [
             TaskType.FEATURE,
             TaskType.BUG,
@@ -64,67 +65,75 @@ class TaskBase(BaseModel):
             TaskType.MAINTENANCE,
         ]
         if v not in valid_types:
-            raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
+            raise ValueError(
+                f"작업 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+            )
         return v
 
 
 class TaskCreateRequest(TaskBase):
-    """Schema for creating a task"""
+    """작업 생성 스키마"""
 
-    project_id: int = Field(..., description="Project ID")
+    project_id: int = Field(..., description="프로젝트 ID")
     parent_task_id: Optional[int] = Field(
-        None, description="Parent task ID for subtasks"
+        None, description="하위 작업을 위한 상위 작업 ID"
     )
-    start_date: Optional[datetime] = Field(None, description="Task start date")
-    due_date: Optional[datetime] = Field(None, description="Task due date")
-    estimated_hours: Optional[int] = Field(None, ge=0, description="Estimated hours")
-    story_points: Optional[int] = Field(None, ge=0, description="Story points")
+    start_date: Optional[datetime] = Field(None, description="작업 시작일")
+    due_date: Optional[datetime] = Field(None, description="작업 마감일")
+    estimated_hours: Optional[int] = Field(None, ge=0, description="예상 시간")
+    story_points: Optional[int] = Field(None, ge=0, description="스토리 포인트")
     acceptance_criteria: Optional[str] = Field(
-        None, max_length=2000, description="Acceptance criteria"
+        None, max_length=2000, description="수락 기준"
     )
     external_id: Optional[str] = Field(
-        None, max_length=100, description="External system ID"
+        None, max_length=100, description="외부 시스템 ID"
     )
     assignee_ids: Optional[List[int]] = Field(
-        default=[], description="List of assignee user IDs"
+        default=[], description="할당된 사용자 ID 목록"
     )
-    tag_ids: Optional[List[int]] = Field(default=[], description="List of tag IDs")
+    tag_ids: Optional[List[int]] = Field(default=[], description="태그 ID 목록")
 
     @field_validator("due_date")
     @classmethod
     def validate_due_date(cls, v: str, values: Any):
-        """Validate due date"""
+        """마감일 검증"""
         if (
             v
             and "start_date" in values
             and values["start_date"]
             and v < values["start_date"]
         ):
-            raise ValueError("Due date must be after start date")
+            raise ValueError("마감일은 시작일 이후여야 합니다")
         return v
 
 
 class TaskUpdateRequest(BaseModel):
-    """Schema for updating a task"""
+    """작업 업데이트 스키마"""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=5000)
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    task_type: Optional[str] = None
-    parent_task_id: Optional[int] = None
-    start_date: Optional[datetime] = None
-    due_date: Optional[datetime] = None
-    estimated_hours: Optional[int] = Field(None, ge=0)
-    actual_hours: Optional[int] = Field(None, ge=0)
-    story_points: Optional[int] = Field(None, ge=0)
-    acceptance_criteria: Optional[str] = Field(None, max_length=2000)
-    external_id: Optional[str] = Field(None, max_length=100)
+    title: Optional[str] = Field(
+        None, min_length=1, max_length=200, description="작업 제목"
+    )
+    description: Optional[str] = Field(None, max_length=5000, description="작업 설명")
+    status: Optional[str] = Field(None, description="작업 상태")
+    priority: Optional[str] = Field(None, description="작업 우선순위")
+    task_type: Optional[str] = Field(None, description="작업 유형")
+    parent_task_id: Optional[int] = Field(None, description="상위 작업 ID")
+    start_date: Optional[datetime] = Field(None, description="작업 시작일")
+    due_date: Optional[datetime] = Field(None, description="작업 마감일")
+    estimated_hours: Optional[int] = Field(None, ge=0, description="예상 시간")
+    actual_hours: Optional[int] = Field(None, ge=0, description="실제 시간")
+    story_points: Optional[int] = Field(None, ge=0, description="스토리 포인트")
+    acceptance_criteria: Optional[str] = Field(
+        None, max_length=2000, description="수락 기준"
+    )
+    external_id: Optional[str] = Field(
+        None, max_length=100, description="외부 시스템 ID"
+    )
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str):
-        """Validate task status"""
+        """작업 상태 검증"""
         if v is not None:
             valid_statuses = [
                 TaskStatus.TODO,
@@ -135,13 +144,15 @@ class TaskUpdateRequest(BaseModel):
                 TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v: str):
-        """Validate task priority"""
+        """작업 우선순위 검증"""
         if v is not None:
             valid_priorities = [
                 TaskPriority.LOW,
@@ -151,14 +162,14 @@ class TaskUpdateRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f"Priority must be one of: {', '.join(valid_priorities)}"
+                    f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
                 )
         return v
 
     @field_validator("task_type")
     @classmethod
     def validate_task_type(cls, v: str) -> str:
-        """Validate task type"""
+        """작업 유형 검증"""
         if v is not None:
             valid_types = [
                 TaskType.FEATURE,
@@ -170,12 +181,14 @@ class TaskUpdateRequest(BaseModel):
                 TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
+                raise ValueError(
+                    f"작업 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+                )
         return v
 
 
 class TaskAssignmentResponse(BaseModel):
-    """Schema for task assignment response"""
+    """작업 할당 응답 스키마"""
 
     id: int
     task_id: int
@@ -187,35 +200,31 @@ class TaskAssignmentResponse(BaseModel):
     assigner: UserPublic
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TaskCommentBase(BaseModel):
-    """Base task comment schema"""
+    """기본 작업 댓글 스키마"""
 
-    content: str = Field(
-        ..., min_length=1, max_length=2000, description="Comment content"
-    )
+    content: str = Field(..., min_length=1, max_length=2000, description="댓글 내용")
 
 
 class TaskCommentCreateRequest(TaskCommentBase):
-    """Schema for creating task comment"""
+    """작업 댓글 생성 스키마"""
 
-    parent_id: Optional[int] = Field(None, description="Parent comment ID for replies")
+    parent_id: Optional[int] = Field(None, description="답글을 위한 부모 댓글 ID")
 
 
 class TaskCommentUpdateRequest(BaseModel):
-    """Schema for updating task comment"""
+    """작업 댓글 업데이트 스키마"""
 
-    content: str = Field(
-        ..., min_length=1, max_length=2000, description="Comment content"
-    )
+    content: str = Field(..., min_length=1, max_length=2000, description="댓글 내용")
 
 
 class TaskCommentResponse(BaseModel):
-    """Schema for task comment response"""
+    """작업 댓글 응답 스키마"""
 
     id: int
     task_id: int
@@ -229,17 +238,17 @@ class TaskCommentResponse(BaseModel):
     replies: List["TaskCommentResponse"] = []
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TaskAttachmentResponse(BaseModel):
-    """Schema for task attachment response"""
+    """작업 첨부파일 응답 스키마"""
 
     id: int
     task_id: int
-    filename: str
+    file_name: str
     file_path: str
     file_size: int
     mime_type: Optional[str] = None
@@ -249,36 +258,32 @@ class TaskAttachmentResponse(BaseModel):
     uploader: UserPublic
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TaskTimeLogBase(BaseModel):
-    """Base task time log schema"""
+    """기본 작업 시간 로그 스키마"""
 
-    hours: int = Field(..., gt=0, description="Hours worked")
-    description: Optional[str] = Field(
-        None, max_length=500, description="Work description"
-    )
+    hours: int = Field(..., gt=0, description="작업한 시간")
+    description: Optional[str] = Field(None, max_length=500, description="작업 설명")
 
 
 class TaskTimeLogCreateRequest(TaskTimeLogBase):
-    """Schema for creating task time log"""
+    """작업 시간 로그 생성 스키마"""
 
-    work_date: Optional[datetime] = Field(
-        None, description="Date of work (default: today)"
-    )
+    work_date: Optional[datetime] = Field(None, description="작업 날짜 (기본값: 오늘)")
 
 
 class TaskTimeLogUpdateRequest(TaskTimeLogBase):
-    """Schema for updating task time log"""
+    """작업 시간 로그 업데이트 스키마"""
 
-    work_date: Optional[datetime] = None
+    work_date: Optional[datetime] = Field(None, description="작업 날짜")
 
 
 class TaskTimeLogResponse(BaseModel):
-    """Schema for task time log response"""
+    """작업 시간 로그 응답 스키마"""
 
     id: int
     task_id: int
@@ -291,68 +296,72 @@ class TaskTimeLogResponse(BaseModel):
     user: UserPublic
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TagBase(BaseModel):
-    """Base tag schema"""
+    """기본 태그 스키마"""
 
-    name: str = Field(..., min_length=1, max_length=50, description="Tag name")
-    color: Optional[str] = Field("#3B82F6", max_length=7, description="Tag color (hex)")
-    description: Optional[str] = Field(
-        None, max_length=200, description="Tag description"
+    name: str = Field(..., min_length=1, max_length=50, description="태그 이름")
+    color: Optional[str] = Field(
+        "#3B82F6", max_length=7, description="태그 색상 (16진수)"
     )
+    description: Optional[str] = Field(None, max_length=200, description="태그 설명")
 
     @field_validator("color")
     @classmethod
     def validate_color(cls, v: str):
-        """Validate tag color"""
+        """태그 색상 검증"""
         if v is not None and not v.startswith("#"):
-            raise ValueError("Color must be in hex format (e.g., #ff0000)")
+            raise ValueError("색상은 16진수 형식이어야 합니다 (예: #ff0000)")
         return v
 
 
 class TagCreateRequest(TagBase):
-    """Schema for creating a tag"""
+    """태그 생성 스키마"""
+
+    pass
 
 
-class TagUpdate(BaseModel):
-    """Schema for updating a tag"""
+class TagUpdateRequest(BaseModel):
+    """태그 업데이트 스키마"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=50)
-    color: Optional[str] = Field(None, max_length=7)
-    description: Optional[str] = Field(None, max_length=200)
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=50, description="태그 이름"
+    )
+    color: Optional[str] = Field(None, max_length=7, description="태그 색상 (16진수)")
+    description: Optional[str] = Field(None, max_length=200, description="태그 설명")
 
     @field_validator("color")
     @classmethod
     def validate_color(cls, v: str):
-        """Validate tag color"""
+        """태그 색상 검증"""
         if v is not None and not v.startswith("#"):
-            raise ValueError("Color must be in hex format (e.g., #ff0000)")
+            raise ValueError("색상은 16진수 형식이어야 합니다 (예: #ff0000)")
         return v
 
 
 class TagResponse(TagBase):
-    """Schema for tag response"""
+    """태그 응답 스키마"""
 
     id: int
     created_by: int
     created_at: datetime
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TaskResponse(TaskBase):
-    """Schema for task response"""
+    """작업 응답 스키마"""
 
     id: int
     project_id: int
-    creator_id: int
+    owner_id: int
     parent_task_id: Optional[int] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
@@ -364,7 +373,7 @@ class TaskResponse(TaskBase):
     completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    creator: UserPublic
+    owner: UserPublic
     assignments: List[TaskAssignmentResponse] = []
     comments: List[TaskCommentResponse] = []
     attachments: List[TaskAttachmentResponse] = []
@@ -373,13 +382,13 @@ class TaskResponse(TaskBase):
     subtasks: List["TaskResponse"] = []
 
     class Config:
-        """Configuration for Pydantic model"""
+        """Pydantic 모델 설정"""
 
         from_attributes = True
 
 
 class TaskListResponse(BaseModel):
-    """Schema for task list response"""
+    """작업 목록 응답 스키마"""
 
     tasks: List[TaskResponse]
     total_items: int
@@ -389,7 +398,7 @@ class TaskListResponse(BaseModel):
 
 
 class TaskStatsResponse(BaseModel):
-    """Schema for task statistics"""
+    """작업 통계 스키마"""
 
     total_tasks: int
     todo_tasks: int
@@ -403,25 +412,25 @@ class TaskStatsResponse(BaseModel):
 
 
 class TaskSearchRequest(BaseModel):
-    """Schema for task search request"""
+    """작업 검색 요청 스키마"""
 
-    search_text: Optional[str] = Field(None, description="Search query")
-    project_id: Optional[int] = None
-    task_status: Optional[str] = None
-    priority: Optional[str] = None
-    task_type: Optional[str] = None
-    assignee_id: Optional[int] = None
-    creator_id: Optional[int] = None
-    tag_ids: Optional[List[int]] = None
-    due_date_from: Optional[datetime] = None
-    due_date_to: Optional[datetime] = None
-    created_from: Optional[datetime] = None
-    created_to: Optional[datetime] = None
+    search_text: Optional[str] = Field(None, description="검색 쿼리")
+    project_id: Optional[int] = Field(None, description="프로젝트 ID")
+    task_status: Optional[str] = Field(None, description="작업 상태")
+    priority: Optional[str] = Field(None, description="우선순위")
+    task_type: Optional[str] = Field(None, description="작업 유형")
+    assignee_id: Optional[int] = Field(None, description="할당자 ID")
+    creator_id: Optional[int] = Field(None, description="생성자 ID")
+    tag_ids: Optional[List[int]] = Field(None, description="태그 ID 목록")
+    due_date_from: Optional[datetime] = Field(None, description="마감일 범위 시작")
+    due_date_to: Optional[datetime] = Field(None, description="마감일 범위 끝")
+    created_from: Optional[datetime] = Field(None, description="생성일 범위 시작")
+    created_to: Optional[datetime] = Field(None, description="생성일 범위 끝")
 
     @field_validator("task_status")
     @classmethod
     def validate_status(cls, v: str):
-        """Validate task status"""
+        """작업 상태 검증"""
         if v is not None:
             valid_statuses = [
                 TaskStatus.TODO,
@@ -432,13 +441,15 @@ class TaskSearchRequest(BaseModel):
                 TaskStatus.BLOCKED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v: str):
-        """Validate task priority"""
+        """작업 우선순위 검증"""
         if v is not None:
             valid_priorities = [
                 TaskPriority.LOW,
@@ -448,14 +459,14 @@ class TaskSearchRequest(BaseModel):
             ]
             if v not in valid_priorities:
                 raise ValueError(
-                    f"Priority must be one of: {', '.join(valid_priorities)}"
+                    f"우선순위는 다음 중 하나여야 합니다: {', '.join(valid_priorities)}"
                 )
         return v
 
     @field_validator("task_type")
     @classmethod
     def validate_task_type(cls, v: str) -> str:
-        """Validate task type"""
+        """작업 유형 검증"""
         if v is not None:
             valid_types = [
                 TaskType.FEATURE,
@@ -467,18 +478,20 @@ class TaskSearchRequest(BaseModel):
                 TaskType.MAINTENANCE,
             ]
             if v not in valid_types:
-                raise ValueError(f"Task type must be one of: {', '.join(valid_types)}")
+                raise ValueError(
+                    f"작업 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+                )
         return v
 
 
 class TaskAssignRequest(BaseModel):
-    """Schema for task assignment request"""
+    """작업 할당 요청 스키마"""
 
-    user_ids: List[int] = Field(..., description="List of user IDs to assign")
+    user_ids: List[int] = Field(..., description="할당할 사용자 ID 목록")
 
 
 class TaskDashboardResponse(BaseModel):
-    """Schema for task dashboard response"""
+    """작업 대시보드 응답 스키마"""
 
     total_tasks: int
     my_tasks: int
@@ -493,7 +506,7 @@ class TaskDashboardResponse(BaseModel):
 
 
 class TaskKanbanBoardResponse(BaseModel):
-    """Schema for Kanban board response"""
+    """칸반 보드 응답 스키마"""
 
     todo: List[TaskResponse]
     in_progress: List[TaskResponse]
@@ -503,7 +516,7 @@ class TaskKanbanBoardResponse(BaseModel):
 
 
 class TaskGanttChartResponse(BaseModel):
-    """Schema for Gantt chart response"""
+    """간트 차트 응답 스키마"""
 
     task_id: int
     title: str
@@ -514,13 +527,13 @@ class TaskGanttChartResponse(BaseModel):
 
 
 class TaskGanttResponse(BaseModel):
-    """Schema for Gantt chart data response"""
+    """간트 차트 데이터 응답 스키마"""
 
     tasks: List[TaskGanttChartResponse]
     project_start: Optional[datetime]
     project_end: Optional[datetime]
 
 
-# Update forward references
+# 전방 참조 업데이트
 TaskCommentResponse.model_rebuild()
 TaskResponse.model_rebuild()
