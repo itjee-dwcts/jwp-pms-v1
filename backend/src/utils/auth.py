@@ -9,12 +9,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import jwt
-from constants.user import TokenType, UserRole
-from core.config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from models.user import User
 from passlib.context import CryptContext
+
+from constants.user import TokenType, UserRole
+from core.config import settings
+from models.user import User
 from schemas.auth import TokenData
 
 logger = logging.getLogger(__name__)
@@ -341,7 +342,7 @@ def require_permissions(required_permissions: List[str]):
             if perm not in current_user.scopes:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="필요한 권한이 없습니다: %s" % perm,
+                    detail=f"필요한 권한이 없습니다: {perm}",
                 )
 
         return current_user
@@ -369,7 +370,7 @@ def require_roles(required_roles: List[str]):
 def check_permission(user_role: str, resource: str, action: str) -> bool:
     """사용자 역할이 리소스와 작업에 대한 권한을 가지고 있는지 확인"""
     user_scopes = get_user_scopes(user_role)
-    required_scope = "%s:%s" % (resource, action)
+    required_scope = f"{resource}:{action}"
     return required_scope in user_scopes
 
 

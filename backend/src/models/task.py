@@ -8,8 +8,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from constants.task import TaskPriority, TaskStatus, TaskType
-from core.base import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -23,6 +21,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from constants.task import TaskPriority, TaskStatus, TaskType
+from core.base import Base
 
 if TYPE_CHECKING:
     from models.user import User

@@ -1,90 +1,54 @@
-# backend/src/models/__init__.py
 """
-Database Models Package
+데이터베이스 모델 패키지
 
-SQLAlchemy models for the PMS application.
+PMS 애플리케이션을 위한 SQLAlchemy 모델들입니다.
 """
 
-# Import Base from database configuration
+# 베이스 클래스 가져오기
 from core.base import Base
 
-# Calendar models
-from models.calendar import (
-    Calendar,
-    Event,
-    EventAttendee,
-    EventStatus,
-    EventType,
-    RecurrenceType,
-)
+# 캘린더 모델
+from .calendar import Calendar, Event, EventAttendee
 
-# Project models
-from models.project import (
-    Project,
-    ProjectAttachment,
-    ProjectComment,
-    ProjectMember,
-    ProjectMemberRole,
-    ProjectPriority,
-    ProjectStatus,
-)
+# 프로젝트 모델
+from .project import Project, ProjectAttachment, ProjectComment, ProjectMember
 
-# Task models
-from models.task import (
+# 작업 모델
+from .task import (
     Tag,
     Task,
     TaskAssignment,
     TaskAttachment,
     TaskComment,
-    TaskPriority,
-    TaskStatus,
     TaskTag,
     TaskTimeLog,
-    TaskType,
 )
 
-# User models
-from models.user import (
-    User,
-    UserActivityLog,
-    UserRole,
-    UserSession,
-    UserStatus,
-)
+# 사용자 모델
+from .user import User, UserActivityLog, UserSession
 
 __all__ = [
-    # Base class
+    # 베이스 클래스
     "Base",
-    # User models
+    # 사용자 모델
     "User",
-    "UserRole",
-    "UserStatus",
     "UserActivityLog",
     "UserSession",
-    # Project models
+    # 프로젝트 모델
     "Project",
-    "ProjectStatus",
-    "ProjectPriority",
     "ProjectMember",
-    "ProjectMemberRole",
     "ProjectComment",
     "ProjectAttachment",
-    # Task models
+    # 작업 모델
     "Task",
-    "TaskStatus",
-    "TaskPriority",
-    "TaskType",
     "TaskAssignment",
     "TaskComment",
     "TaskAttachment",
     "TaskTimeLog",
     "Tag",
     "TaskTag",
-    # Calendar models
+    # 캘린더 모델
     "Calendar",
     "Event",
-    "EventType",
-    "EventStatus",
-    "RecurrenceType",
     "EventAttendee",
 ]

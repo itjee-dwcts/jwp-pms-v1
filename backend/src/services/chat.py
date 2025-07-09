@@ -11,16 +11,23 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, cast
 
 import openai
-from constants.chat import MessageRole, MessageStatus, OpenAIModel, SessionStatus
-from core.config import get_settings
-from core.database import get_async_session
-from models.chat import ChatMessage, ChatSession, ChatTemplate, ChatUsageStats
-from models.user import User
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
+from sqlalchemy import and_, desc, extract, func, or_
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import select
+from sqlalchemy.sql.functions import count
+
+from constants.chat import MessageRole, MessageStatus, OpenAIModel, SessionStatus
+from core.config import get_settings
+from core.database import get_async_session
+from models.chat import ChatMessage, ChatSession, ChatTemplate, ChatUsageStats
+from models.user import User
 from schemas.chat import (
     ChatMessageCreateRequest,
     ChatMessageListResponse,
@@ -38,12 +45,6 @@ from schemas.chat import (
     OpenAIMessageRequest,
     OpenAIResponse,
 )
-from sqlalchemy import and_, desc, extract, func, or_
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import select
-from sqlalchemy.sql.functions import count
 from utils.exceptions import AuthorizationError, BusinessException, NotFoundError
 
 logger = logging.getLogger(__name__)
@@ -307,8 +308,8 @@ class ChatService:
                     setattr(session, field, value)
 
             # 메타데이터 업데이트
-            setattr(session, "updated_by", user_id)
-            setattr(session, "updated_at", datetime.utcnow())
+            session.updated_by = user_id
+            session.updated_at = datetime.utcnow()
 
             await self.db.commit()
 
@@ -786,7 +787,7 @@ class ChatService:
             OpenAIModel.GPT_4_VISION: 0.01,
         }
 
-        price_per_1k_tokens = pricing.get(OpenAIModel(model), 0.002)
+        price_per_1k_tokens = pricing.get(model, 0.002)
         return (tokens / 1000) * price_per_1k_tokens
 
     async def _update_usage_stats(

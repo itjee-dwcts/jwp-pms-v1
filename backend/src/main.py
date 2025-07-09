@@ -438,12 +438,12 @@ graphql_app = GraphQLRouter(schema)
 app.include_router(graphql_app, prefix="/graphql")
 
 
-def find_free_port(start_port: int = 8000) -> int:
+def find_free_port(start_port: int = 8001) -> int:
     """
     사용 가능한 포트를 찾는 함수
 
     Args:
-        start_port: 시작 포트 번호 (기본값: 8000)
+        start_port: 시작 포트 번호 (기본값: 8001)
 
     Returns:
         사용 가능한 포트 번호

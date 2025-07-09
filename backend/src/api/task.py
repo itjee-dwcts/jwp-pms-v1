@@ -7,9 +7,11 @@
 import logging
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.task import (
     TaskCommentResponse,
@@ -19,7 +21,6 @@ from schemas.task import (
     TaskUpdateRequest,
 )
 from services.task import TaskService
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,6 +53,13 @@ async def list_tasks(
                 task_status=task_status,
                 priority=priority,
                 search_text=search_text,
+                task_type=None,
+                creator_id=None,
+                tag_ids=None,
+                due_date_from=None,
+                due_date_to=None,
+                created_from=None,
+                created_to=None,
             ),
         )
 

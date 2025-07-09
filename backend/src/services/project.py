@@ -8,6 +8,11 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, cast
 
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import count
+
 from constants.project import ProjectStatus
 from core.database import get_async_session
 from models.project import (
@@ -28,10 +33,6 @@ from schemas.project import (
     ProjectStatsResponse,
     ProjectUpdateRequest,
 )
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.functions import count
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -174,8 +175,8 @@ class ProjectService:
             for field, value in update_data.items():
                 setattr(project, field, value)
 
-            setattr(project, "updated_by", user_id)
-            setattr(project, "updated_at", datetime.now(timezone.utc))
+            project.updated_by = user_id
+            project.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
 
@@ -217,9 +218,9 @@ class ProjectService:
                 raise NotFoundError(f"ID {project_id}인 프로젝트를 찾을 수 없습니다")
 
             # 상태 변경으로 소프트 삭제
-            setattr(project, "status", ProjectStatus.CANCELLED)
-            setattr(project, "updated_by", user_id)
-            setattr(project, "updated_at", datetime.utcnow())
+            project.status = ProjectStatus.CANCELLED
+            project.updated_by = user_id
+            project.updated_at = datetime.utcnow()
 
             await self.db.commit()
 

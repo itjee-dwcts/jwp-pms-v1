@@ -8,8 +8,9 @@
 from datetime import datetime
 from typing import List, Optional
 
-from constants.user import UserRole, UserStatus
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from constants.user import UserRole, UserStatus
 
 
 class UserBase(BaseModel):

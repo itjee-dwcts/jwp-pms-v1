@@ -7,14 +7,6 @@ OpenAI API와 연동하여 사용자와의 대화를 저장하고 관리하는 �
 import uuid
 from datetime import datetime, timezone
 
-from constants.chat import (
-    InputMode,
-    MessageRole,
-    MessageStatus,
-    OpenAIModel,
-    SessionStatus,
-)
-from core.database import Base
 from sqlalchemy import (
     DECIMAL,
     JSON,
@@ -26,8 +18,17 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from constants.chat import (
+    InputMode,
+    MessageRole,
+    MessageStatus,
+    OpenAIModel,
+    SessionStatus,
+)
+from core.database import Base
 
 
 class ChatSession(Base):

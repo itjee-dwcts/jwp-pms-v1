@@ -1,7 +1,7 @@
 """
-Authentication Schemas
+인증 스키마
 
-Pydantic models for authentication-related requests and responses.
+인증 관련 요청 및 응답을 위한 Pydantic 모델들입니다.
 """
 
 from datetime import datetime
@@ -11,14 +11,14 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class LoginRequest(BaseModel):
-    """Login request schema"""
+    """로그인 요청 스키마"""
 
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=1)
     remember_me: bool = False
 
     class Config:
-        """Configuration for the LoginRequest schema"""
+        """LoginRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -31,16 +31,16 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    """Login response schema"""
+    """로그인 응답 스키마"""
 
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
-    user: "UserResponse"
+    user: "LoginUserResponse"
 
     class Config:
-        """Configuration for the LoginResponse schema"""
+        """LoginResponse 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -53,14 +53,14 @@ class LoginResponse(BaseModel):
                     "id": 1,
                     "username": "john_doe",
                     "email": "john@example.com",
-                    "full_name": "John Doe",
+                    "full_name": "홍길동",
                 },
             }
         }
 
 
 class RegisterRequest(BaseModel):
-    """User registration request schema"""
+    """사용자 등록 요청 스키마"""
 
     email: EmailStr
     full_name: str = Field(..., min_length=1, max_length=100)
@@ -71,30 +71,28 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        """Validate username format"""
+        """사용자명 형식 검증"""
         if not v.isalnum() and "_" not in v:
-            raise ValueError(
-                "Username must contain only letters, numbers, and underscores"
-            )
+            raise ValueError("사용자명은 영문자, 숫자, 밑줄만 포함할 수 있습니다")
         return v.lower()
 
     @field_validator("confirm_password", mode="before")
     @classmethod
     def passwords_match(cls, v: str, values: Any) -> str:
-        """Validate that passwords match"""
+        """비밀번호 일치 검증"""
         if "password" in values and v != values["password"]:
-            raise ValueError("Passwords do not match")
+            raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
     class Config:
-        """Configuration for the RegisterRequest schema"""
+        """RegisterRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
                 "username": "john_doe",
                 "email": "john@example.com",
-                "full_name": "John Doe",
+                "full_name": "홍길동",
                 "password": "securePassword123!",
                 "confirm_password": "securePassword123!",
             }
@@ -102,12 +100,12 @@ class RegisterRequest(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Refresh token request schema"""
+    """리프레시 토큰 요청 스키마"""
 
     refresh_token: str
 
     class Config:
-        """Configuration for the RefreshTokenRequest schema"""
+        """RefreshTokenRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -116,7 +114,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 class RefreshTokenResponse(BaseModel):
-    """Refresh token response schema"""
+    """리프레시 토큰 응답 스키마"""
 
     access_token: str
     refresh_token: str
@@ -124,7 +122,7 @@ class RefreshTokenResponse(BaseModel):
     expires_in: int
 
     class Config:
-        """Configuration for the RefreshTokenResponse schema"""
+        """RefreshTokenResponse 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -138,13 +136,13 @@ class RefreshTokenResponse(BaseModel):
 
 
 class LogoutRequest(BaseModel):
-    """Logout request schema"""
+    """로그아웃 요청 스키마"""
 
     refresh_token: Optional[str] = None
     logout_all_devices: bool = False
 
     class Config:
-        """Configuration for the LogoutRequest schema"""
+        """LogoutRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -156,7 +154,7 @@ class LogoutRequest(BaseModel):
 
 
 class PasswordChangeRequest(BaseModel):
-    """Password change request schema"""
+    """비밀번호 변경 요청 스키마"""
 
     current_password: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=8, max_length=128)
@@ -165,13 +163,13 @@ class PasswordChangeRequest(BaseModel):
     @field_validator("confirm_new_password", mode="before")
     @classmethod
     def passwords_match(cls, v: str, values: Any) -> str:
-        """Validate that new passwords match"""
+        """새 비밀번호 일치 검증"""
         if "new_password" in values and v != values["new_password"]:
-            raise ValueError("New passwords do not match")
+            raise ValueError("새 비밀번호가 일치하지 않습니다")
         return v
 
     class Config:
-        """Configuration for the PasswordChangeRequest schema"""
+        """PasswordChangeRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra = {
@@ -184,19 +182,19 @@ class PasswordChangeRequest(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
-    """Password reset request schema"""
+    """비밀번호 재설정 요청 스키마"""
 
     email: EmailStr
 
     class Config:
-        """Configuration for the PasswordResetRequest schema"""
+        """PasswordResetRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra = {"example": {"email": "john@example.com"}}
 
 
 class PasswordResetConfirm(BaseModel):
-    """Password reset confirmation schema"""
+    """비밀번호 재설정 확인 스키마"""
 
     token: str
     new_password: str = Field(..., min_length=8, max_length=128)
@@ -208,13 +206,13 @@ class PasswordResetConfirm(BaseModel):
     )
     @classmethod
     def passwords_match(cls, v: str, values: Any) -> str:
-        """Validate that passwords match"""
+        """비밀번호 일치 검증"""
         if "new_password" in values and v != values["new_password"]:
-            raise ValueError("Passwords do not match")
+            raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
     class Config:
-        """Configuration for the PasswordResetConfirm schema"""
+        """PasswordResetConfirm 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -227,30 +225,30 @@ class PasswordResetConfirm(BaseModel):
 
 
 class Token(BaseModel):
-    """Token schema"""
+    """토큰 스키마"""
 
     access_token: str
     token_type: str = "bearer"
 
 
 class TokenData(BaseModel):
-    """Token data schema with user information"""
+    """사용자 정보가 포함된 토큰 데이터 스키마"""
 
-    # Standard JWT claims
-    sub: Optional[str] = None  # Subject (typically user ID as string)
-    exp: Optional[datetime] = None  # Expiration time
-    iat: Optional[datetime] = None  # Issued at time
-    type: Optional[str] = None  # Token type (access, refresh, etc.)
+    # 표준 JWT 클레임
+    sub: Optional[str] = None  # 주체 (일반적으로 사용자 ID를 문자열로)
+    exp: Optional[datetime] = None  # 만료 시간
+    iat: Optional[datetime] = None  # 발급 시간
+    type: Optional[str] = None  # 토큰 유형 (access, refresh 등)
 
-    # User information fields
-    user_id: Optional[int] = None  # User ID
-    username: Optional[str] = None  # Username
-    email: Optional[str] = None  # User email
-    role: Optional[str] = None  # User role
-    scopes: Optional[List[str]] = None  # User permissions/scopes
+    # 사용자 정보 필드
+    user_id: Optional[int] = None  # 사용자 ID
+    username: Optional[str] = None  # 사용자명
+    email: Optional[str] = None  # 사용자 이메일
+    role: Optional[str] = None  # 사용자 역할
+    scopes: Optional[List[str]] = None  # 사용자 권한/범위
 
     class Config:
-        """Configuration for the TokenData schema"""
+        """TokenData 스키마 설정"""
 
         from_attributes = True
         json_schema_extra = {
@@ -262,20 +260,20 @@ class TokenData(BaseModel):
                 "user_id": 123,
                 "username": "john_doe",
                 "email": "john@example.com",
-                "role": "developer",
+                "role": "개발자",
                 "scopes": ["projects:read", "tasks:write"],
             }
         }
 
 
 class TokenRefresh(BaseModel):
-    """Token refresh schema"""
+    """토큰 갱신 스키마"""
 
     refresh_token: str
 
 
-class UserResponse(BaseModel):
-    """User response schema for authentication"""
+class LoginUserResponse(BaseModel):
+    """인증용 사용자 응답 스키마"""
 
     id: int
     username: str
@@ -289,7 +287,7 @@ class UserResponse(BaseModel):
     last_active: Optional[datetime] = None
 
     class Config:
-        """Configuration for the UserResponse schema"""
+        """LoginUserResponse 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -297,9 +295,9 @@ class UserResponse(BaseModel):
                 "id": 1,
                 "username": "john_doe",
                 "email": "john@example.com",
-                "full_name": "John Doe",
-                "role": "developer",
-                "status": "active",
+                "full_name": "홍길동",
+                "role": "개발자",
+                "status": "활성",
                 "is_active": True,
                 "is_verified": True,
                 "created_at": "2023-01-01T00:00:00Z",
@@ -309,12 +307,12 @@ class UserResponse(BaseModel):
 
 
 class EmailVerificationRequest(BaseModel):
-    """Email verification request schema"""
+    """이메일 인증 요청 스키마"""
 
     email: EmailStr
 
     class Config:
-        """Configuration for the EmailVerificationRequest schema"""
+        """EmailVerificationRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -323,12 +321,12 @@ class EmailVerificationRequest(BaseModel):
 
 
 class EmailVerificationConfirm(BaseModel):
-    """Email verification confirmation schema"""
+    """이메일 인증 확인 스키마"""
 
     token: str
 
     class Config:
-        """Configuration for the EmailVerificationConfirm schema"""
+        """EmailVerificationConfirm 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -337,19 +335,19 @@ class EmailVerificationConfirm(BaseModel):
 
 
 class AuthenticationError(BaseModel):
-    """Authentication error response schema"""
+    """인증 오류 응답 스키마"""
 
     detail: str
     error_code: str
     timestamp: datetime
 
     class Config:
-        """Configuration for the AuthenticationError schema"""
+        """AuthenticationError 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
             "example": {
-                "detail": "Invalid credentials",
+                "detail": "잘못된 자격 증명",
                 "error_code": "AUTHENTICATION_ERROR",
                 "timestamp": "2023-12-01T10:30:00Z",
             }
@@ -357,14 +355,14 @@ class AuthenticationError(BaseModel):
 
 
 class OAuthLoginRequest(BaseModel):
-    """OAuth login request schema"""
+    """OAuth 로그인 요청 스키마"""
 
     provider: Annotated[str, Field(pattern="^(google|github)$")]
     code: str
     state: Optional[str] = None
 
     class Config:
-        """Configuration for the OAuthLoginRequest schema"""
+        """OAuthLoginRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -377,27 +375,27 @@ class OAuthLoginRequest(BaseModel):
 
 
 class TwoFactorAuthRequest(BaseModel):
-    """Two-factor authentication request schema"""
+    """2단계 인증 요청 스키마"""
 
     token: str = Field(..., min_length=6, max_length=6)
 
     @field_validator("token")
     @classmethod
     def validate_token(cls, v: str) -> str:
-        """Validate 2FA token is numeric"""
+        """2FA 토큰이 숫자인지 검증"""
         if not v.isdigit():
-            raise ValueError("Token must be 6 digits")
+            raise ValueError("토큰은 6자리 숫자여야 합니다")
         return v
 
     class Config:
-        """Configuration for the TwoFactorAuthRequest schema"""
+        """TwoFactorAuthRequest 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {"example": {"token": "123456"}}
 
 
 class SessionInfo(BaseModel):
-    """Session information schema"""
+    """세션 정보 스키마"""
 
     session_id: str
     user_agent: Optional[str] = None
@@ -407,7 +405,7 @@ class SessionInfo(BaseModel):
     is_current: bool
 
     class Config:
-        """Configuration for the SessionInfo schema"""
+        """SessionInfo 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {
@@ -423,7 +421,7 @@ class SessionInfo(BaseModel):
 
 
 class UserLoginHistory(BaseModel):
-    """User login history schema"""
+    """사용자 로그인 기록 스키마"""
 
     id: int
     ip_address: Optional[str] = None
@@ -432,7 +430,7 @@ class UserLoginHistory(BaseModel):
     created_at: datetime
 
     class Config:
-        """Configuration for the UserLoginHistory schema"""
+        """UserLoginHistory 스키마 설정"""
 
         from_attributes = True
         json_schema_extra: dict[str, dict[str, Any]] = {

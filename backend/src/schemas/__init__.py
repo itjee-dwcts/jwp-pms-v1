@@ -1,20 +1,34 @@
 """
-Pydantic Schemas Package
+Pydantic 스키마 패키지
 
-Request/Response schemas for API validation.
+API 검증을 위한 요청/응답 스키마들입니다.
 """
 
+# 인증 스키마
 from .auth import (
+    AuthenticationError,
+    EmailVerificationConfirm,
+    EmailVerificationRequest,
     LoginRequest,
     LoginResponse,
+    LoginUserResponse,
     LogoutRequest,
+    OAuthLoginRequest,
     PasswordChangeRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+    RegisterRequest,
+    SessionInfo,
     Token,
     TokenData,
     TokenRefresh,
+    TwoFactorAuthRequest,
+    UserLoginHistory,
 )
+
+# 캘린더 스키마
 from .calendar import (
     CalendarBase,
     CalendarCreateRequest,
@@ -32,11 +46,11 @@ from .calendar import (
     EventListResponse,
     EventResponse,
     EventSearchRequest,
-    EventType,
     EventUpdateRequest,
-    RecurrenceType,
     RecurringEventResponse,
 )
+
+# 공통 스키마
 from .common import (
     ActivityLogEntry,
     ActivityLogResponse,
@@ -66,6 +80,8 @@ from .common import (
     TimeRange,
     ValidationErrorResponse,
 )
+
+# 프로젝트 스키마
 from .project import (
     ProjectAttachmentResponse,
     ProjectBase,
@@ -79,20 +95,18 @@ from .project import (
     ProjectMemberBase,
     ProjectMemberCreateRequest,
     ProjectMemberResponse,
-    ProjectMemberRole,
     ProjectMemberUpdateRequest,
-    ProjectPriority,
     ProjectResponse,
     ProjectSearchRequest,
     ProjectStatsResponse,
-    ProjectStatus,
     ProjectUpdateRequest,
 )
+
+# 작업 스키마
 from .task import (
     TagBase,
     TagCreateRequest,
     TagResponse,
-    TagUpdate,
     TaskAssignmentResponse,
     TaskAssignRequest,
     TaskAttachmentResponse,
@@ -107,18 +121,17 @@ from .task import (
     TaskGanttResponse,
     TaskKanbanBoardResponse,
     TaskListResponse,
-    TaskPriority,
     TaskResponse,
     TaskSearchRequest,
     TaskStatsResponse,
-    TaskStatus,
     TaskTimeLogBase,
     TaskTimeLogCreateRequest,
     TaskTimeLogResponse,
     TaskTimeLogUpdateRequest,
-    TaskType,
     TaskUpdateRequest,
 )
+
+# 사용자 스키마
 from .user import (
     UserActivityLogResponse,
     UserBase,
@@ -134,25 +147,34 @@ from .user import (
     UserPublic,
     UserRefreshToken,
     UserResponse,
-    UserRole,
     UserSessionResponse,
     UserStatsResponse,
-    UserStatus,
     UserUpdateRequest,
 )
 
 __all__ = [
-    # Auth schemas
+    # 인증 스키마
+    "AuthenticationError",
+    "EmailVerificationConfirm",
+    "EmailVerificationRequest",
     "LoginRequest",
     "LoginResponse",
     "LogoutRequest",
+    "OAuthLoginRequest",
     "PasswordChangeRequest",
     "PasswordResetConfirm",
     "PasswordResetRequest",
+    "RefreshTokenRequest",
+    "RefreshTokenResponse",
+    "RegisterRequest",
+    "SessionInfo",
     "Token",
     "TokenData",
     "TokenRefresh",
-    # Calendar schemas
+    "TwoFactorAuthRequest",
+    "UserLoginHistory",
+    "LoginUserResponse",
+    # 캘린더 스키마
     "CalendarBase",
     "CalendarCreateRequest",
     "CalendarListResponse",
@@ -169,11 +191,9 @@ __all__ = [
     "EventListResponse",
     "EventResponse",
     "EventSearchRequest",
-    "EventType",
     "EventUpdateRequest",
     "RecurringEventResponse",
-    "RecurrenceType",
-    # Common schemas
+    # 공통 스키마
     "ActivityLogEntry",
     "ActivityLogResponse",
     "Address",
@@ -201,7 +221,7 @@ __all__ = [
     "SystemInfoResponse",
     "TimeRange",
     "ValidationErrorResponse",
-    # Project schemas
+    # 프로젝트 스키마
     "ProjectAttachmentResponse",
     "ProjectBase",
     "ProjectCommentBase",
@@ -214,19 +234,16 @@ __all__ = [
     "ProjectMemberBase",
     "ProjectMemberCreateRequest",
     "ProjectMemberResponse",
-    "ProjectMemberRole",
     "ProjectMemberUpdateRequest",
-    "ProjectPriority",
     "ProjectResponse",
     "ProjectSearchRequest",
-    "ProjectStatus",
     "ProjectStatsResponse",
     "ProjectUpdateRequest",
-    # Task schemas
+    # 작업 스키마
     "TagBase",
     "TagCreateRequest",
     "TagResponse",
-    "TagUpdate",
+    "TaskUpdateRequest",
     "TaskAssignmentResponse",
     "TaskAssignRequest",
     "TaskAttachmentResponse",
@@ -241,18 +258,15 @@ __all__ = [
     "TaskGanttResponse",
     "TaskKanbanBoardResponse",
     "TaskListResponse",
-    "TaskPriority",
     "TaskResponse",
     "TaskSearchRequest",
     "TaskStatsResponse",
-    "TaskStatus",
     "TaskTimeLogBase",
     "TaskTimeLogCreateRequest",
     "TaskTimeLogResponse",
     "TaskTimeLogUpdateRequest",
-    "TaskType",
     "TaskUpdateRequest",
-    # User schemas
+    # 사용자 스키마
     "UserActivityLogResponse",
     "UserBase",
     "UserCreateRequest",
@@ -266,10 +280,8 @@ __all__ = [
     "UserProfileUpdateRequest",
     "UserPublic",
     "UserRefreshToken",
-    "UserResponse",
-    "UserRole",
     "UserSessionResponse",
     "UserStatsResponse",
-    "UserStatus",
     "UserUpdateRequest",
+    "UserResponse",
 ]

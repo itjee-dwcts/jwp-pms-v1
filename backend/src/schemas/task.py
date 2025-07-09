@@ -7,8 +7,9 @@
 from datetime import datetime
 from typing import Any, List, Optional
 
-from constants.task import TaskPriority, TaskStatus, TaskType
 from pydantic import BaseModel, Field, field_validator
+
+from constants.task import TaskPriority, TaskStatus, TaskType
 from schemas.user import UserPublic
 
 

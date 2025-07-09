@@ -1,7 +1,7 @@
 """
-Database Configuration
+데이터베이스 설정
 
-SQLAlchemy async database setup for PostgreSQL.
+PostgreSQL을 위한 SQLAlchemy 비동기 데이터베이스 설정입니다.
 """
 
 import logging
@@ -20,34 +20,30 @@ from sqlalchemy.exc import (
     OperationalError,
     SQLAlchemyError,
 )
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from constants.user import UserRole, UserStatus
 from models.user import User
 
 from .base import Base
 from .config import get_database_url, get_sync_database_url
-from .constants import UserRole, UserStatus
 from .security import get_password_hash
 
 logger = logging.getLogger(__name__)
 
-# Database URL
+# 데이터베이스 URL
 DATABASE_URL = get_database_url()
 
-# Create async engine
+# 비동기 엔진 생성
 engine = create_async_engine(
     DATABASE_URL,
-    echo=False,  # Set to True for SQL logging
+    echo=False,  # SQL 로깅을 위해 True로 설정
     future=True,
-    poolclass=NullPool,  # Disable connection pooling for development
+    poolclass=NullPool,  # 개발용 커넥션 풀링 비활성화
 )
 
-# Create async session maker
+# 비동기 세션 메이커 생성
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -59,13 +55,13 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependency for getting async database session
+    비동기 데이터베이스 세션을 가져오는 의존성
     """
     async with AsyncSessionLocal() as session:
         try:
             yield session
         except (DatabaseError, SQLAlchemyError, OperationalError) as e:
-            logger.error("Database session error: %s", e)
+            logger.error("데이터베이스 세션 오류: %s", e)
             await session.rollback()
             raise
         finally:
@@ -74,85 +70,85 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def create_tables():
     """
-    Create all database tables
+    모든 데이터베이스 테이블 생성
     """
     try:
-        # Import all models to register them with Base
+        # Base에 등록하기 위해 모든 모델 가져오기
         import_all_models()
 
         async with engine.begin() as conn:
-            # Import all models to register them with Base
+            # Base에 등록하기 위해 모든 모델 가져오기
             # from models import User  # noqa
 
             await conn.run_sync(Base.metadata.create_all)
-            logger.info("✅ Database tables created successfully")
+            logger.info("✅ 데이터베이스 테이블이 성공적으로 생성되었습니다")
     except OperationalError as e:
-        logger.error("❌ Connection error creating database tables: %s", e)
+        logger.error("❌ 데이터베이스 테이블 생성 중 연결 오류: %s", e)
         raise
     except DatabaseError as e:
-        logger.error("❌ Database error creating tables: %s", e)
+        logger.error("❌ 테이블 생성 중 데이터베이스 오류: %s", e)
         raise
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error creating database tables: %s", e)
+        logger.error("❌ 데이터베이스 테이블 생성 중 SQLAlchemy 오류: %s", e)
         raise
 
 
 async def drop_tables():
     """
-    Drop all database tables (use with caution!)
+    모든 데이터베이스 테이블 삭제 (주의해서 사용!)
     """
     try:
-        # Import all models to register them with Base
+        # Base에 등록하기 위해 모든 모델 가져오기
         import_all_models()
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
-            logger.warning("⚠️ All database tables dropped")
+            logger.warning("⚠️ 모든 데이터베이스 테이블이 삭제되었습니다")
     except OperationalError as e:
-        logger.error("❌ Connection error dropping database tables: %s", e)
+        logger.error("❌ 데이터베이스 테이블 삭제 중 연결 오류: %s", e)
         raise
     except DatabaseError as e:
-        logger.error("❌ Database error dropping tables: %s", e)
+        logger.error("❌ 테이블 삭제 중 데이터베이스 오류: %s", e)
         raise
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error dropping database tables: %s", e)
+        logger.error("❌ 데이터베이스 테이블 삭제 중 SQLAlchemy 오류: %s", e)
         raise
 
 
 async def check_database_connection() -> bool:
     """
-    Check if database connection is working
+    데이터베이스 연결이 작동하는지 확인
     """
     try:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
         return True
     except OperationalError as e:
-        logger.error("Database connection check failed (operational): %s", e)
+        logger.error("데이터베이스 연결 확인 실패 (운영 오류): %s", e)
         return False
     except DatabaseError as e:
-        logger.error("Database connection check failed (database): %s", e)
+        logger.error("데이터베이스 연결 확인 실패 (데이터베이스 오류): %s", e)
         return False
     except SQLAlchemyError as e:
-        logger.error("Database connection check failed (sqlalchemy): %s", e)
+        logger.error("데이터베이스 연결 확인 실패 (SQLAlchemy 오류): %s", e)
         return False
 
 
 async def get_database_info() -> dict:
     """
-    Get database information
+    데이터베이스 정보 가져오기
     """
     try:
         async with engine.begin() as conn:
-            # Get PostgreSQL version
+            # PostgreSQL 버전 가져오기
             version_result = await conn.execute(text("SELECT version()"))
             version = version_result.scalar()
 
-            # Get database name
+            # 데이터베이스 이름 가져오기
             db_name_result = await conn.execute(text("SELECT current_database()"))
             db_name = db_name_result.scalar()
 
-            # Get current user
+            # 현재 사용자 가져오기
             user_result = await conn.execute(text("SELECT current_user"))
             user = user_result.scalar()
 
@@ -160,29 +156,29 @@ async def get_database_info() -> dict:
                 "database": db_name,
                 "user": user,
                 "version": version,
-                "status": "connected",
+                "status": "연결됨",
             }
     except OperationalError as e:
         # 데이터베이스 연결 문제
-        logger.error("Database connection error: %s", e)
-        return {"status": "connection_error", "error": str(e)}
+        logger.error("데이터베이스 연결 오류: %s", e)
+        return {"status": "연결_오류", "error": str(e)}
     except DatabaseError as e:
         # 데이터베이스 관련 오류
-        logger.error("Database error: %s", e)
-        return {"status": "database_error", "error": str(e)}
+        logger.error("데이터베이스 오류: %s", e)
+        return {"status": "데이터베이스_오류", "error": str(e)}
     except SQLAlchemyError as e:
         # SQLAlchemy 관련 오류
-        logger.error("SQLAlchemy error: %s", e)
-        return {"status": "sqlalchemy_error", "error": str(e)}
+        logger.error("SQLAlchemy 오류: %s", e)
+        return {"status": "sqlalchemy_오류", "error": str(e)}
 
 
 async def get_table_info() -> dict:
     """
-    Get information about database tables
+    데이터베이스 테이블 정보 가져오기
     """
     try:
         async with engine.begin() as conn:
-            # Get table names
+            # 테이블 이름 가져오기
             tables_result = await conn.execute(
                 text(
                     """
@@ -195,7 +191,7 @@ async def get_table_info() -> dict:
             )
             tables = [row[0] for row in tables_result.fetchall()]
 
-            # Get total row counts for each table
+            # 각 테이블의 총 행 수 가져오기
             table_counts = {}
             for table in tables:
                 try:
@@ -204,13 +200,13 @@ async def get_table_info() -> dict:
                     )
                     table_counts[table] = count_result.scalar()
                 except OperationalError as e:
-                    logger.error("Connection error getting user count: %s", e)
+                    logger.error("사용자 수 가져오는 중 연결 오류: %s", e)
                     table_counts[table] = "N/A"
                 except DatabaseError as e:
-                    logger.error("Database error getting user count: %s", e)
+                    logger.error("사용자 수 가져오는 중 데이터베이스 오류: %s", e)
                     table_counts[table] = "N/A"
                 except SQLAlchemyError as e:
-                    logger.error("SQLAlchemy error getting user count: %s", e)
+                    logger.error("사용자 수 가져오는 중 SQLAlchemy 오류: %s", e)
                     table_counts[table] = "N/A"
 
             return {
@@ -219,128 +215,128 @@ async def get_table_info() -> dict:
                 "total_tables": len(tables),
             }
     except OperationalError as e:
-        logger.error("Database connection error getting table info: %s", e)
-        return {"error": f"Connection error: {e}"}
+        logger.error("테이블 정보 가져오는 중 데이터베이스 연결 오류: %s", e)
+        return {"error": f"연결 오류: {e}"}
     except DatabaseError as e:
-        logger.error("Database error getting table info: %s", e)
-        return {"error": f"Database error: {e}"}
+        logger.error("테이블 정보 가져오는 중 데이터베이스 오류: %s", e)
+        return {"error": f"데이터베이스 오류: {e}"}
     except SQLAlchemyError as e:
-        logger.error("SQLAlchemy error getting table info: %s", e)
-        return {"error": f"SQLAlchemy error: {e}"}
+        logger.error("테이블 정보 가져오는 중 SQLAlchemy 오류: %s", e)
+        return {"error": f"SQLAlchemy 오류: {e}"}
 
 
 def import_all_models():
     """
-    Import all models to ensure they are registered with SQLAlchemy
+    SQLAlchemy에 등록되도록 모든 모델 가져오기
     """
     try:
-        logger.debug("All models imported successfully")
+        logger.debug("모든 모델이 성공적으로 가져와졌습니다")
     except ImportError as e:
-        logger.warning("Some models could not be imported: %s", e)
+        logger.warning("일부 모델을 가져올 수 없습니다: %s", e)
 
 
 async def initialize_database():
     """
-    Initialize database with required setup
+    필요한 설정으로 데이터베이스 초기화
     """
-    logger.info("🔧 Initializing database...")
+    logger.info("🔧 데이터베이스를 초기화하는 중...")
 
     try:
-        # Check connection
+        # 연결 확인
         if not await check_database_connection():
-            raise ConnectionError("Database connection failed")
+            raise ConnectionError("데이터베이스 연결에 실패했습니다")
 
-        # Import all models
+        # 모든 모델 가져오기
         import_all_models()
 
-        # Create tables
+        # 테이블 생성
         await create_tables()
 
-        # Run any initialization scripts
+        # 초기화 스크립트 실행
         await run_initialization_scripts()
 
-        logger.info("✅ Database initialization completed")
+        logger.info("✅ 데이터베이스 초기화가 완료되었습니다")
         return True
 
     except OperationalError as e:
         # 데이터베이스 연결 문제
-        logger.error("❌ Database connection error during initialization: %s", e)
+        logger.error("❌ 초기화 중 데이터베이스 연결 오류: %s", e)
         return False
     except IntegrityError as e:
         # 제약 조건 위반 (초기 데이터 삽입 시)
-        logger.error("❌ Integrity error during initialization: %s", e)
+        logger.error("❌ 초기화 중 무결성 오류: %s", e)
         return False
     except DatabaseError as e:
         # 데이터베이스 관련 오류 (테이블 생성 실패 등)
-        logger.error("❌ Database error during initialization: %s", e)
+        logger.error("❌ 초기화 중 데이터베이스 오류: %s", e)
         return False
     except SQLAlchemyError as e:
         # 기타 SQLAlchemy 관련 오류
-        logger.error("❌ SQLAlchemy error during initialization: %s", e)
+        logger.error("❌ 초기화 중 SQLAlchemy 오류: %s", e)
         return False
     except ImportError as e:
         # 모델 import 실패
-        logger.error("❌ Model import error during initialization: %s", e)
+        logger.error("❌ 초기화 중 모델 가져오기 오류: %s", e)
         return False
 
 
 async def run_initialization_scripts():
     """
-    Run database initialization scripts
+    데이터베이스 초기화 스크립트 실행
     """
     try:
         async with AsyncSessionLocal() as session:
-            # Create default admin user if not exists
+            # 기본 관리자 사용자가 존재하지 않으면 생성
             await create_default_admin_user(session)
 
-            # Create default roles/permissions if needed
+            # 필요시 기본 역할/권한 생성
             await create_default_roles()
 
             await session.commit()
-            logger.info("✅ Initialization scripts completed")
+            logger.info("✅ 초기화 스크립트가 완료되었습니다")
 
     except IntegrityError as e:
         # 중복 데이터 삽입 시도 (이미 존재하는 관리자 등)
         logger.warning(
-            ("⚠️ Integrity constraint during initialization (may be expected): %s"),
+            ("⚠️ 초기화 중 무결성 제약 조건 (예상될 수 있음): %s"),
             e,
         )
         # 롤백하고 계속 진행
         await session.rollback()
     except OperationalError as e:
         # 데이터베이스 연결 문제
-        logger.error("❌ Connection error during initialization scripts: %s", e)
+        logger.error("❌ 초기화 스크립트 중 연결 오류: %s", e)
         await session.rollback()
         raise
     except DatabaseError as e:
         # 데이터베이스 관련 오류
-        logger.error("❌ Database error during initialization scripts: %s", e)
+        logger.error("❌ 초기화 스크립트 중 데이터베이스 오류: %s", e)
         await session.rollback()
         raise
     except SQLAlchemyError as e:
         # 기타 SQLAlchemy 오류
-        logger.error("❌ SQLAlchemy error during initialization scripts: %s", e)
+        logger.error("❌ 초기화 스크립트 중 SQLAlchemy 오류: %s", e)
         await session.rollback()
         raise
 
 
 async def create_default_admin_user(session: AsyncSession):
     """
-    Create default admin user if it doesn't exist
+    기본 관리자 사용자가 존재하지 않으면 생성
     """
     try:
-        # Check if admin user exists
+        # 관리자 사용자 존재 확인
         result = await session.execute(
             select(User).where(User.email == "jongho.woo@computer.co.kr")
         )
         admin_user = result.scalar_one_or_none()
 
         if not admin_user:
-            # Create default admin user
+            # 기본 관리자 사용자 생성
             admin_user = User(
                 username="admin",
                 email="jongho.woo@computer.co.kr",
-                full_name="Administrator",
+                full_name="관리자",
                 password=get_password_hash("admin123!"),
                 role=UserRole.ADMIN,
                 status=UserStatus.ACTIVE,
@@ -348,58 +344,58 @@ async def create_default_admin_user(session: AsyncSession):
                 is_verified=True,
             )
             session.add(admin_user)
-            logger.info("✅ Default admin user created")
+            logger.info("✅ 기본 관리자 사용자가 생성되었습니다")
         else:
-            logger.info("✅ Default admin user already exists")
+            logger.info("✅ 기본 관리자 사용자가 이미 존재합니다")
 
     except IntegrityError as e:
         # 동시 실행으로 인한 중복 생성 시도
-        logger.warning("⚠️ Admin user already exists (concurrent creation): %s", e)
+        logger.warning("⚠️ 관리자 사용자가 이미 존재합니다 (동시 생성): %s", e)
         raise  # 상위에서 처리하도록 전파
     except DataError as e:
         # 잘못된 데이터 형식
-        logger.error("❌ Data format error creating admin user: %s", e)
+        logger.error("❌ 관리자 사용자 생성 중 데이터 형식 오류: %s", e)
         raise
     except SQLAlchemyError as e:
         # 기타 SQLAlchemy 오류
-        logger.error("❌ SQLAlchemy error creating admin user: %s", e)
+        logger.error("❌ 관리자 사용자 생성 중 SQLAlchemy 오류: %s", e)
         raise
 
 
 async def create_default_roles() -> None:
     """
-    Create default roles and permissions if needed
+    필요시 기본 역할과 권한 생성
     """
     try:
-        # This is a placeholder for future role/permission system
-        # For now, roles are handled via enums in the user model
-        logger.info("✅ Default roles verified")
+        # 향후 역할/권한 시스템을 위한 자리 표시자
+        # 현재는 사용자 모델의 열거형을 통해 역할이 처리됨
+        logger.info("✅ 기본 역할이 확인되었습니다")
 
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error creating default roles: %s", e)
+        logger.error("❌ 기본 역할 생성 중 SQLAlchemy 오류: %s", e)
         raise
 
 
 async def backup_database(backup_path: str | None = None):
     """
-    Create database backup using pg_dump
+    pg_dump를 사용하여 데이터베이스 백업 생성
     """
 
     try:
-        # Generate backup filename if not provided
+        # 제공되지 않으면 백업 파일명 생성
         if not backup_path:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_path = f"backup_pms_{timestamp}.sql"
 
-        # Ensure backup directory exists
+        # 백업 디렉토리가 존재하는지 확인
         backup_file = Path(backup_path)
         backup_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Get database connection info from URL
+        # URL에서 데이터베이스 연결 정보 가져오기
 
         db_url = urlparse(get_sync_database_url())
 
-        # Build pg_dump command
+        # pg_dump 명령 구성
         cmd = [
             "pg_dump",
             "-h",
@@ -413,86 +409,88 @@ async def backup_database(backup_path: str | None = None):
             "-f",
             str(backup_file),
             "--verbose",
-            "--no-password",  # Use .pgpass or environment variables
-            # for password
+            "--no-password",  # .pgpass 또는 환경 변수 사용
+            # 비밀번호용
         ]
 
-        # Set password environment variable if available
+        # 사용 가능한 경우 비밀번호 환경 변수 설정
         env = os.environ.copy()
         if db_url.password:
             env["PGPASSWORD"] = db_url.password
 
-        # Execute pg_dump
-        logger.info("📦 Starting database backup to: %s", backup_path)
+        # pg_dump 실행
+        logger.info("📦 데이터베이스 백업 시작: %s", backup_path)
 
         result = subprocess.run(
             cmd,
             env=env,
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minutes timeout
-            check=False,  # Explicitly do not raise exception on non-zero exit
+            timeout=300,  # 5분 타임아웃
+            check=False,  # 0이 아닌 종료 시 예외를 발생시키지 않음
         )
 
         if result.returncode == 0:
             file_size = backup_file.stat().st_size
-            logger.info("✅ Database backup completed successfully")
+            logger.info("✅ 데이터베이스 백업이 성공적으로 완료되었습니다")
             logger.info(
-                "📦 Backup file: %s (Size: %s bytes)",
+                "📦 백업 파일: %s (크기: %s 바이트)",
                 backup_path,
                 file_size,
             )
 
             return {
-                "status": "success",
+                "status": "성공",
                 "backup_path": str(backup_file.absolute()),
                 "file_size": file_size,
                 "timestamp": datetime.now().isoformat(),
             }
         else:
-            logger.error("❌ Database backup failed: %s", result.stderr)
+            logger.error("❌ 데이터베이스 백업에 실패했습니다: %s", result.stderr)
             return {
-                "status": "error",
+                "status": "오류",
                 "error": result.stderr,
                 "command": " ".join(cmd),
             }
 
     except subprocess.TimeoutExpired:
-        logger.error("❌ Database backup timed out")
-        return {"status": "timeout", "error": "Backup operation timed out"}
+        logger.error("❌ 데이터베이스 백업 시간이 초과되었습니다")
+        return {"status": "타임아웃", "error": "백업 작업 시간이 초과되었습니다"}
 
     except FileNotFoundError:
         logger.error(
-            "❌ pg_dump command not found. Please install %s",
-            "PostgreSQL client tools",
+            "❌ pg_dump 명령을 찾을 수 없습니다. %s를 설치해주세요",
+            "PostgreSQL 클라이언트 도구",
         )
         return {
-            "status": "error",
-            "error": ("pg_dump not found. Install PostgreSQL client tools"),
+            "status": "오류",
+            "error": (
+                "pg_dump를 찾을 수 없습니다. PostgreSQL 클라이언트 도구를 설치해주세요"
+            ),
         }
 
     except (subprocess.SubprocessError, OSError) as e:
-        logger.error("❌ Database backup failed: %s", e)
-        return {"status": "error", "error": str(e)}
+        logger.error("❌ 데이터베이스 백업에 실패했습니다: %s", e)
+        return {"status": "오류", "error": str(e)}
 
 
 async def restore_database(backup_path: str):
     """
-    Restore database from backup using psql
+    psql을 사용하여 백업에서 데이터베이스 복원
     """
 
     try:
         backup_file = Path(backup_path)
 
-        # Check if backup file exists
+        # 백업 파일이 존재하는지 확인
         if not backup_file.exists():
-            raise FileNotFoundError(f"Backup file not found: {backup_path}")
+            raise FileNotFoundError(f"백업 파일을 찾을 수 없습니다: {backup_path}")
 
-        # Get database connection info
+        # 데이터베이스 연결 정보 가져오기
 
         db_url = urlparse(get_sync_database_url())
 
-        # Build psql command
+        # psql 명령 구성
         cmd = [
             "psql",
             "-h",
@@ -508,57 +506,57 @@ async def restore_database(backup_path: str):
             "--quiet",
         ]
 
-        # Set password environment variable if available
+        # 사용 가능한 경우 비밀번호 환경 변수 설정
         env = os.environ.copy()
         if db_url.password:
             env["PGPASSWORD"] = db_url.password
 
-        # Execute psql
-        logger.info("📦 Starting database restore from: %s", backup_path)
+        # psql 실행
+        logger.info("📦 데이터베이스 복원 시작: %s", backup_path)
 
         result = subprocess.run(
             cmd,
             env=env,
             capture_output=True,
             text=True,
-            timeout=600,  # 10 minutes timeout
-            check=False,  # Explicitly do not raise exception on non-zero exit
+            timeout=600,  # 10분 타임아웃
+            check=False,  # 0이 아닌 종료 시 예외를 발생시키지 않음
         )
 
         if result.returncode == 0:
-            logger.info("✅ Database restore completed successfully")
+            logger.info("✅ 데이터베이스 복원이 성공적으로 완료되었습니다")
             return {
-                "status": "success",
+                "status": "성공",
                 "backup_path": backup_path,
                 "restored_at": datetime.now().isoformat(),
             }
         else:
-            logger.error("❌ Database restore failed: %s", result.stderr)
+            logger.error("❌ 데이터베이스 복원에 실패했습니다: %s", result.stderr)
             return {
-                "status": "error",
+                "status": "오류",
                 "error": result.stderr,
                 "command": " ".join(cmd),
             }
 
     except subprocess.TimeoutExpired:
-        logger.error("❌ Database restore timed out")
-        return {"status": "timeout", "error": "Restore operation timed out"}
+        logger.error("❌ 데이터베이스 복원 시간이 초과되었습니다")
+        return {"status": "타임아웃", "error": "복원 작업 시간이 초과되었습니다"}
 
     except FileNotFoundError as e:
-        logger.error("❌ File error during restore: %s", e)
-        return {"status": "error", "error": str(e)}
+        logger.error("❌ 복원 중 파일 오류: %s", e)
+        return {"status": "오류", "error": str(e)}
 
     except (subprocess.SubprocessError, OSError) as e:
-        logger.error("❌ Database restore failed: %s", e)
-        return {"status": "error", "error": str(e)}
+        logger.error("❌ 데이터베이스 복원에 실패했습니다: %s", e)
+        return {"status": "오류", "error": str(e)}
 
 
 async def get_database_health() -> dict:
     """
-    Get comprehensive database health information
+    종합적인 데이터베이스 상태 정보 가져오기
     """
     health_info = {
-        "status": "unknown",
+        "status": "알 수 없음",
         "connection": False,
         "tables": 0,
         "info": {},
@@ -566,39 +564,39 @@ async def get_database_health() -> dict:
     }
 
     try:
-        # Check basic connection
+        # 기본 연결 확인
         health_info["connection"] = await check_database_connection()
 
         if health_info["connection"]:
-            # Get database info
+            # 데이터베이스 정보 가져오기
             health_info["info"] = await get_database_info()
 
-            # Get table info
+            # 테이블 정보 가져오기
             table_info = await get_table_info()
             health_info["tables"] = table_info.get("total_tables", 0)
 
-            # Get performance metrics
+            # 성능 지표 가져오기
             health_info["performance"] = await get_performance_metrics()
 
-            health_info["status"] = "healthy"
+            health_info["status"] = "정상"
         else:
-            health_info["status"] = "unhealthy"
+            health_info["status"] = "비정상"
 
     except (OperationalError, DatabaseError, SQLAlchemyError) as e:
-        health_info["status"] = "error"
+        health_info["status"] = "오류"
         health_info["error"] = str(e)
-        logger.error("Database health check failed: %s", e)
+        logger.error("데이터베이스 상태 확인에 실패했습니다: %s", e)
 
     return health_info
 
 
 async def get_performance_metrics() -> dict:
     """
-    Get database performance metrics
+    데이터베이스 성능 지표 가져오기
     """
     try:
         async with engine.begin() as conn:
-            # Get connection count
+            # 연결 수 가져오기
             conn_result = await conn.execute(
                 text(
                     """
@@ -610,7 +608,7 @@ async def get_performance_metrics() -> dict:
             )
             connection_count = conn_result.scalar()
 
-            # Get database size
+            # 데이터베이스 크기 가져오기
             size_result = await conn.execute(
                 text(
                     """
@@ -622,7 +620,7 @@ async def get_performance_metrics() -> dict:
             )
             database_size = size_result.scalar()
 
-            # Get cache hit ratio
+            # 캐시 적중률 가져오기
             cache_result = await conn.execute(
                 text(
                     """
@@ -647,51 +645,51 @@ async def get_performance_metrics() -> dict:
             }
 
     except OperationalError as e:
-        logger.warning("Connection error getting performance metrics: %s", e)
-        return {"error": "Connection error"}
+        logger.warning("성능 지표 가져오는 중 연결 오류: %s", e)
+        return {"error": "연결 오류"}
     except DatabaseError as e:
-        logger.warning("Database error getting performance metrics: %s", e)
-        return {"error": "Database error"}
+        logger.warning("성능 지표 가져오는 중 데이터베이스 오류: %s", e)
+        return {"error": "데이터베이스 오류"}
     except SQLAlchemyError as e:
-        logger.warning("SQLAlchemy error getting performance metrics: %s", e)
-        return {"error": "SQLAlchemy error"}
+        logger.warning("성능 지표 가져오는 중 SQLAlchemy 오류: %s", e)
+        return {"error": "SQLAlchemy 오류"}
 
 
-# Database event handlers
+# 데이터베이스 이벤트 핸들러
 async def on_database_connect():
     """
-    Handler for database connection events
+    데이터베이스 연결 이벤트 핸들러
     """
-    logger.info("🔗 Database connected")
+    logger.info("🔗 데이터베이스가 연결되었습니다")
 
 
 async def on_database_disconnect():
     """
-    Handler for database disconnection events
+    데이터베이스 연결 해제 이벤트 핸들러
     """
-    logger.info("🔌 Database disconnected")
+    logger.info("🔌 데이터베이스 연결이 해제되었습니다")
 
 
-# Connection pool management
+# 연결 풀 관리
 async def close_database_connections():
     """
-    Close all database connections
+    모든 데이터베이스 연결 닫기
     """
     try:
         await engine.dispose()
-        logger.info("🔌 Database connections closed")
+        logger.info("🔌 데이터베이스 연결이 닫혔습니다")
     except (OperationalError, DatabaseError, SQLAlchemyError) as e:
-        logger.error("❌ Error closing database connections: %s", e)
+        logger.error("❌ 데이터베이스 연결 닫기 오류: %s", e)
 
 
-# Database migration helpers
+# 데이터베이스 마이그레이션 도우미
 async def check_migration_status():
     """
-    Check the status of database migrations
+    데이터베이스 마이그레이션 상태 확인
     """
     try:
         async with engine.begin() as conn:
-            # Check if alembic version table exists
+            # alembic 버전 테이블이 존재하는지 확인
             version_table_result = await conn.execute(
                 text(
                     """
@@ -707,7 +705,7 @@ async def check_migration_status():
             has_version_table = version_table_result.scalar()
 
             if has_version_table:
-                # Get current migration version
+                # 현재 마이그레이션 버전 가져오기
                 version_result = await conn.execute(
                     text(
                         """
@@ -718,50 +716,50 @@ async def check_migration_status():
                 current_version = version_result.scalar()
 
                 return {
-                    "status": "managed",
+                    "status": "관리됨",
                     "current_version": current_version,
                     "has_migrations": True,
                 }
             else:
                 return {
-                    "status": "unmanaged",
+                    "status": "관리되지 않음",
                     "current_version": None,
                     "has_migrations": False,
                 }
 
     except OperationalError as e:
-        logger.error("Connection error checking migration status: %s", e)
-        return {"status": "connection_error", "error": str(e)}
+        logger.error("마이그레이션 상태 확인 중 연결 오류: %s", e)
+        return {"status": "연결_오류", "error": str(e)}
     except DatabaseError as e:
-        logger.error("Database error checking migration status: %s", e)
-        return {"status": "database_error", "error": str(e)}
+        logger.error("마이그레이션 상태 확인 중 데이터베이스 오류: %s", e)
+        return {"status": "데이터베이스_오류", "error": str(e)}
     except SQLAlchemyError as e:
-        logger.error("SQLAlchemy error checking migration status: %s", e)
-        return {"status": "sqlalchemy_error", "error": str(e)}
+        logger.error("마이그레이션 상태 확인 중 SQLAlchemy 오류: %s", e)
+        return {"status": "sqlalchemy_오류", "error": str(e)}
 
 
-# For Alembic migrations
+# Alembic 마이그레이션용
 def get_sync_engine():
     """
-    Get synchronous engine for Alembic migrations
+    Alembic 마이그레이션을 위한 동기 엔진 가져오기
     """
     return create_engine(get_sync_database_url())
 
 
-# Utility functions
+# 유틸리티 함수
 def get_engine():
-    """Get the database engine instance"""
+    """데이터베이스 엔진 인스턴스 가져오기"""
     return engine
 
 
 def get_session_factory():
-    """Get the session factory"""
+    """세션 팩토리 가져오기"""
     return AsyncSessionLocal
 
 
 async def execute_raw_sql(sql: str, params: dict | None = None) -> list:
     """
-    Execute raw SQL query (use with caution)
+    원시 SQL 쿼리 실행 (주의해서 사용)
     """
     try:
         async with engine.begin() as conn:
@@ -771,23 +769,23 @@ async def execute_raw_sql(sql: str, params: dict | None = None) -> list:
             else:
                 return []
     except OperationalError as e:
-        logger.error("Connection error executing raw SQL: %s", e)
+        logger.error("원시 SQL 실행 중 연결 오류: %s", e)
         raise
     except DatabaseError as e:
-        logger.error("Database error executing raw SQL: %s", e)
+        logger.error("원시 SQL 실행 중 데이터베이스 오류: %s", e)
         raise
     except SQLAlchemyError as e:
-        logger.error("SQLAlchemy error executing raw SQL: %s", e)
+        logger.error("원시 SQL 실행 중 SQLAlchemy 오류: %s", e)
         raise
 
 
-# Database monitoring
+# 데이터베이스 모니터링
 class DatabaseMonitor:
-    """Database monitoring utilities"""
+    """데이터베이스 모니터링 유틸리티"""
 
     @staticmethod
     async def get_slow_queries(page_size: int = 10):
-        """Get slow running queries"""
+        """느린 실행 쿼리 가져오기"""
         try:
             async with engine.begin() as conn:
                 result = await conn.execute(
@@ -804,12 +802,12 @@ class DatabaseMonitor:
 
                 return [dict(row) for row in result.fetchall()]
         except (OperationalError, DatabaseError, SQLAlchemyError) as e:
-            logger.warning("Could not get slow queries: %s", e)
+            logger.warning("느린 쿼리를 가져올 수 없습니다: %s", e)
             return []
 
     @staticmethod
     async def get_table_sizes():
-        """Get table sizes"""
+        """테이블 크기 가져오기"""
         try:
             async with engine.begin() as conn:
                 result = await conn.execute(
@@ -835,24 +833,24 @@ class DatabaseMonitor:
 
                 return [dict(row) for row in result.fetchall()]
         except (OperationalError, DatabaseError, SQLAlchemyError) as e:
-            logger.warning("Could not get table sizes: %s", e)
+            logger.warning("테이블 크기를 가져올 수 없습니다: %s", e)
             return []
 
 
-# Global database monitor instance
+# 전역 데이터베이스 모니터 인스턴스
 db_monitor = DatabaseMonitor()
 
 
-# Database cleanup utilities
+# 데이터베이스 정리 유틸리티
 async def cleanup_old_sessions(days: int = 30) -> int:
     """
-    Clean up old user sessions
+    오래된 사용자 세션 정리
     """
     try:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         async with AsyncSessionLocal() as session:
-            # Delete expired sessions
+            # 만료된 세션 삭제
             result = await session.execute(
                 text(
                     """
@@ -867,29 +865,29 @@ async def cleanup_old_sessions(days: int = 30) -> int:
             deleted_count = getattr(result, "rowcount", 0)
             await session.commit()
 
-            logger.info("🧹 Cleaned up %d old sessions", deleted_count)
+            logger.info("🧹 %d개의 오래된 세션을 정리했습니다", deleted_count)
             return deleted_count
 
     except OperationalError as e:
-        logger.error("❌ Connection error during session cleanup: %s", e)
+        logger.error("❌ 세션 정리 중 연결 오류: %s", e)
         return 0
     except DatabaseError as e:
-        logger.error("❌ Database error during session cleanup: %s", e)
+        logger.error("❌ 세션 정리 중 데이터베이스 오류: %s", e)
         return 0
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error during session cleanup: %s", e)
+        logger.error("❌ 세션 정리 중 SQLAlchemy 오류: %s", e)
         return 0
 
 
 async def cleanup_old_logs(days: int = 90) -> int:
     """
-    Clean up old activity logs
+    오래된 활동 로그 정리
     """
     try:
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 
         async with AsyncSessionLocal() as session:
-            # Delete old activity logs
+            # 오래된 활동 로그 삭제
             result = await session.execute(
                 text(
                     """
@@ -904,35 +902,35 @@ async def cleanup_old_logs(days: int = 90) -> int:
             deleted_count = result_count
             await session.commit()
 
-            logger.info("🧹 Cleaned up %d old activity logs", deleted_count)
+            logger.info("🧹 %d개의 오래된 활동 로그를 정리했습니다", deleted_count)
             return deleted_count
 
     except OperationalError as e:
-        logger.error("❌ Connection error during log cleanup: %s", e)
+        logger.error("❌ 로그 정리 중 연결 오류: %s", e)
         return 0
     except DatabaseError as e:
-        logger.error("❌ Database error during log cleanup: %s", e)
+        logger.error("❌ 로그 정리 중 데이터베이스 오류: %s", e)
         return 0
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error during log cleanup: %s", e)
+        logger.error("❌ 로그 정리 중 SQLAlchemy 오류: %s", e)
         return 0
 
 
 async def vacuum_database():
     """
-    Run VACUUM ANALYZE on database for maintenance
+    유지보수를 위해 데이터베이스에서 VACUUM ANALYZE 실행
     """
     try:
         async with engine.begin() as conn:
             await conn.execute(text("VACUUM ANALYZE"))
-            logger.info("🧹 Database vacuum completed")
+            logger.info("🧹 데이터베이스 정리가 완료되었습니다")
             return True
     except OperationalError as e:
-        logger.error("❌ Connection error during vacuum: %s", e)
+        logger.error("❌ 정리 중 연결 오류: %s", e)
         return False
     except DatabaseError as e:
-        logger.error("❌ Database error during vacuum: %s", e)
+        logger.error("❌ 정리 중 데이터베이스 오류: %s", e)
         return False
     except SQLAlchemyError as e:
-        logger.error("❌ SQLAlchemy error during vacuum: %s", e)
+        logger.error("❌ 정리 중 SQLAlchemy 오류: %s", e)
         return False

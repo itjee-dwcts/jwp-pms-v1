@@ -1,13 +1,13 @@
 """
-Database Base Model
+데이터베이스 기본 모델
 
-SQLAlchemy declarative base for all models.
+모든 모델을 위한 SQLAlchemy 선언적 기본 클래스입니다.
 """
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.declarative import declarative_base
 
-# Naming convention for constraints
+# 제약 조건을 위한 명명 규칙
 naming_convention = {
     "ix": "ix_%(column_0_label)s",
     "ux": "ux_%(table_name)s_%(column_0_name)s",
@@ -16,6 +16,6 @@ naming_convention = {
     "pk": "pk_%(table_name)s",
 }
 
-# Create declarative base
+# 선언적 기본 클래스 생성
 Base = declarative_base()
 Base.metadata = MetaData(naming_convention=naming_convention)

@@ -1,7 +1,7 @@
 """
-Helper Functions
+도우미 함수들
 
-Common utility functions used across the application.
+애플리케이션 전반에서 사용되는 공통 유틸리티 함수들입니다.
 """
 
 import hashlib
@@ -21,7 +21,7 @@ from fastapi import UploadFile
 
 
 def generate_random_string(length: int = 32, use_alphanumeric: bool = True) -> str:
-    """Generate a random string of specified length"""
+    """지정된 길이의 무작위 문자열 생성"""
     if use_alphanumeric:
         characters = string.ascii_letters + string.digits
     else:
@@ -31,22 +31,22 @@ def generate_random_string(length: int = 32, use_alphanumeric: bool = True) -> s
 
 
 def generate_uuid() -> str:
-    """Generate a UUID-like string"""
+    """UUID 형태의 문자열 생성"""
     return str(uuid.uuid4())
 
 
 def generate_secure_token(length: int = 32) -> str:
-    """Generate a cryptographically secure token"""
+    """암호학적으로 안전한 토큰 생성"""
     return secrets.token_urlsafe(length)
 
 
 def generate_numeric_code(length: int = 6) -> str:
-    """Generate a random numeric code"""
+    """무작위 숫자 코드 생성"""
     return "".join(secrets.choice(string.digits) for _ in range(length))
 
 
 def hash_string(text: str, algorithm: str = "sha256") -> str:
-    """Hash a string using specified algorithm"""
+    """지정된 알고리즘을 사용하여 문자열 해시화"""
     if algorithm == "md5":
         return hashlib.md5(text.encode()).hexdigest()
     elif algorithm == "sha1":
@@ -56,22 +56,22 @@ def hash_string(text: str, algorithm: str = "sha256") -> str:
     elif algorithm == "sha512":
         return hashlib.sha512(text.encode()).hexdigest()
     else:
-        raise ValueError(f"Unsupported algorithm: {algorithm}")
+        raise ValueError(f"지원하지 않는 알고리즘: {algorithm}")
 
 
 def slugify(text: str, max_length: int = 50) -> str:
-    """Convert text to URL-friendly slug"""
-    # Convert to lowercase
+    """텍스트를 URL 친화적인 슬러그로 변환"""
+    # 소문자로 변환
     text = text.lower()
 
-    # Replace spaces and special characters with hyphens
+    # 공백과 특수문자를 하이픈으로 치환
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"[-\s]+", "-", text)
 
-    # Remove leading/trailing hyphens
+    # 앞뒤 하이픈 제거
     text = text.strip("-")
 
-    # Truncate if necessary
+    # 필요시 길이 제한
     if len(text) > max_length:
         text = text[:max_length].rstrip("-")
 
@@ -79,52 +79,50 @@ def slugify(text: str, max_length: int = 50) -> str:
 
 
 def hash_file_content(content: bytes) -> str:
-    """Generate SHA256 hash of file content"""
+    """파일 내용의 SHA256 해시 생성"""
     return hashlib.sha256(content).hexdigest()
 
 
 def validate_email(email: str) -> bool:
-    """Validate email address format"""
+    """이메일 주소 형식 검증"""
     pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return re.match(pattern, email) is not None
 
 
 def validate_username(username: str) -> Dict[str, Union[bool, str]]:
-    """Validate username format and return validation result"""
-    result = {"is_valid": True, "message": "Username is valid"}
+    """사용자명 형식 검증 및 검증 결과 반환"""
+    result = {"is_valid": True, "message": "사용자명이 유효합니다"}
 
     if len(username) < 3:
         result["is_valid"] = False
-        result["message"] = "Username must be at least 3 characters long"
+        result["message"] = "사용자명은 최소 3자 이상이어야 합니다"
     elif len(username) > 50:
         result["is_valid"] = False
-        result["message"] = "Username must not exceed 50 characters"
+        result["message"] = "사용자명은 50자를 초과할 수 없습니다"
     elif not re.match(r"^[a-zA-Z0-9_]+$", username):
         result["is_valid"] = False
-        result["message"] = (
-            "Username can only contain letters, numbers, and underscores"
-        )
+        result["message"] = "사용자명은 문자, 숫자, 밑줄만 포함할 수 있습니다"
     elif username.startswith("_") or username.endswith("_"):
         result["is_valid"] = False
-        result["message"] = "Username cannot start or end with underscore"
+        result["message"] = "사용자명은 밑줄로 시작하거나 끝날 수 없습니다"
     elif "__" in username:
         result["is_valid"] = False
-        result["message"] = "Username cannot contain consecutive underscores"
+        result["message"] = "사용자명은 연속된 밑줄을 포함할 수 없습니다"
 
     return result
 
 
 def validate_phone(phone: str) -> bool:
-    """Validate phone number format"""
-    # Remove all non-digit characters
+    """전화번호 형식 검증"""
+    # 숫자가 아닌 모든 문자 제거
     digits_only = re.sub(r"\D", "", phone)
 
-    # Check if it's a valid length (7-15 digits)
+    # 유효한 길이인지 확인 (7-15자리)
     return 7 <= len(digits_only) <= 15
 
 
 def validate_url(url: str) -> bool:
-    """Validate URL format"""
+    """URL 형식 검증"""
     pattern = (
         r"^https?://(?:[-\w.])+"
         r"(?:\:[0-9]+)?"
@@ -136,14 +134,14 @@ def validate_url(url: str) -> bool:
 
 
 def sanitize_filename(filename: str) -> str:
-    """Sanitize filename by removing/replacing invalid characters"""
-    # Remove path separators and other dangerous characters
+    """유효하지 않은 문자를 제거/치환하여 파일명 정리"""
+    # 경로 구분자 및 기타 위험한 문자 제거
     filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
 
-    # Remove control characters
+    # 제어 문자 제거
     filename = "".join(char for char in filename if ord(char) >= 32)
 
-    # Limit length
+    # 길이 제한
     if len(filename) > 255:
         name, ext = filename.rsplit(".", 1) if "." in filename else (filename, "")
         max_name_length = 255 - len(ext) - 1 if ext else 255
@@ -153,18 +151,18 @@ def sanitize_filename(filename: str) -> str:
 
 
 def get_file_extension(filename: str) -> str:
-    """Get file extension from filename"""
+    """파일명에서 확장자 추출"""
     return Path(filename).suffix.lower()
 
 
 def is_allowed_file_type(filename: str, allowed_extensions: List[str]) -> bool:
-    """Check if file type is allowed"""
+    """파일 형식이 허용되는지 확인"""
     extension = get_file_extension(filename)
     return extension in [ext.lower() for ext in allowed_extensions]
 
 
 def format_file_size(size_bytes: int) -> str:
-    """Format file size in human-readable format"""
+    """사람이 읽기 쉬운 형식으로 파일 크기 포맷"""
     if size_bytes == 0:
         return "0 B"
 
@@ -177,7 +175,7 @@ def format_file_size(size_bytes: int) -> str:
 
 
 def parse_file_size(size_str: str) -> int:
-    """Parse file size string to bytes"""
+    """파일 크기 문자열을 바이트로 파싱"""
     size_str = size_str.upper().strip()
 
     units = {
@@ -189,15 +187,15 @@ def parse_file_size(size_str: str) -> int:
         "PB": 1024**5,
     }
 
-    # Extract number and unit
+    # 숫자와 단위 추출
     match = re.match(r"^(\d+(?:\.\d+)?)\s*([A-Z]+)$", size_str)
     if not match:
-        raise ValueError(f"Invalid file size format: {size_str}")
+        raise ValueError(f"잘못된 파일 크기 형식: {size_str}")
 
     number, unit = match.groups()
 
     if unit not in units:
-        raise ValueError(f"Unknown file size unit: {unit}")
+        raise ValueError(f"알 수 없는 파일 크기 단위: {unit}")
 
     return int(float(number) * units[unit])
 
@@ -205,19 +203,19 @@ def parse_file_size(size_str: str) -> int:
 async def save_upload_file(
     upload_file: UploadFile, destination_path: Path
 ) -> Dict[str, Any]:
-    """Save uploaded file to destination path"""
+    """업로드된 파일을 대상 경로에 저장"""
     try:
-        # Ensure destination directory exists
+        # 대상 디렉토리가 존재하는지 확인
         destination_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Read file content
+        # 파일 내용 읽기
         content = await upload_file.read()
 
-        # Save file
+        # 파일 저장
         async with aiofiles.open(destination_path, "wb") as f:
             await f.write(content)
 
-        # Calculate file hash and size
+        # 파일 해시 및 크기 계산
         file_hash = hash_file_content(content)
         file_size = len(content)
 
@@ -230,13 +228,13 @@ async def save_upload_file(
         }
 
     except Exception as e:
-        raise OSError(f"Failed to save file: {e}") from e
+        raise OSError(f"파일 저장에 실패했습니다: {e}") from e
 
 
 def calculate_pagination(
     total_items: int, page_no: int, page_size: int
 ) -> Dict[str, int]:
-    """Calculate pagination metadata"""
+    """페이지네이션 메타데이터 계산"""
     total_pages = (total_items + page_size - 1) // page_size if total_items > 0 else 0
 
     return {
@@ -250,7 +248,7 @@ def calculate_pagination(
 
 
 def parse_sort_params(sort_param: Optional[str]) -> List[Dict[str, str]]:
-    """Parse sort parameter string into list of sort criteria"""
+    """정렬 매개변수 문자열을 정렬 기준 목록으로 파싱"""
     if not sort_param:
         return []
 
@@ -274,13 +272,13 @@ def parse_sort_params(sort_param: Optional[str]) -> List[Dict[str, str]]:
 
 
 def parse_filter_params(filter_param: Optional[str]) -> List[Dict[str, Any]]:
-    """Parse filter parameter string into list of filter criteria"""
+    """필터 매개변수 문자열을 필터 기준 목록으로 파싱"""
     if not filter_param:
         return []
 
     filters = []
 
-    # Simple format: field:operator:value,field2:operator2:value2
+    # 간단한 형식: field:operator:value,field2:operator2:value2
     for filter_str in filter_param.split(","):
         filter_str = filter_str.strip()
         if not filter_str:
@@ -290,7 +288,7 @@ def parse_filter_params(filter_param: Optional[str]) -> List[Dict[str, Any]]:
         if len(parts) == 3:
             field, operator, value = parts
 
-            # Try to convert value to appropriate type
+            # 값을 적절한 타입으로 변환 시도
             if value.lower() == "true":
                 value = True
             elif value.lower() == "false":
@@ -306,46 +304,46 @@ def parse_filter_params(filter_param: Optional[str]) -> List[Dict[str, Any]]:
 
 
 def format_datetime(dt: datetime, format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
-    """Format datetime to string"""
+    """날짜시간을 문자열로 포맷"""
     return dt.strftime(format_str)
 
 
 def parse_datetime(dt_str: str, format_str: str = "%Y-%m-%d %H:%M:%S") -> datetime:
-    """Parse datetime string to datetime object"""
+    """날짜시간 문자열을 datetime 객체로 파싱"""
     return datetime.strptime(dt_str, format_str)
 
 
 def time_ago(dt: datetime) -> str:
-    """Get human-readable time ago string"""
+    """사람이 읽기 쉬운 경과 시간 문자열 반환"""
     now = datetime.utcnow()
     diff = now - dt
 
     seconds = diff.total_seconds()
 
     if seconds < 60:
-        return "just now"
+        return "방금 전"
     elif seconds < 3600:
         minutes = int(seconds // 60)
-        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        return f"{minutes}분 전"
     elif seconds < 86400:
         hours = int(seconds // 3600)
-        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        return f"{hours}시간 전"
     elif seconds < 604800:
         days = int(seconds // 86400)
-        return f"{days} day{'s' if days != 1 else ''} ago"
-    elif seconds < 2629746:  # ~30.44 days
+        return f"{days}일 전"
+    elif seconds < 2629746:  # ~30.44일
         weeks = int(seconds // 604800)
-        return f"{weeks} week{'s' if weeks != 1 else ''} ago"
-    elif seconds < 31556952:  # ~365.24 days
+        return f"{weeks}주 전"
+    elif seconds < 31556952:  # ~365.24일
         months = int(seconds // 2629746)
-        return f"{months} month{'s' if months != 1 else ''} ago"
+        return f"{months}개월 전"
     else:
         years = int(seconds // 31556952)
-        return f"{years} year{'s' if years != 1 else ''} ago"
+        return f"{years}년 전"
 
 
 def get_age_from_date(birth_date: Union[datetime, date]) -> int:
-    """Calculate age from birth date"""
+    """생년월일로부터 나이 계산"""
     today = datetime.now().date()
     if isinstance(birth_date, datetime):
         birth_date = birth_date.date()
@@ -361,7 +359,7 @@ def get_age_from_date(birth_date: Union[datetime, date]) -> int:
 
 
 def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4) -> str:
-    """Mask sensitive data like emails, phone numbers"""
+    """이메일, 전화번호 등 민감한 데이터 마스킹"""
     if len(data) <= visible_chars:
         return mask_char * len(data)
 
@@ -378,7 +376,7 @@ def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4)
 
 
 def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
-    """Truncate text to specified length"""
+    """지정된 길이로 텍스트 자르기"""
     if len(text) <= max_length:
         return text
 
@@ -386,44 +384,43 @@ def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
 
 
 def clean_html(html_text: str) -> str:
-    """Remove HTML tags from text"""
-
+    """텍스트에서 HTML 태그 제거"""
     clean = re.compile("<.*?>")
     return re.sub(clean, "", html_text)
 
 
 def extract_mentions(text: str) -> List[str]:
-    """Extract @mentions from text"""
+    """텍스트에서 @멘션 추출"""
     return re.findall(r"@(\w+)", text)
 
 
 def extract_hashtags(text: str) -> List[str]:
-    """Extract #hashtags from text"""
+    """텍스트에서 #해시태그 추출"""
     return re.findall(r"#(\w+)", text)
 
 
 def generate_color_from_string(text: str) -> str:
-    """Generate a consistent color hex code from string"""
-    # Create hash from string
+    """문자열로부터 일관된 색상 16진수 코드 생성"""
+    # 문자열로부터 해시 생성
     hash_object = hashlib.md5(text.encode())
     hex_hash = hash_object.hexdigest()
 
-    # Take first 6 characters for RGB
+    # RGB를 위해 처음 6자리 사용
     return f"#{hex_hash[:6]}"
 
 
 def url_encode(text: str) -> str:
-    """URL encode text"""
+    """텍스트 URL 인코딩"""
     return quote(text)
 
 
 def url_decode(text: str) -> str:
-    """URL decode text"""
+    """텍스트 URL 디코딩"""
     return unquote(text)
 
 
 def deep_merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
-    """Deep merge two dictionaries"""
+    """두 딕셔너리를 깊게 병합"""
     result = dict1.copy()
 
     for key, value in dict2.items():
@@ -438,10 +435,10 @@ def deep_merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, 
 def flatten_dict(
     d: Dict[str, Any], parent_key: str = "", sep: str = "."
 ) -> Dict[str, Any]:
-    """Flatten nested dictionary"""
+    """중첩된 딕셔너리 평면화"""
     items = []
     for k, v in d.items():
-        # Ensure key is str
+        # 키가 문자열인지 확인
         if isinstance(k, bytes):
             k = k.decode("utf-8")
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
@@ -453,12 +450,12 @@ def flatten_dict(
 
 
 def chunk_list(lst: List[Any], chunk_size: int) -> List[List[Any]]:
-    """Split list into chunks of specified size"""
-    return [lst[i + chunk_size] for i in range(0, len(lst), chunk_size)]
+    """리스트를 지정된 크기의 청크로 분할"""
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def remove_duplicates(lst: List[Any], key: Optional[str] = None) -> List[Any]:
-    """Remove duplicates from list, optionally using a key function"""
+    """리스트에서 중복 제거, 선택적으로 키 함수 사용"""
     if key:
         seen = set()
         result = []
@@ -473,7 +470,7 @@ def remove_duplicates(lst: List[Any], key: Optional[str] = None) -> List[Any]:
 
 
 def safe_cast(value: Any, target_type: type, default: Any = None) -> Any:
-    """Safely cast value to target type, return default if casting fails"""
+    """값을 대상 타입으로 안전하게 캐스팅, 실패시 기본값 반환"""
     try:
         return target_type(value)
     except (ValueError, TypeError):
@@ -481,14 +478,14 @@ def safe_cast(value: Any, target_type: type, default: Any = None) -> Any:
 
 
 def is_valid_url(url: str) -> bool:
-    """Check if string is a valid URL"""
+    """문자열이 유효한 URL인지 확인"""
     url_pattern = re.compile(
-        r"^https?://"  # http:// or https://
+        r"^https?://"  # http:// 또는 https://
         r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"
         r"localhost|"  # localhost...
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
-        r"(?::\d+)?"  # optional port
-        r"(?:/?|[/?]\S+)?",  # path
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...또는 ip
+        r"(?::\d+)?"  # 선택적 포트
+        r"(?:/?|[/?]\S+)?",  # 경로
         re.IGNORECASE,
     )
 
@@ -498,8 +495,8 @@ def is_valid_url(url: str) -> bool:
 def generate_pagination_info(
     total_items: int, page_no: int, page_size: int
 ) -> Dict[str, Any]:
-    """Generate pagination information"""
-    total_pages = (total_items + page_size - 1) // page_size  # Ceiling division
+    """페이지네이션 정보 생성"""
+    total_pages = (total_items + page_size - 1) // page_size  # 올림 나눗셈
 
     return {
         "total_items": total_items,
@@ -514,12 +511,11 @@ def generate_pagination_info(
 
 
 def build_url(base_url: str, path: str, params: Optional[Dict[str, Any]] = None) -> str:
-    """Build URL with path and query parameters"""
-
+    """경로와 쿼리 매개변수로 URL 구성"""
     url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
 
     if params:
-        # Filter out None values
+        # None 값 필터링
         filtered_params = {k: v for k, v in params.items() if v is not None}
         if filtered_params:
             url += "?" + urlencode(filtered_params)
@@ -528,7 +524,7 @@ def build_url(base_url: str, path: str, params: Optional[Dict[str, Any]] = None)
 
 
 def parse_comma_separated(value: str) -> List[str]:
-    """Parse comma-separated string into list"""
+    """쉼표로 구분된 문자열을 리스트로 파싱"""
     if not value:
         return []
 
@@ -536,13 +532,13 @@ def parse_comma_separated(value: str) -> List[str]:
 
 
 def to_camel_case(snake_str: str) -> str:
-    """Convert snake_case to camelCase"""
+    """snake_case를 camelCase로 변환"""
     components = snake_str.split("_")
     return components[0] + "".join(x.title() for x in components[1:])
 
 
 def to_snake_case(camel_str: str) -> str:
-    """Convert camelCase to snake_case"""
+    """camelCase를 snake_case로 변환"""
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", camel_str)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
@@ -550,55 +546,55 @@ def to_snake_case(camel_str: str) -> str:
 def calculate_password_strength(
     password: str,
 ) -> Dict[str, Union[int, str, bool, List[str]]]:
-    """Calculate password strength score and feedback"""
+    """비밀번호 강도 점수 및 피드백 계산"""
     score = 0
     feedback = []
 
-    # Length check
+    # 길이 확인
     if len(password) >= 8:
         score += 1
     else:
-        feedback.append("Use at least 8 characters")
+        feedback.append("최소 8자 이상 사용하세요")
 
     if len(password) >= 12:
         score += 1
 
-    # Character variety checks
+    # 문자 다양성 확인
     if re.search(r"[a-z]", password):
         score += 1
     else:
-        feedback.append("Include lowercase letters")
+        feedback.append("소문자를 포함하세요")
 
     if re.search(r"[A-Z]", password):
         score += 1
     else:
-        feedback.append("Include uppercase letters")
+        feedback.append("대문자를 포함하세요")
 
     if re.search(r"\d", password):
         score += 1
     else:
-        feedback.append("Include numbers")
+        feedback.append("숫자를 포함하세요")
 
     if re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
         score += 1
     else:
-        feedback.append("Include special characters")
+        feedback.append("특수문자를 포함하세요")
 
-    # Common patterns check
-    if not re.search(r"(.)\1{2,}", password):  # No repeating characters
+    # 일반적인 패턴 확인
+    if not re.search(r"(.)\1{2,}", password):  # 반복 문자 없음
         score += 1
     else:
-        feedback.append("Avoid repeating characters")
+        feedback.append("반복되는 문자를 피하세요")
 
-    # Determine strength level
+    # 강도 수준 결정
     if score <= 2:
-        strength = "weak"
+        strength = "약함"
     elif score <= 4:
-        strength = "medium"
+        strength = "보통"
     elif score <= 6:
-        strength = "strong"
+        strength = "강함"
     else:
-        strength = "very_strong"
+        strength = "매우 강함"
 
     return {
         "score": score,
@@ -610,41 +606,39 @@ def calculate_password_strength(
 
 
 class RateLimitTracker:
-    """Simple in-memory rate limit tracker"""
+    """간단한 메모리 내 속도 제한 추적기"""
 
     def __init__(self):
         self.requests = {}
 
     def is_allowed(self, key: str, limit: int, window: int) -> bool:
-        """Check if request is allowed within rate limit"""
-
+        """요청이 속도 제한 내에서 허용되는지 확인"""
         now = time.time()
 
         if key not in self.requests:
             self.requests[key] = []
 
-        # Remove old requests outside the window
+        # 윈도우 밖의 오래된 요청 제거
         self.requests[key] = [
             req_time for req_time in self.requests[key] if now - req_time < window
         ]
 
-        # Check if limit exceeded
+        # 제한 초과 여부 확인
         if len(self.requests[key]) >= limit:
             return False
 
-        # Add current request
+        # 현재 요청 추가
         self.requests[key].append(now)
         return True
 
     def get_remaining(self, key: str, limit: int, window: int) -> int:
-        """Get remaining requests in current window"""
-
+        """현재 윈도우에서 남은 요청 수 반환"""
         now = time.time()
 
         if key not in self.requests:
             return limit
 
-        # Count requests in current window
+        # 현재 윈도우의 요청 수 계산
         current_requests = [
             req_time for req_time in self.requests[key] if now - req_time < window
         ]
@@ -652,5 +646,5 @@ class RateLimitTracker:
         return max(0, limit - len(current_requests))
 
 
-# Global rate limit tracker instance
+# 전역 속도 제한 추적기 인스턴스
 rate_tracker = RateLimitTracker()

@@ -1,13 +1,19 @@
-# backend/src/services/task.py
 """
-Task Service
+작업 서비스
 
-Business logic for task management operations.
+작업 관리 작업을 위한 비즈니스 로직입니다.
 """
 
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional, cast
+
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import (
+    count,  # func.count 오류 인식 이슈로 인해 별도 처리함
+)
 
 from core.database import get_async_session
 from models.project import Project
@@ -29,12 +35,6 @@ from schemas.task import (
     TaskStatsResponse,
     TaskUpdateRequest,
 )
-from sqlalchemy import and_, desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.functions import (
-    count,  # func.count 오류 인식 이슈로 인해 별도 처리함
-)
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskService:
-    """Task management service"""
+    """작업 관리 서비스"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -56,27 +56,29 @@ class TaskService:
     async def create_task(
         self, task_data: TaskCreateRequest, creator_id: int
     ) -> TaskResponse:
-        """Create a new task"""
+        """새 작업 생성"""
         try:
-            # Verify project exists and user has access
+            # 프로젝트가 존재하고 사용자가 접근 권한이 있는지 확인
             project_result = await self.db.execute(
                 select(Project).where(Project.id == task_data.project_id)
             )
             project = project_result.scalar_one_or_none()
             if not project:
-                raise NotFoundError(f"Project with ID {task_data.project_id} not found")
+                raise NotFoundError(
+                    f"ID {task_data.project_id}인 프로젝트를 찾을 수 없습니다"
+                )
 
-            # Check if user has permission to create tasks in this project
+            # 사용자가 이 프로젝트에서 작업을 생성할 권한이 있는지 확인
             project_service = ProjectService(self.db)
             project_access = await project_service.check_project_access(
                 task_data.project_id, creator_id
             )
             if not project_access:
                 raise AuthorizationError(
-                    "No permission to create tasks in this project"
+                    "이 프로젝트에서 작업을 생성할 권한이 없습니다"
                 )
 
-            # Verify parent task if specified
+            # 지정된 경우 상위 작업 확인
             if task_data.parent_task_id:
                 parent_result = await self.db.execute(
                     select(Task).where(Task.id == task_data.parent_task_id)
@@ -84,16 +86,18 @@ class TaskService:
                 parent_task = parent_result.scalar_one_or_none()
 
                 if not parent_task:
-                    raise NotFoundError("Parent task not found")
+                    raise NotFoundError("상위 작업을 찾을 수 없습니다")
 
                 parent_project_id = getattr(parent_task, "project_id", None)
                 if not parent_project_id:
-                    raise ValidationError("Parent task does not belong to any project")
+                    raise ValidationError(
+                        "상위 작업이 어떤 프로젝트에도 속해 있지 않습니다"
+                    )
 
                 if parent_project_id != task_data.project_id:
-                    raise ValidationError("Parent task must be in the same project")
+                    raise ValidationError("상위 작업은 같은 프로젝트에 있어야 합니다")
 
-            # Create task
+            # 작업 생성
             task = Task(
                 title=task_data.title,
                 description=task_data.description,
@@ -116,16 +120,18 @@ class TaskService:
             self.db.add(task)
             await self.db.flush()
 
-            # Assign users if specified
+            # 지정된 경우 사용자 할당
             task_id = getattr(task, "id", None)
             if not task_id:
-                raise ConflictError("Failed to create task, ID not assigned")
+                raise ConflictError(
+                    "작업 생성에 실패했습니다. ID가 할당되지 않았습니다"
+                )
 
             if task_data.assignee_ids:
                 for user_id in task_data.assignee_ids:
                     await self.assign_user_to_task(task_id, user_id, creator_id)
 
-            # Add tags if specified
+            # 지정된 경우 태그 추가
             if task_data.tag_ids:
                 for tag_id in task_data.tag_ids:
                     task_tag = TaskTag(
@@ -135,7 +141,7 @@ class TaskService:
 
             await self.db.commit()
 
-            # Fetch created task with relationships
+            # 관계와 함께 생성된 작업 가져오기
             result = await self.db.execute(
                 select(Task)
                 .options(
@@ -147,20 +153,20 @@ class TaskService:
             )
             created_task = result.scalar_one()
 
-            logger.info("Task created successfully: %s", task.title)
+            logger.info("작업이 성공적으로 생성되었습니다: %s", task.title)
             return TaskResponse.model_validate(created_task)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to create task: %s", e)
+            logger.error("작업 생성에 실패했습니다: %s", e)
             raise
 
     async def get_task_by_id(
         self, task_id: int, user_id: Optional[int] = None
     ) -> TaskResponse:
-        """Get task by ID"""
+        """ID로 작업 가져오기"""
         try:
-            # Build query with relationships
+            # 관계와 함께 쿼리 빌드
             query = (
                 select(Task)
                 .options(
@@ -182,64 +188,64 @@ class TaskService:
             task = result.scalar_one_or_none()
 
             if not task:
-                raise NotFoundError(f"Task with ID {task_id} not found")
+                raise NotFoundError(f"ID {task_id}인 작업을 찾을 수 없습니다")
 
-            # Check access permissions
+            # 접근 권한 확인
             if user_id:
                 has_access = await self.check_task_access(task_id, user_id)
                 if not has_access:
-                    raise AuthorizationError("Access denied to this task")
+                    raise AuthorizationError("이 작업에 대한 접근이 거부되었습니다")
 
             return TaskResponse.model_validate(task)
 
         except Exception as e:
-            logger.error("Failed to get task %d: %s", task_id, e)
+            logger.error("작업 %d 가져오기에 실패했습니다: %s", task_id, e)
             raise
 
     async def update_task(
         self, task_id: int, task_data: TaskUpdateRequest, user_id: int
     ) -> TaskResponse:
-        """Update task information"""
+        """작업 정보 업데이트"""
         try:
-            # Check user has permission to update task
+            # 사용자가 작업을 업데이트할 권한이 있는지 확인
             has_access = await self.check_task_access(task_id, user_id)
             if not has_access:
-                raise AuthorizationError("No permission to update this task")
+                raise AuthorizationError("이 작업을 업데이트할 권한이 없습니다")
 
             result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = result.scalar_one_or_none()
 
             if not task:
-                raise NotFoundError(f"Task with ID {task_id} not found")
+                raise NotFoundError(f"ID {task_id}인 작업을 찾을 수 없습니다")
 
-            # Update fields
+            # 필드 업데이트
             update_data = task_data.dict(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(task, field, value)
 
-            # Mark as completed if status changed to done
+            # 상태가 완료로 변경되면 완료로 표시
             task_status = getattr(task, "status", None)
             if task_status is None:
-                raise ValidationError("Task status cannot be None")
+                raise ValidationError("작업 상태는 None일 수 없습니다")
 
             task_completed_at = getattr(task, "completed_at", None)
 
             if task_data.status == "done" and task_status != "done":
-                setattr(
-                    task, "completed_at", datetime.utcnow()
+                task.completed_at = (
+                    datetime.utcnow()
                 )  # task.completed_at = datetime.utcnow()
             elif task_data.status != "done" and task_completed_at is not None:
-                setattr(task, "completed_at", None)  # task.completed_at = None
+                task.completed_at = None  # task.completed_at = None
 
             # task.updated_by = user_id
             # task.updated_at = datetime.utcnow()
 
-            setattr(task, "updated_by", user_id)
-            setattr(task, "updated_at", datetime.utcnow())
+            task.updated_by = user_id
+            task.updated_at = datetime.utcnow()
 
             await self.db.commit()
 
-            # Fetch updated task with relationships
+            # 관계와 함께 업데이트된 작업 가져오기
             result = await self.db.execute(
                 select(Task)
                 .options(
@@ -250,41 +256,41 @@ class TaskService:
             )
             updated_task = result.scalar_one()
 
-            logger.info("Task updated successfully: %s", task.title)
+            logger.info("작업이 성공적으로 업데이트되었습니다: %s", task.title)
             return TaskResponse.model_validate(updated_task)
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to update task %d: %s", task_id, e)
+            logger.error("작업 %d 업데이트에 실패했습니다: %s", task_id, e)
             raise
 
     async def delete_task(self, task_id: int, user_id: int) -> bool:
-        """Delete task (soft delete)"""
+        """작업 삭제 (소프트 삭제)"""
         try:
-            # Check user has permission to delete task
+            # 사용자가 작업을 삭제할 권한이 있는지 확인
             has_access = await self.check_task_access(task_id, user_id)
             if not has_access:
-                raise AuthorizationError("No permission to delete this task")
+                raise AuthorizationError("이 작업을 삭제할 권한이 없습니다")
 
             result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = result.scalar_one_or_none()
 
             if not task:
-                raise NotFoundError(f"Task with ID {task_id} not found")
+                raise NotFoundError(f"ID {task_id}인 작업을 찾을 수 없습니다")
 
-            # Soft delete by changing status
-            setattr(task, "status", "cancelled")
-            setattr(task, "updated_by", user_id)
-            setattr(task, "updated_at", datetime.now(timezone.utc))
+            # 상태 변경으로 소프트 삭제
+            task.status = "cancelled"
+            task.updated_by = user_id
+            task.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
 
-            logger.info("Task deleted: %s", task.title)
+            logger.info("작업이 삭제되었습니다: %s", task.title)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to delete task %d: %s", task_id, e)
+            logger.error("작업 %d 삭제에 실패했습니다: %s", task_id, e)
             raise
 
     async def list_tasks(
@@ -294,17 +300,16 @@ class TaskService:
         user_id: Optional[int] = None,
         search_params: Optional[TaskSearchRequest] = None,
     ) -> TaskListResponse:
-        """List tasks with pagination and filters"""
+        """페이지네이션 및 필터를 사용한 작업 목록"""
         try:
-            # Build base query
+            # 기본 쿼리 빌드
             query = select(Task).options(
                 selectinload(Task.creator),
                 selectinload(Task.project),
                 selectinload(Task.assignments).selectinload(TaskAssignment.user),
             )
 
-            # Apply access control - user can see tasks in projects they
-            # have access to
+            # 접근 제어 적용 - 사용자는 접근 권한이 있는 프로젝트의 작업을 볼 수 있음
             if user_id:
                 project_service = ProjectService(self.db)
                 accessible_projects = await project_service.get_accessible_projects(
@@ -312,7 +317,7 @@ class TaskService:
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
-            # Apply search filters
+            # 검색 필터 적용
             if search_params:
                 if search_params.search_text:
                     query = query.where(
@@ -359,22 +364,22 @@ class TaskService:
                 if search_params.created_to:
                     query = query.where(Task.created_at <= search_params.created_to)
 
-            # Get total count
+            # 총 개수 가져오기
             count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
-            # Apply pagination and ordering
+            # 페이지네이션 및 정렬 적용
             offset = (page_no - 1) * page_size
             query = (
                 query.offset(offset).limit(page_size).order_by(desc(Task.created_at))
             )
 
-            # Execute query
+            # 쿼리 실행
             result = await self.db.execute(query)
             tasks = result.scalars().all()
 
-            # Calculate pagination info
+            # 페이지네이션 정보 계산
             total_pages = (
                 (total_items if total_items is not None else 0) + page_size - 1
             ) // page_size
@@ -388,50 +393,50 @@ class TaskService:
             )
 
         except Exception as e:
-            logger.error("Failed to list tasks: %s", e)
+            logger.error("작업 목록 가져오기에 실패했습니다: %s", e)
             raise
 
     async def assign_task(
         self, task_id: int, user_ids: List[int], assigned_by: int
     ) -> bool:
-        """Assign task to users"""
+        """사용자에게 작업 할당"""
         try:
-            # Check permission
+            # 권한 확인
             has_access = await self.check_task_access(task_id, assigned_by)
             if not has_access:
-                raise AuthorizationError("No permission to assign this task")
+                raise AuthorizationError("이 작업을 할당할 권한이 없습니다")
 
-            # Verify task exists
+            # 작업 존재 확인
             task_result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = task_result.scalar_one_or_none()
             if not task:
-                raise NotFoundError("Task not found")
+                raise NotFoundError("작업을 찾을 수 없습니다")
 
-            # Remove existing assignments
+            # 기존 할당 제거
             await self.db.execute(
                 TaskAssignment.__table__.update()
                 .where(TaskAssignment.task_id == task_id)
                 .values(is_active=False)
             )
 
-            # Add new assignments
+            # 새 할당 추가
             for user_id in user_ids:
                 await self.assign_user_to_task(task_id, user_id, assigned_by)
 
             await self.db.commit()
 
-            logger.info("Task %d assigned to users: %s", task_id, user_ids)
+            logger.info("작업 %d이 사용자들에게 할당되었습니다: %s", task_id, user_ids)
             return True
 
         except Exception as e:
             await self.db.rollback()
-            logger.error("Failed to assign task %d: %s", task_id, e)
+            logger.error("작업 %d 할당에 실패했습니다: %s", task_id, e)
             raise
 
     async def get_task_stats(self, user_id: Optional[int] = None) -> TaskStatsResponse:
-        """Get task statistics"""
+        """작업 통계 가져오기"""
         try:
-            # Build base query with access control
+            # 접근 제어가 포함된 기본 쿼리 빌드
             base_query = select(Task)
             if user_id:
                 project_service = ProjectService(self.db)
@@ -440,12 +445,12 @@ class TaskService:
                 )
                 base_query = base_query.where(Task.project_id.in_(accessible_projects))
 
-            # Total tasks
+            # 총 작업 수
             total_query = select(count()).select_from(base_query.subquery())
             total_result = await self.db.execute(total_query)
             total_tasks = total_result.scalar()
 
-            # Tasks by status
+            # 상태별 작업 수
             status_counts = {}
             for status in [
                 "todo",
@@ -462,7 +467,7 @@ class TaskService:
                 )
                 status_counts[status] = status_result.scalar()
 
-            # Overdue tasks
+            # 연체된 작업
             overdue_result = await self.db.execute(
                 select(count()).select_from(
                     base_query.where(
@@ -475,7 +480,7 @@ class TaskService:
             )
             overdue_tasks = overdue_result.scalar()
 
-            # Tasks by priority
+            # 우선순위별 작업
             priority_result = await self.db.execute(
                 select(Task.priority, count(Task.id))
                 .select_from(base_query.subquery())
@@ -484,7 +489,7 @@ class TaskService:
             # tasks_by_priority = dict(priority_result.fetchall())
             tasks_by_priority = {row[0]: row[1] for row in priority_result.fetchall()}
 
-            # Tasks by type
+            # 유형별 작업
             type_result = await self.db.execute(
                 select(Task.task_type, count(Task.id))
                 .select_from(base_query.subquery())
@@ -505,44 +510,44 @@ class TaskService:
             )
 
         except Exception as e:
-            logger.error("Failed to get task stats: %s", e)
+            logger.error("작업 통계 가져오기에 실패했습니다: %s", e)
             raise
 
     async def get_kanban_board(
         self, project_id: Optional[int] = None, user_id: Optional[int] = None
     ) -> TaskKanbanBoardResponse:
-        """Get tasks organized in Kanban board format"""
+        """칸반 보드 형식으로 구성된 작업 가져오기"""
         try:
-            # Build base query
+            # 기본 쿼리 빌드
             query = select(Task).options(
                 selectinload(Task.creator),
                 selectinload(Task.assignments).selectinload(TaskAssignment.user),
             )
 
-            # Filter by project if specified
+            # 지정된 경우 프로젝트별 필터링
             if project_id:
-                # Check access to project
+                # 프로젝트에 대한 접근 권한 확인
                 if user_id:
                     project_service = ProjectService(self.db)
                     project_access = await project_service.check_project_access(
                         project_id, user_id
                     )
                     if not project_access:
-                        raise AuthorizationError("No access to this project")
+                        raise AuthorizationError("이 프로젝트에 접근할 권한이 없습니다")
                 query = query.where(Task.project_id == project_id)
             elif user_id:
-                # Show tasks from accessible projects
+                # 접근 가능한 프로젝트의 작업 표시
                 project_service = ProjectService(self.db)
                 accessible_projects = await project_service.get_accessible_projects(
                     user_id
                 )
                 query = query.where(Task.project_id.in_(accessible_projects))
 
-            # Execute query
+            # 쿼리 실행
             result = await self.db.execute(query)
             tasks = result.scalars().all()
 
-            # Organize by status
+            # 상태별로 구성
             kanban_board = TaskKanbanBoardResponse(
                 todo=[], in_progress=[], in_review=[], testing=[], done=[]
             )
@@ -551,7 +556,7 @@ class TaskService:
                 task_response = TaskResponse.model_validate(task)
                 task_status = getattr(task, "status", None)
                 if task_status is None:
-                    logger.warning("Task %d has no status, skipping", task.id)
+                    logger.warning("작업 %d에 상태가 없습니다. 건너뜁니다", task.id)
                     continue
 
                 if task_status == "todo":
@@ -568,11 +573,11 @@ class TaskService:
             return kanban_board
 
         except Exception as e:
-            logger.error("Failed to get kanban board: %s", e)
+            logger.error("칸반 보드 가져오기에 실패했습니다: %s", e)
             raise
 
     async def check_task_access(self, task_id: int, user_id: int) -> bool:
-        """Check if user has access to task"""
+        """사용자가 작업에 접근할 수 있는지 확인"""
         try:
             task_result = await self.db.execute(select(Task).where(Task.id == task_id))
             task = task_result.scalar_one_or_none()
@@ -580,16 +585,18 @@ class TaskService:
             if not task:
                 return False
 
-            # Task creator has access
+            # 작업 생성자는 접근 권한이 있음
             task_creator_id = getattr(task, "creator_id", None)
             if task_creator_id is None:
-                logger.warning("Task %d has no creator, access denied", task_id)
+                logger.warning(
+                    "작업 %d에 생성자가 없습니다. 접근이 거부되었습니다", task_id
+                )
                 return False
 
             if task_creator_id == user_id:
                 return True
 
-            # Check if user is assigned to task
+            # 사용자가 작업에 할당되었는지 확인
             assignment_result = await self.db.execute(
                 select(TaskAssignment).where(
                     and_(
@@ -602,10 +609,12 @@ class TaskService:
             if assignment_result.scalar_one_or_none():
                 return True
 
-            # Check project access
+            # 프로젝트 접근 권한 확인
             task_project_id = getattr(task, "project_id", None)
             if task_project_id is None:
-                logger.warning("Task %d has no project, access denied", task_id)
+                logger.warning(
+                    "작업 %d에 프로젝트가 없습니다. 접근이 거부되었습니다", task_id
+                )
                 return False
 
             project_service = ProjectService(self.db)
@@ -618,18 +627,18 @@ class TaskService:
             ConflictError,
             AuthorizationError,
         ) as e:
-            logger.error("Failed to check task access: %s", e)
+            logger.error("작업 접근 권한 확인에 실패했습니다: %s", e)
             return False
 
     async def assign_user_to_task(self, task_id: int, user_id: int, assigned_by: int):
-        """Assign a user to a task"""
+        """사용자를 작업에 할당"""
         try:
-            # Verify user exists
+            # 사용자 존재 확인
             user_result = await self.db.execute(select(User).where(User.id == user_id))
             if not user_result.scalar_one_or_none():
-                raise NotFoundError(f"User with ID {user_id} not found")
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
 
-            # Check if already assigned
+            # 이미 할당되었는지 확인
             existing_result = await self.db.execute(
                 select(TaskAssignment).where(
                     and_(
@@ -640,9 +649,9 @@ class TaskService:
                 )
             )
             if existing_result.scalar_one_or_none():
-                return  # Already assigned
+                return  # 이미 할당됨
 
-            # Create assignment
+            # 할당 생성
             assignment = TaskAssignment(
                 task_id=task_id,
                 user_id=user_id,
@@ -659,7 +668,9 @@ class TaskService:
             ConflictError,
             AuthorizationError,
         ) as e:
-            logger.error("Failed to assign user %d to task %d: %s", user_id, task_id, e)
+            logger.error(
+                "사용자 %d를 작업 %d에 할당하는데 실패했습니다: %s", user_id, task_id, e
+            )
             raise
 
     async def list_task_comments(
@@ -668,7 +679,7 @@ class TaskService:
         user_id: int,
     ):
         """
-        List comments for a user
+        사용자의 댓글 목록
         """
 
         stmt = select(TaskComment).where(TaskComment.task_id == task_id)
@@ -679,7 +690,7 @@ class TaskService:
 
 
 async def get_task_service(db: AsyncSession | None = None) -> TaskService:
-    """Get task service instance"""
+    """작업 서비스 인스턴스 가져오기"""
     if db is None:
         async for session in get_async_session():
             return TaskService(session)

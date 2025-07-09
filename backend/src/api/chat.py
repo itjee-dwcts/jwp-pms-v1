@@ -7,9 +7,12 @@ OpenAI API와 연동하는 채팅 기능 엔드포인트
 import logging
 from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.chat import (
     ChatMessageCreateRequest,
@@ -30,8 +33,6 @@ from schemas.chat import (
     OpenAIResponse,
 )
 from services.chat import ChatService
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
 from utils.exceptions import AuthorizationError, BusinessException, NotFoundError
 
 logger = logging.getLogger(__name__)

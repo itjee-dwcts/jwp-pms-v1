@@ -15,8 +15,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import structlog
-from core.config import get_settings
 from structlog.stdlib import LoggerFactory
+
+from core.config import get_settings
 
 settings = get_settings()
 

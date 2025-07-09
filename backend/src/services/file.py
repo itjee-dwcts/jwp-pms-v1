@@ -1,7 +1,7 @@
 """
-File Service
+파일 서비스
 
-Business logic for file upload and management operations.
+파일 업로드 및 관리 작업을 위한 비즈니스 로직입니다.
 """
 
 from datetime import datetime, timezone
@@ -17,7 +17,7 @@ from models.task import TaskAttachment
 
 
 class FileService:
-    """File service for file management operations"""
+    """파일 관리 작업을 위한 파일 서비스"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -32,9 +32,9 @@ class FileService:
         project_id: Optional[int] = None,
         task_id: Optional[int] = None,
     ) -> Union[ProjectAttachment, TaskAttachment]:
-        """Create file record in database"""
+        """데이터베이스에 파일 기록 생성"""
         if project_id:
-            # Verify user has access to project
+            # 사용자가 프로젝트에 접근 권한이 있는지 확인
             member_query = select(ProjectMember).where(
                 and_(
                     ProjectMember.project_id == project_id,
@@ -46,7 +46,7 @@ class FileService:
             member = member_result.scalar_one_or_none()
 
             if not member:
-                raise ValueError("User does not have access to this project")
+                raise ValueError("사용자가 이 프로젝트에 접근 권한이 없습니다")
 
             file_record = ProjectAttachment(
                 project_id=project_id,
@@ -60,7 +60,7 @@ class FileService:
             )
 
         elif task_id:
-            # Similar logic for task attachments
+            # 작업 첨부파일에 대한 유사한 로직
             file_record = TaskAttachment(
                 task_id=task_id,
                 file_name=file_name,
@@ -73,7 +73,7 @@ class FileService:
             )
 
         else:
-            raise ValueError("Either project_id or task_id must be provided")
+            raise ValueError("project_id 또는 task_id 중 하나는 제공되어야 합니다")
 
         self.db.add(file_record)
         await self.db.commit()
@@ -83,7 +83,7 @@ class FileService:
     async def get_file_with_access_check(
         self, file_id: int, user_id: int
     ) -> Optional[ProjectAttachment]:
-        """Get file if user has access"""
+        """사용자가 접근 권한이 있는 경우 파일 가져오기"""
         query = (
             select(ProjectAttachment)
             .join(ProjectMember)
@@ -101,28 +101,28 @@ class FileService:
         return result.scalar_one_or_none()
 
     async def delete_file(self, file_id: int, user_id: int) -> bool:
-        """Delete file if user has permission"""
+        """사용자가 권한이 있는 경우 파일 삭제"""
         file_record = await self.get_file_with_access_check(file_id, user_id)
         if not file_record:
             return False
 
         file_path = getattr(file_record, "file_path", None)
         if not file_path:
-            raise ValueError("File path is not set for this record")
+            raise ValueError("이 기록에 대한 파일 경로가 설정되지 않았습니다")
 
-        # Delete file from filesystem
+        # 파일 시스템에서 파일 삭제
         file_path = Path(file_path)
         if file_path.exists():
             file_path.unlink()
 
-        # Delete database record
+        # 데이터베이스 기록 삭제
         await self.db.delete(file_record)
         await self.db.commit()
         return True
 
 
 async def get_file_service(db: Optional[AsyncSession] = None) -> FileService:
-    """Get file service instance"""
+    """파일 서비스 인스턴스 가져오기"""
     if db is None:
         async for session in get_async_session():
             return FileService(session)

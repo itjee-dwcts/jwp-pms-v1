@@ -145,7 +145,7 @@ alembic upgrade head
 
 ```bash
 # 개발 서버 실행
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8001
 
 # 또는 스크립트 사용
 python -m src.main
@@ -155,9 +155,9 @@ python -m src.main
 
 브라우저에서 다음 URL을 방문하세요:
 
-- **Swagger UI**: <http://localhost:8000/docs>
-- **ReDoc**: <http://localhost:8000/redoc>
-- **OpenAPI JSON**: <http://localhost:8000/api/v1/openapi.json>
+- **Swagger UI**: <http://localhost:8001/docs>
+- **ReDoc**: <http://localhost:8001/redoc>
+- **OpenAPI JSON**: <http://localhost:8001/api/v1/openapi.json>
 
 ## 📚 API 문서
 
@@ -208,7 +208,7 @@ Authorization: Bearer <your-jwt-token>
 
 ## 📁 프로젝트 구조
 
-``` bash
+```bash
 backend/
 ├── src/
 │   ├── api/                 # API 라우터
@@ -422,7 +422,7 @@ docker build -t pms-backend .
 Docker 컨테이너 실행:
 
 ```bash
-docker run -p 8000:8000 pms-backend
+docker run -p 8001:8001 pms-backend
 ```
 
 ### 프로덕션 배포

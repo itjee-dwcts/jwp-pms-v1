@@ -262,7 +262,7 @@ class UserNotFoundError(NotFoundError):
 
     def __init__(self, user_id: Optional[str] = None, email: Optional[str] = None):
         identifier = user_id or email or "알 수 없음"
-        message = "사용자를 찾을 수 없습니다: %s" % identifier
+        message = f"사용자를 찾을 수 없습니다: {identifier}"
         super().__init__(message, "user", identifier)
 
 
@@ -270,7 +270,7 @@ class UserAlreadyExistsError(ConflictError):
     """이미 존재하는 사용자를 생성하려고 할 때 발생"""
 
     def __init__(self, email: str):
-        message = "이미 존재하는 이메일입니다: %s" % email
+        message = f"이미 존재하는 이메일입니다: {email}"
         super().__init__(message, {"email": email})
 
 
@@ -333,7 +333,7 @@ class ProjectNotFoundError(NotFoundError):
     """프로젝트를 찾을 수 없을 때 발생"""
 
     def __init__(self, project_id: str):
-        message = "프로젝트를 찾을 수 없습니다: %s" % project_id
+        message = f"프로젝트를 찾을 수 없습니다: {project_id}"
         super().__init__(message, "project", project_id)
 
 
@@ -341,7 +341,7 @@ class TaskNotFoundError(NotFoundError):
     """작업을 찾을 수 없을 때 발생"""
 
     def __init__(self, task_id: str):
-        message = "작업을 찾을 수 없습니다: %s" % task_id
+        message = f"작업을 찾을 수 없습니다: {task_id}"
         super().__init__(message, "task", task_id)
 
 
@@ -349,7 +349,7 @@ class EventNotFoundError(NotFoundError):
     """이벤트를 찾을 수 없을 때 발생"""
 
     def __init__(self, event_id: str):
-        message = "이벤트를 찾을 수 없습니다: %s" % event_id
+        message = f"이벤트를 찾을 수 없습니다: {event_id}"
         super().__init__(message, "event", event_id)
 
 

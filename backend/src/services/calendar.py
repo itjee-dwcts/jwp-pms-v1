@@ -8,6 +8,11 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, cast
 
+from sqlalchemy import and_, desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import count
+
 from core.database import get_async_session
 from models.calendar import Calendar, Event, EventAttendee
 from models.project import Project
@@ -27,10 +32,6 @@ from schemas.calendar import (
     EventSearchRequest,
     EventUpdateRequest,
 )
-from sqlalchemy import and_, desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.functions import count
 from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -158,8 +159,8 @@ class CalendarService:
                 setattr(calendar, field, value)
 
             # 메타데이터 업데이트
-            setattr(calendar, "updated_by", user_id)
-            setattr(calendar, "updated_at", datetime.utcnow())
+            calendar.updated_by = user_id
+            calendar.updated_at = datetime.utcnow()
 
             await self.db.commit()
 
@@ -427,8 +428,8 @@ class CalendarService:
             for field, value in update_data.items():
                 setattr(event, field, value)
 
-            setattr(event, "updated_by", user_id)
-            setattr(event, "updated_at", datetime.utcnow())
+            event.updated_by = user_id
+            event.updated_at = datetime.utcnow()
 
             await self.db.commit()
 

@@ -128,7 +128,7 @@ yarn install
 
 ```bash
 # API 기본 URL
-REACT_APP_API_BASE_URL=http://localhost:8000
+REACT_APP_API_BASE_URL=http://localhost:8001
 
 # 애플리케이션 설정
 REACT_APP_APP_NAME=PMS

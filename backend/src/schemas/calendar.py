@@ -1,51 +1,49 @@
-# backend/src/schemas/calendar.py
 """
-Calendar Pydantic Schemas
+캘린더 Pydantic 스키마
 
-Request/Response schemas for calendar and event management.
+캘린더 및 이벤트 관리를 위한 요청/응답 스키마입니다.
 """
 
 from datetime import datetime
 from typing import List, Optional
 
-from constants.calendar import EventStatus, EventType, RecurrenceType
 from pydantic import BaseModel, Field, field_validator
+
+from constants.calendar import EventStatus, EventType, RecurrenceType
 from schemas.user import UserPublic
 
 
 class CalendarBase(BaseModel):
-    """Base calendar schema"""
+    """기본 캘린더 스키마"""
 
-    name: str = Field(..., min_length=1, max_length=100, description="Calendar name")
-    description: Optional[str] = Field(
-        None, max_length=500, description="Calendar description"
-    )
+    name: str = Field(..., min_length=1, max_length=100, description="캘린더 이름")
+    description: Optional[str] = Field(None, max_length=500, description="캘린더 설명")
     color: str = Field(
-        default="#3b82f6", max_length=7, description="Calendar color (hex)"
+        default="#3b82f6", max_length=7, description="캘린더 색상 (16진수)"
     )
-    is_public: bool = Field(default=False, description="Whether the calendar is public")
+    is_public: bool = Field(default=False, description="공개 캘린더 여부")
 
     @field_validator("color")
     @classmethod
     def validate_color(cls, v):
-        """Validate color format"""
-        # Ensure color is in hex format (e.g., #3b82f6)
+        """색상 형식 검증"""
+        # 색상이 16진수 형식인지 확인 (예: #3b82f6)
         if not v.startswith("#") or len(v) != 7:
-            raise ValueError("Color must be in hex format (e.g., #3b82f6)")
+            raise ValueError("색상은 16진수 형식이어야 합니다 (예: #3b82f6)")
         return v
 
     class Config:
-        """Configuration for CalendarBase"""
+        """CalendarBase 설정"""
 
         from_attributes = True
 
 
 class CalendarCreateRequest(CalendarBase):
-    """Schema for creating a calendar"""
+    """캘린더 생성 스키마"""
 
 
 class CalendarUpdateRequest(BaseModel):
-    """Schema for updating a calendar"""
+    """캘린더 수정 스키마"""
 
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
@@ -55,20 +53,20 @@ class CalendarUpdateRequest(BaseModel):
     @field_validator("color")
     @classmethod
     def validate_color(cls, v):
-        """Validate color format"""
-        # Ensure color is in hex format (e.g., #3b82f6)
+        """색상 형식 검증"""
+        # 색상이 16진수 형식인지 확인 (예: #3b82f6)
         if v is not None and (not v.startswith("#") or len(v) != 7):
-            raise ValueError("Color must be in hex format (e.g., #3b82f6)")
+            raise ValueError("색상은 16진수 형식이어야 합니다 (예: #3b82f6)")
         return v
 
     class Config:
-        """Configuration for CalendarUpdateRequest"""
+        """CalendarUpdateRequest 설정"""
 
         from_attributes = True
 
 
 class CalendarResponse(CalendarBase):
-    """Schema for calendar response"""
+    """캘린더 응답 스키마"""
 
     id: int
     owner_id: int
@@ -77,26 +75,24 @@ class CalendarResponse(CalendarBase):
     owner: UserPublic
 
     class Config:
-        """Configuration for CalendarResponse"""
+        """CalendarResponse 설정"""
 
         from_attributes = True
 
 
 class EventBase(BaseModel):
-    """Base event schema"""
+    """기본 이벤트 스키마"""
 
-    title: str = Field(..., min_length=1, max_length=200, description="Event title")
-    description: Optional[str] = Field(
-        None, max_length=2000, description="Event description"
-    )
-    event_type: str = Field(default="meeting", description="Event type")
-    status: str = Field(default="scheduled", description="Event status")
+    title: str = Field(..., min_length=1, max_length=200, description="이벤트 제목")
+    description: Optional[str] = Field(None, max_length=2000, description="이벤트 설명")
+    event_type: str = Field(default="meeting", description="이벤트 유형")
+    status: str = Field(default="scheduled", description="이벤트 상태")
 
     @field_validator("event_type")
     @classmethod
     def validate_event_type(cls, v):
-        """Validate event type"""
-        # Ensure event type is one of the defined types
+        """이벤트 유형 검증"""
+        # 이벤트 유형이 정의된 유형 중 하나인지 확인
         valid_types = [
             EventType.MEETING,
             EventType.DEADLINE,
@@ -106,14 +102,16 @@ class EventBase(BaseModel):
             EventType.REMINDER,
         ]
         if v not in valid_types:
-            raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
+            raise ValueError(
+                f"이벤트 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+            )
         return v
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v):
-        """Validate event status"""
-        # Ensure status is one of the defined statuses
+        """이벤트 상태 검증"""
+        # 상태가 정의된 상태 중 하나인지 확인
         valid_statuses = [
             EventStatus.SCHEDULED,
             EventStatus.IN_PROGRESS,
@@ -122,65 +120,65 @@ class EventBase(BaseModel):
             EventStatus.POSTPONED,
         ]
         if v not in valid_statuses:
-            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            raise ValueError(
+                f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+            )
         return v
 
     class Config:
-        """Configuration for EventBase"""
+        """EventBase 설정"""
 
         from_attributes = True
 
 
 class EventCreateRequest(EventBase):
-    """Schema for creating an event"""
+    """이벤트 생성 스키마"""
 
-    calendar_id: int = Field(..., description="Calendar ID")
-    start_datetime: datetime = Field(..., description="Event start date and time")
-    end_datetime: datetime = Field(..., description="Event end date and time")
-    is_all_day: bool = Field(default=False, description="Whether the event is all day")
-    location: Optional[str] = Field(None, max_length=200, description="Event location")
-    recurrence_type: str = Field(default="none", description="Recurrence type")
-    recurrence_end_date: Optional[datetime] = Field(
-        None, description="Recurrence end date"
-    )
+    calendar_id: int = Field(..., description="캘린더 ID")
+    start_datetime: datetime = Field(..., description="이벤트 시작 날짜 및 시간")
+    end_datetime: datetime = Field(..., description="이벤트 종료 날짜 및 시간")
+    is_all_day: bool = Field(default=False, description="종일 이벤트 여부")
+    location: Optional[str] = Field(None, max_length=200, description="이벤트 장소")
+    recurrence_type: str = Field(default="none", description="반복 유형")
+    recurrence_end_date: Optional[datetime] = Field(None, description="반복 종료 날짜")
     reminder_minutes: Optional[int] = Field(
-        None, ge=0, description="Reminder minutes before event"
+        None, ge=0, description="이벤트 전 알림 시간(분)"
     )
-    project_id: Optional[int] = Field(None, description="Related project ID")
-    task_id: Optional[int] = Field(None, description="Related task ID")
+    project_id: Optional[int] = Field(None, description="연관된 프로젝트 ID")
+    task_id: Optional[int] = Field(None, description="연관된 작업 ID")
     attendee_ids: Optional[List[int]] = Field(
-        default=[], description="List of attendee user IDs"
+        default=[], description="참석자 사용자 ID 목록"
     )
 
     @field_validator("end_datetime")
     @classmethod
     def validate_end_datetime(cls, v, values):
-        """Validate end datetime"""
-        # Ensure end datetime is after start datetime
+        """종료 날짜시간 검증"""
+        # 종료 날짜시간이 시작 날짜시간보다 늦은지 확인
         if "start_datetime" in values and v <= values["start_datetime"]:
-            raise ValueError("End datetime must be after start datetime")
+            raise ValueError("종료 날짜시간은 시작 날짜시간보다 늦어야 합니다")
         return v
 
     @field_validator("recurrence_type")
     @classmethod
     def validate_recurrence_type(cls, v):
-        """Validate recurrence type"""
-        # Ensure recurrence type is one of the defined types
+        """반복 유형 검증"""
+        # 반복 유형이 정의된 유형 중 하나인지 확인
         valid_types = ["none", "daily", "weekly", "monthly", "yearly"]
         if v not in valid_types:
             raise ValueError(
-                f"Recurrence type must be one of: {', '.join(valid_types)}"
+                f"반복 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
             )
         return v
 
     class Config:
-        """Configuration for EventCreateRequest"""
+        """EventCreateRequest 설정"""
 
         from_attributes = True
 
 
 class EventUpdateRequest(BaseModel):
-    """Schema for updating an event"""
+    """이벤트 수정 스키마"""
 
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=2000)
@@ -197,8 +195,8 @@ class EventUpdateRequest(BaseModel):
     @field_validator("event_type")
     @classmethod
     def validate_event_type(cls, v):
-        """Validate event type"""
-        # Ensure event type is one of the defined types
+        """이벤트 유형 검증"""
+        # 이벤트 유형이 정의된 유형 중 하나인지 확인
         if v is not None:
             valid_types = [
                 EventType.MEETING,
@@ -209,14 +207,16 @@ class EventUpdateRequest(BaseModel):
                 EventType.REMINDER,
             ]
             if v not in valid_types:
-                raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
+                raise ValueError(
+                    f"이벤트 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+                )
         return v
 
     @field_validator("status")
     @classmethod
     def validate_status(cls, v):
-        """Validate event status"""
-        # Ensure status is one of the defined statuses
+        """이벤트 상태 검증"""
+        # 상태가 정의된 상태 중 하나인지 확인
         if v is not None:
             valid_statuses = [
                 EventStatus.SCHEDULED,
@@ -226,14 +226,16 @@ class EventUpdateRequest(BaseModel):
                 EventStatus.POSTPONED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     @field_validator("recurrence_type")
     @classmethod
     def validate_recurrence_type(cls, v):
-        """Validate recurrence type"""
-        # Ensure recurrence type is one of the defined types
+        """반복 유형 검증"""
+        # 반복 유형이 정의된 유형 중 하나인지 확인
         if v is not None:
             valid_types = [
                 RecurrenceType.NONE,
@@ -244,18 +246,18 @@ class EventUpdateRequest(BaseModel):
             ]
             if v not in valid_types:
                 raise ValueError(
-                    f"Recurrence type must be one of: {', '.join(valid_types)}"
+                    f"반복 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
                 )
         return v
 
     class Config:
-        """Configuration for EventUpdateRequest"""
+        """EventUpdateRequest 설정"""
 
         from_attributes = True
 
 
 class EventAttendeeResponse(BaseModel):
-    """Schema for event attendee response"""
+    """이벤트 참석자 응답 스키마"""
 
     id: int
     event_id: int
@@ -265,13 +267,13 @@ class EventAttendeeResponse(BaseModel):
     user: UserPublic
 
     class Config:
-        """Configuration for EventAttendeeResponse"""
+        """EventAttendeeResponse 설정"""
 
         from_attributes = True
 
 
 class EventResponse(EventBase):
-    """Schema for event response"""
+    """이벤트 응답 스키마"""
 
     id: int
     calendar_id: int
@@ -292,13 +294,13 @@ class EventResponse(EventBase):
     attendees: List[EventAttendeeResponse] = []
 
     class Config:
-        """Configuration for EventResponse"""
+        """EventResponse 설정"""
 
         from_attributes = True
 
 
 class EventListResponse(BaseModel):
-    """Schema for event list response"""
+    """이벤트 목록 응답 스키마"""
 
     events: List[EventResponse]
     total_items: int
@@ -307,13 +309,13 @@ class EventListResponse(BaseModel):
     total_pages: int
 
     class Config:
-        """Configuration for EventListResponse"""
+        """EventListResponse 설정"""
 
         from_attributes = True
 
 
 class CalendarListResponse(BaseModel):
-    """Schema for calendar list response"""
+    """캘린더 목록 응답 스키마"""
 
     calendars: List[CalendarResponse]
     total_items: int
@@ -322,15 +324,15 @@ class CalendarListResponse(BaseModel):
     total_pages: int
 
     class Config:
-        """Configuration for CalendarListResponse"""
+        """CalendarListResponse 설정"""
 
         from_attributes = True
 
 
 class EventSearchRequest(BaseModel):
-    """Schema for event search request"""
+    """이벤트 검색 요청 스키마"""
 
-    query: Optional[str] = Field(None, description="Search query")
+    query: Optional[str] = Field(None, description="검색 쿼리")
     calendar_id: Optional[int] = None
     event_type: Optional[str] = None
     event_status: Optional[str] = None
@@ -345,7 +347,7 @@ class EventSearchRequest(BaseModel):
     @field_validator("event_type")
     @classmethod
     def validate_event_type(cls, v):
-        """Validate event type"""
+        """이벤트 유형 검증"""
         if v is not None:
             valid_types = [
                 EventType.MEETING,
@@ -356,13 +358,15 @@ class EventSearchRequest(BaseModel):
                 EventType.REMINDER,
             ]
             if v not in valid_types:
-                raise ValueError(f"Event type must be one of: {', '.join(valid_types)}")
+                raise ValueError(
+                    f"이벤트 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+                )
         return v
 
     @field_validator("event_status")
     @classmethod
     def validate_status(cls, v):
-        """Validate event status"""
+        """이벤트 상태 검증"""
         if v is not None:
             valid_statuses = [
                 EventStatus.SCHEDULED,
@@ -372,32 +376,32 @@ class EventSearchRequest(BaseModel):
                 EventStatus.POSTPONED,
             ]
             if v not in valid_statuses:
-                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+                raise ValueError(
+                    f"상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
+                )
         return v
 
     class Config:
-        """Configuration for EventSearchRequest"""
+        """EventSearchRequest 설정"""
 
         from_attributes = True
 
 
 class CalendarViewRequest(BaseModel):
-    """Schema for calendar view request"""
+    """캘린더 뷰 요청 스키마"""
 
     view_type: str = Field(
-        default="month", description="View type: day, week, month, year"
+        default="month", description="뷰 유형: day, week, month, year"
     )
-    start_date: datetime = Field(..., description="View start date")
-    end_date: datetime = Field(..., description="View end date")
-    calendar_ids: Optional[List[int]] = Field(
-        None, description="Calendar IDs to include"
-    )
+    start_date: datetime = Field(..., description="뷰 시작 날짜")
+    end_date: datetime = Field(..., description="뷰 종료 날짜")
+    calendar_ids: Optional[List[int]] = Field(None, description="포함할 캘린더 ID 목록")
 
     @field_validator("view_type")
     @classmethod
     def validate_view_type(cls, v):
-        """Validate view type"""
-        # Ensure view type is one of the defined types
+        """뷰 유형 검증"""
+        # 뷰 유형이 정의된 유형 중 하나인지 확인
         valid_types = [
             "day",
             "week",
@@ -405,26 +409,28 @@ class CalendarViewRequest(BaseModel):
             "year",
         ]
         if v not in valid_types:
-            raise ValueError(f"View type must be one of: {', '.join(valid_types)}")
+            raise ValueError(
+                f"뷰 유형은 다음 중 하나여야 합니다: {', '.join(valid_types)}"
+            )
         return v
 
     @field_validator("end_date")
     @classmethod
     def validate_end_date(cls, v, values):
-        """Validate end date"""
-        # Ensure end date is after start date
+        """종료 날짜 검증"""
+        # 종료 날짜가 시작 날짜보다 늦은지 확인
         if "start_date" in values and v <= values["start_date"]:
-            raise ValueError("End date must be after start date")
+            raise ValueError("종료 날짜는 시작 날짜보다 늦어야 합니다")
         return v
 
     class Config:
-        """Configuration for CalendarViewRequest"""
+        """CalendarViewRequest 설정"""
 
         from_attributes = True
 
 
 class CalendarStatsResponse(BaseModel):
-    """Schema for calendar statistics"""
+    """캘린더 통계 스키마"""
 
     total_events: int
     upcoming_events: int
@@ -435,13 +441,13 @@ class CalendarStatsResponse(BaseModel):
     events_this_month: int
 
     class Config:
-        """Configuration for CalendarStatsResponse"""
+        """CalendarStatsResponse 설정"""
 
         from_attributes = True
 
 
 class EventDashboardResponse(BaseModel):
-    """Schema for event dashboard response"""
+    """이벤트 대시보드 응답 스키마"""
 
     today_events: List[EventResponse]
     upcoming_events: List[EventResponse]
@@ -450,34 +456,34 @@ class EventDashboardResponse(BaseModel):
     event_stats: CalendarStatsResponse
 
     class Config:
-        """Configuration for EventDashboardResponse"""
+        """EventDashboardResponse 설정"""
 
         from_attributes = True
 
 
 class EventAttendeeRequest(BaseModel):
-    """Schema for event attendee request"""
+    """이벤트 참석자 요청 스키마"""
 
-    user_ids: List[int] = Field(..., description="List of user IDs to add as attendees")
+    user_ids: List[int] = Field(..., description="참석자로 추가할 사용자 ID 목록")
 
     class Config:
-        """Configuration for EventAttendeeRequest"""
+        """EventAttendeeRequest 설정"""
 
         from_attributes = True
 
 
 class EventAttendeeResponseUpdate(BaseModel):
-    """Schema for updating attendee response"""
+    """참석자 응답 수정 스키마"""
 
     response_status: str = Field(
-        ..., description="Response status: accepted, declined, tentative"
+        ..., description="응답 상태: accepted, declined, tentative"
     )
 
     @field_validator("response_status")
     @classmethod
     def validate_response_status(cls, v):
-        """Validate response status"""
-        # Ensure response status is one of the defined statuses
+        """응답 상태 검증"""
+        # 응답 상태가 정의된 상태 중 하나인지 확인
         valid_statuses = [
             "accepted",
             "declined",
@@ -486,27 +492,25 @@ class EventAttendeeResponseUpdate(BaseModel):
         ]
         if v not in valid_statuses:
             raise ValueError(
-                f"Response status must be one of: {', '.join(valid_statuses)}"
+                f"응답 상태는 다음 중 하나여야 합니다: {', '.join(valid_statuses)}"
             )
         return v
 
     class Config:
-        """Configuration for EventAttendeeResponseUpdate"""
+        """EventAttendeeResponseUpdate 설정"""
 
         from_attributes = True
 
 
 class RecurringEventResponse(BaseModel):
-    """Schema for recurring event response"""
+    """반복 이벤트 응답 스키마"""
 
     parent_event: EventResponse
     recurring_events: List[EventResponse]
     next_occurrence: Optional[datetime]
     total_occurrences: int
-    total_occurrences: int
-    total_occurrences: int
 
     class Config:
-        """Configuration for RecurringEventResponse"""
+        """RecurringEventResponse 설정"""
 
         from_attributes = True

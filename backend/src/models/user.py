@@ -8,8 +8,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from constants.user import UserRole, UserStatus
-from core.base import Base
 from sqlalchemy import (
     Boolean,
     Column,
@@ -21,6 +19,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from constants.user import UserRole, UserStatus
+from core.base import Base
 
 if TYPE_CHECKING:
     pass

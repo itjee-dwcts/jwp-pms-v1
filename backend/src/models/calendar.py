@@ -1,21 +1,13 @@
 """
-Calendar Models
+캘린더 모델
 
-SQLAlchemy models for calendar and event management.
+캘린더 및 이벤트 관리를 위한 SQLAlchemy 모델들입니다.
 """
 
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from constants.calendar import (
-    EventAttendeeStatus,
-    EventReminder,
-    EventStatus,
-    EventType,
-    RecurrenceType,
-)
-from core.base import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -29,13 +21,22 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
+from constants.calendar import (
+    EventAttendeeStatus,
+    EventReminder,
+    EventStatus,
+    EventType,
+    RecurrenceType,
+)
+from core.base import Base
+
 if TYPE_CHECKING:
     pass
 
 
 class Calendar(Base):
     """
-    Calendar model for organizing events
+    이벤트 구성을 위한 캘린더 모델
     """
 
     __tablename__ = "calendars"
@@ -44,56 +45,54 @@ class Calendar(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Calendar ID",
+        doc="캘린더 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
-        doc="Creation time",
+        doc="생성 시간",
     )
-    created_by = Column(UUID, nullable=True, doc="User who created this calendar")
+    created_by = Column(UUID, nullable=True, doc="이 캘린더를 생성한 사용자")
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
-        doc="Last update time",
+        doc="마지막 수정 시간",
     )
-    updated_by = Column(UUID, nullable=True, doc="User who last updated this calendar")
+    updated_by = Column(UUID, nullable=True, doc="이 캘린더를 마지막으로 수정한 사용자")
 
-    # Basic Information
-    name = Column(String(100), nullable=False, doc="Calendar name")
-    description = Column(Text, nullable=True, doc="Calendar description")
+    # 기본 정보
+    name = Column(String(100), nullable=False, doc="캘린더 이름")
+    description = Column(Text, nullable=True, doc="캘린더 설명")
     color = Column(
         String(7),
         default="#3B82F6",
         nullable=False,
-        doc="Calendar color (hex)",
+        doc="캘린더 색상 (16진수)",
     )
 
-    # Ownership and Visibility
-    owner_id = Column(
-        UUID, ForeignKey("users.id"), nullable=False, doc="Calendar owner"
-    )
+    # 소유권 및 표시 여부
+    owner_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="캘린더 소유자")
     is_default = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether this is the user's default calendar",
+        doc="사용자의 기본 캘린더 여부",
     )
     is_public = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the calendar is public",
+        doc="공개 캘린더 여부",
     )
     is_active = Column(
         Boolean,
         default=True,
         nullable=False,
-        doc="Whether the calendar is active",
+        doc="활성 캘린더 여부",
     )
 
-    # Relationships
+    # 관계
     creator = relationship("User")
     updater = relationship("User")
     owner = relationship("User", back_populates="calendars")
@@ -107,7 +106,7 @@ class Calendar(Base):
 
 class Event(Base):
     """
-    Event model for calendar events
+    캘린더 이벤트 모델
     """
 
     __tablename__ = "events"
@@ -116,126 +115,122 @@ class Event(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Event ID",
+        doc="이벤트 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
-        doc="Creation time",
+        doc="생성 시간",
     )
-    created_by = Column(UUID, nullable=True, doc="User who created this event")
+    created_by = Column(UUID, nullable=True, doc="이 이벤트를 생성한 사용자")
     updated_at = Column(
         DateTime(timezone=True),
         nullable=True,
         onupdate=datetime.now(timezone.utc),
-        doc="Last update time",
+        doc="마지막 수정 시간",
     )
-    updated_by = Column(UUID, nullable=True, doc="User who last updated this event")
+    updated_by = Column(UUID, nullable=True, doc="이 이벤트를 마지막으로 수정한 사용자")
 
-    # Basic Information
-    title = Column(String(200), nullable=False, doc="Event title")
-    description = Column(Text, nullable=True, doc="Event description")
-    location = Column(String(200), nullable=True, doc="Event location")
+    # 기본 정보
+    title = Column(String(200), nullable=False, doc="이벤트 제목")
+    description = Column(Text, nullable=True, doc="이벤트 설명")
+    location = Column(String(200), nullable=True, doc="이벤트 장소")
 
-    # Timing
+    # 시간 정보
     start_time = Column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
-        doc="Event start time",
+        doc="이벤트 시작 시간",
     )
     end_time = Column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
-        doc="Event end time",
+        doc="이벤트 종료 시간",
     )
     is_all_day = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the event is all-day",
+        doc="종일 이벤트 여부",
     )
-    time_zone = Column(String(50), nullable=True, doc="Event timezone")
+    time_zone = Column(String(50), nullable=True, doc="이벤트 시간대")
 
-    # Status and Type
+    # 상태 및 유형
     event_type = Column(
         String(20),  # Enum(EventType),
         default=EventType.MEETING,
         nullable=False,
-        doc="Event type",
+        doc="이벤트 유형",
     )
     status = Column(
         String(20),  # Enum(EventStatus),
         default=EventStatus.SCHEDULED,
         nullable=False,
-        doc="Event status",
+        doc="이벤트 상태",
     )
 
-    # Associations
+    # 연관 관계
     calendar_id = Column(
         UUID,
         ForeignKey("calendars.id"),
         nullable=False,
-        doc="Associated calendar",
+        doc="연관된 캘린더",
     )
     project_id = Column(
         UUID,
         ForeignKey("projects.id"),
         nullable=True,
-        doc="Associated project (optional)",
+        doc="연관된 프로젝트 (선택적)",
     )
     task_id = Column(
         UUID,
         ForeignKey("tasks.id"),
         nullable=True,
-        doc="Associated task (optional)",
+        doc="연관된 작업 (선택적)",
     )
-    owner_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="Event owner")
+    owner_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="이벤트 소유자")
 
-    # Recurrence
+    # 반복 설정
     recurrence_type = Column(
         String(20),  # Enum(RecurrenceType),
         default=RecurrenceType.NONE,
         nullable=False,
-        doc="Recurrence pattern",
+        doc="반복 패턴",
     )
     recurrence_interval = Column(
         Integer,
         default=1,
         nullable=False,
-        doc="Recurrence interval (e.g., every 2 weeks)",
+        doc="반복 간격 (예: 매 2주)",
     )
     recurrence_end_date = Column(
-        DateTime(timezone=True), nullable=True, doc="When recurrence ends"
+        DateTime(timezone=True), nullable=True, doc="반복 종료 날짜"
     )
     parent_id = Column(
         UUID,
         ForeignKey("events.id"),
         nullable=True,
-        doc="Parent event for recurring instances",
+        doc="반복 인스턴스의 부모 이벤트",
     )
 
-    # Notification
+    # 알림 설정
     reminder_type = Column(
         String(20),  # Enum(EventReminder),
         default=EventReminder.NONE,
         nullable=False,
-        doc="Reminder type (e.g., email, push notification)",
+        doc="알림 유형 (예: 이메일, 푸시 알림)",
     )
 
-    reminder_minutes = Column(
-        Integer, nullable=True, doc="Reminder time in minutes before event"
-    )
+    reminder_minutes = Column(Integer, nullable=True, doc="이벤트 전 알림 시간 (분)")
 
-    # Meeting Information
-    meeting_url = Column(
-        String(500), nullable=True, doc="Meeting URL (e.g., Zoom, Teams)"
-    )
-    meeting_id = Column(String(100), nullable=True, doc="Meeting ID")
-    meeting_password = Column(String(100), nullable=True, doc="Meeting password")
+    # 회의 정보
+    meeting_url = Column(String(500), nullable=True, doc="회의 URL (예: Zoom, Teams)")
+    meeting_id = Column(String(100), nullable=True, doc="회의 ID")
+    meeting_password = Column(String(100), nullable=True, doc="회의 비밀번호")
 
-    # Relationships
+    # 관계
     calendar = relationship("Calendar", back_populates="events")
     project = relationship("Project", back_populates="events")
     task = relationship("Task", back_populates="events")
@@ -260,7 +255,7 @@ class Event(Base):
         "EventAttendee", back_populates="event", cascade="all, delete-orphan"
     )
 
-    # Constraints
+    # 제약 조건
     __table_args__ = (
         CheckConstraint("start_time <= end_time", name="ck_event_time_order"),
         CheckConstraint(
@@ -277,7 +272,7 @@ class Event(Base):
 
 class EventAttendee(Base):
     """
-    Event attendee model
+    이벤트 참석자 모델
     """
 
     __tablename__ = "event_attendees"
@@ -286,53 +281,50 @@ class EventAttendee(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        doc="Attendee ID",
+        doc="참석자 ID",
     )
     created_at = Column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
-        doc="Creation time",
+        doc="생성 시간",
     )
-    created_by = Column(
-        UUID, nullable=True, doc="User who created this attendee record"
-    )
+    created_by = Column(UUID, nullable=True, doc="이 참석자 기록을 생성한 사용자")
     updated_at = Column(
         DateTime(timezone=True),
         nullable=True,
         onupdate=datetime.now(timezone.utc),
-        doc="Last update time",
+        doc="마지막 수정 시간",
     )
     updated_by = Column(
         UUID,
         nullable=True,
-        doc="User who last updated this attendee record",
+        doc="이 참석자 기록을 마지막으로 수정한 사용자",
     )
 
-    # Basic Information
-
-    event_id = Column(UUID, ForeignKey("events.id"), nullable=False, doc="Event ID")
+    # 기본 정보
+    event_id = Column(UUID, ForeignKey("events.id"), nullable=False, doc="이벤트 ID")
     user_id = Column(
-        UUID, ForeignKey("users.id"), nullable=False, doc="Attendee user ID"
+        UUID, ForeignKey("users.id"), nullable=False, doc="참석자 사용자 ID"
     )
     status = Column(
         String(20),
         default=EventAttendeeStatus.INVITED,
         nullable=False,
-        doc="Attendance status (invited, accepted, declined, tentative)",
+        doc="참석 상태 (초대됨, 수락, 거절, 미정)",
     )
     response_at = Column(
         DateTime(timezone=True),
         nullable=True,
-        doc="When the user responded to the invitation",
+        doc="사용자가 초대에 응답한 시간",
     )
     is_organizer = Column(
         Boolean,
         default=False,
         nullable=False,
-        doc="Whether the attendee is the organizer",
+        doc="참석자가 주최자인지 여부",
     )
 
-    # Relationships
+    # 관계
     event = relationship("Event", back_populates="attendees")
     user = relationship("User")
     creator = relationship("User")

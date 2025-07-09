@@ -8,6 +8,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, cast
 
+from sqlalchemy import desc, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count
+
 from constants.user import UserRole, UserStatus
 from core.database import get_async_session
 from models.user import User, UserActivityLog
@@ -19,9 +23,6 @@ from schemas.user import (
     UserStatsResponse,
     UserUpdateRequest,
 )
-from sqlalchemy import desc, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import count
 from utils.auth import get_password_hash, verify_password
 from utils.exceptions import AuthenticationError, ConflictError, NotFoundError
 
@@ -226,8 +227,8 @@ class UserService:
             for field, value in update_data.items():
                 setattr(user, field, value)
 
-            setattr(user, "updated_by", updated_by)
-            setattr(user, "updated_at", datetime.utcnow())
+            user.updated_by = updated_by
+            user.updated_at = datetime.utcnow()
 
             # 활동 로그
             await self._log_activity(
@@ -265,10 +266,10 @@ class UserService:
                 raise AuthenticationError("현재 비밀번호가 올바르지 않습니다")
 
             # 비밀번호 업데이트
-            setattr(user, "password", get_password_hash(password_data.new_password))
-            setattr(user, "password_changed_at", datetime.utcnow())
-            setattr(user, "updated_at", datetime.utcnow())
-            setattr(user, "updated_by", user_id)
+            user.password = get_password_hash(password_data.new_password)
+            user.password_changed_at = datetime.utcnow()
+            user.updated_at = datetime.utcnow()
+            user.updated_by = user_id
 
             # 활동 로그
             await self._log_activity(
@@ -306,10 +307,10 @@ class UserService:
             return False
 
         # 새 비밀번호 해시화
-        setattr(user, "password", get_password_hash(new_password))
-        setattr(user, "password_changed_at", datetime.utcnow())
-        setattr(user, "updated_at", datetime.utcnow())
-        setattr(user, "updated_by", updated_by)
+        user.password = get_password_hash(new_password)
+        user.password_changed_at = datetime.utcnow()
+        user.updated_at = datetime.utcnow()
+        user.updated_by = updated_by
 
         # 활동 로그 생성
         activity_log = UserActivityLog(
@@ -341,10 +342,10 @@ class UserService:
         if not user:
             return False
 
-        setattr(user, "is_active", False)
-        setattr(user, "status", UserStatus.INACTIVE)
-        setattr(user, "updated_at", datetime.utcnow())
-        setattr(user, "updated_by", deactivated_by)
+        user.is_active = False
+        user.status = UserStatus.INACTIVE
+        user.updated_at = datetime.utcnow()
+        user.updated_by = deactivated_by
 
         # 활동 로그 생성
         activity_log = UserActivityLog(
@@ -376,10 +377,10 @@ class UserService:
         if not user:
             return False
 
-        setattr(user, "is_active", True)
-        setattr(user, "status", UserStatus.ACTIVE)
-        setattr(user, "updated_at", datetime.utcnow())
-        setattr(user, "updated_by", activated_by)
+        user.is_active = True
+        user.status = UserStatus.ACTIVE
+        user.updated_at = datetime.utcnow()
+        user.updated_by = activated_by
 
         # 활동 로그 생성
         activity_log = UserActivityLog(
@@ -419,10 +420,10 @@ class UserService:
                 raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
 
             # 상태 변경으로 소프트 삭제
-            setattr(user, "is_active", False)
-            setattr(user, "status", UserStatus.INACTIVE)
-            setattr(user, "updated_by", deleted_by)
-            setattr(user, "updated_at", datetime.utcnow())
+            user.is_active = False
+            user.status = UserStatus.INACTIVE
+            user.updated_by = deleted_by
+            user.updated_at = datetime.utcnow()
 
             # 활동 로그
             await self._log_activity(
@@ -590,7 +591,7 @@ class UserService:
                 select(User.role, count(User.id)).group_by(User.role)
             )
             users_by_role: dict[str, int] = {
-                role: count for role, count in role_result.fetchall()
+                row[0]: row[1] for row in role_result.fetchall()
             }
 
             # 상태별 사용자
@@ -598,7 +599,7 @@ class UserService:
                 select(User.status, count(User.id)).group_by(User.status)
             )
             users_by_status: dict[str, int] = {
-                status: count for status, count in status_result.fetchall()
+                str(row[0]): int(row[1]) for row in status_result.fetchall()
             }
 
             return UserStatsResponse(
@@ -629,8 +630,8 @@ class UserService:
             user = result.scalar_one_or_none()
 
             if user:
-                setattr(user, "last_login", datetime.utcnow())
-                setattr(user, "last_login_ip", ip_address)
+                user.last_login = datetime.utcnow()
+                user.last_login_ip = ip_address
 
                 # 활동 로그
                 await self._log_activity(

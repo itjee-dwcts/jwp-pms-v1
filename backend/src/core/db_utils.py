@@ -1,25 +1,26 @@
 """
-Database Utilities
+데이터베이스 유틸리티
 
-Helper functions for database operations and health checks.
+데이터베이스 작업 및 상태 확인을 위한 도우미 함수들입니다.
 """
 
 import logging
 from typing import Any, Dict
 
-from core.database import AsyncSessionLocal, Base, engine
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+
+from core.database import AsyncSessionLocal, Base, engine
 
 logger = logging.getLogger(__name__)
 
 
 async def check_database_health() -> Dict[str, Any]:
     """
-    Comprehensive database health check
+    종합적인 데이터베이스 상태 확인
     """
     health_info = {
-        "status": "unknown",
+        "status": "알 수 없음",
         "connection": False,
         "tables": [],
         "version": None,
@@ -28,20 +29,20 @@ async def check_database_health() -> Dict[str, Any]:
 
     try:
         async with engine.begin() as conn:
-            # Basic connection test
+            # 기본 연결 테스트
             result = await conn.execute(text("SELECT 1"))
             health_info["connection"] = result.fetchone() is not None
 
-            # Get database version
+            # 데이터베이스 버전 가져오기
             try:
                 version_result = await conn.execute(text("SELECT version()"))
                 version_row = version_result.fetchone()
                 if version_row:
                     health_info["version"] = version_row[0]
             except SQLAlchemyError as e:
-                logger.warning("Could not get database version: %s", e)
+                logger.warning("데이터베이스 버전을 가져올 수 없습니다: %s", e)
 
-            # Check if our tables exist
+            # 테이블 존재 여부 확인
             try:
                 tables_result = await conn.execute(
                     text(
@@ -55,21 +56,21 @@ async def check_database_health() -> Dict[str, Any]:
                 )
                 health_info["tables"] = [row[0] for row in tables_result.fetchall()]
             except SQLAlchemyError as e:
-                logger.warning("Could not list tables: %s", e)
+                logger.warning("테이블 목록을 가져올 수 없습니다: %s", e)
 
-            health_info["status"] = "healthy"
+            health_info["status"] = "정상"
 
     except SQLAlchemyError as e:
-        health_info["status"] = "unhealthy"
+        health_info["status"] = "비정상"
         health_info["error"] = str(e)
-        logger.error("Database health check failed: %s", e)
+        logger.error("데이터베이스 상태 확인에 실패했습니다: %s", e)
 
     return health_info
 
 
 async def test_database_operations() -> Dict[str, Any]:
     """
-    Test basic database operations
+    기본적인 데이터베이스 작업 테스트
     """
     test_results = {
         "connection": False,
@@ -80,22 +81,22 @@ async def test_database_operations() -> Dict[str, Any]:
     }
 
     try:
-        # Test connection
+        # 연결 테스트
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
             test_results["connection"] = True
 
-        # Test session creation
+        # 세션 생성 테스트
         async with AsyncSessionLocal() as session:
             test_results["create_session"] = True
 
-            # Test query execution
+            # 쿼리 실행 테스트
             result = await session.execute(text("SELECT CURRENT_TIMESTAMP"))
             timestamp = result.fetchone()
             if timestamp:
                 test_results["query_execution"] = True
 
-            # Test transaction
+            # 트랜잭션 테스트
             try:
                 await session.execute(text("SELECT 1"))
                 await session.commit()
@@ -106,14 +107,14 @@ async def test_database_operations() -> Dict[str, Any]:
 
     except SQLAlchemyError as e:
         test_results["error"] = str(e)
-        logger.error("Database operations test failed: %s", e)
+        logger.error("데이터베이스 작업 테스트에 실패했습니다: %s", e)
 
     return test_results
 
 
 async def get_database_stats() -> Dict[str, Any]:
     """
-    Get database statistics and information
+    데이터베이스 통계 및 정보 가져오기
     """
     stats = {
         "database_size": None,
@@ -125,7 +126,7 @@ async def get_database_stats() -> Dict[str, Any]:
 
     try:
         async with engine.begin() as conn:
-            # Get database size
+            # 데이터베이스 크기 가져오기
             try:
                 size_result = await conn.execute(
                     text(
@@ -138,9 +139,9 @@ async def get_database_stats() -> Dict[str, Any]:
                 if size_row:
                     stats["database_size"] = size_row[0]
             except SQLAlchemyError as e:
-                logger.warning("Could not get database size: %s", e)
+                logger.warning("데이터베이스 크기를 가져올 수 없습니다: %s", e)
 
-            # Get table count
+            # 테이블 개수 가져오기
             try:
                 count_result = await conn.execute(
                     text(
@@ -155,9 +156,9 @@ async def get_database_stats() -> Dict[str, Any]:
                 if count_row:
                     stats["table_count"] = count_row[0]
             except SQLAlchemyError as e:
-                logger.warning("Could not get table count: %s", e)
+                logger.warning("테이블 개수를 가져올 수 없습니다: %s", e)
 
-            # Get connection count
+            # 연결 개수 가져오기
             try:
                 conn_result = await conn.execute(
                     text(
@@ -172,9 +173,9 @@ async def get_database_stats() -> Dict[str, Any]:
                 if conn_row:
                     stats["connection_count"] = conn_row[0]
             except SQLAlchemyError as e:
-                logger.warning("Could not get connection count: %s", e)
+                logger.warning("연결 개수를 가져올 수 없습니다: %s", e)
 
-            # Get uptime
+            # 가동 시간 가져오기
             try:
                 uptime_result = await conn.execute(
                     text(
@@ -190,66 +191,66 @@ async def get_database_stats() -> Dict[str, Any]:
                 if uptime_row:
                     stats["uptime"] = str(uptime_row[0])
             except SQLAlchemyError as e:
-                logger.warning("Could not get uptime: %s", e)
+                logger.warning("가동 시간을 가져올 수 없습니다: %s", e)
 
     except SQLAlchemyError as e:
         stats["error"] = str(e)
-        logger.error("Failed to get database stats: %s", e)
+        logger.error("데이터베이스 통계를 가져오는데 실패했습니다: %s", e)
 
     return stats
 
 
 async def initialize_database():
     """
-    Initialize database with basic setup
+    기본 설정으로 데이터베이스 초기화
     """
-    logger.info("🔧 Initializing database...")
+    logger.info("🔧 데이터베이스를 초기화하는 중...")
 
     try:
-        # Check connection
+        # 연결 확인
         health = await check_database_health()
-        if health["status"] != "healthy":
+        if health["status"] != "정상":
             raise ValueError(
-                f"Database unhealthy: {health.get('error', 'Unknown error')}"
+                f"데이터베이스가 비정상입니다: {health.get('error', '알 수 없는 오류')}"
             )
 
-        # Import all models to ensure they're registered
+        # 모든 모델을 가져와서 등록되도록 함
 
-        # Create tables
+        # 테이블 생성
         async with engine.begin() as conn:
             await conn.run_sync(
-                lambda sync_conn: logger.info("📊 Creating database tables...")
+                lambda sync_conn: logger.info("📊 데이터베이스 테이블을 생성하는 중...")
             )
 
             await conn.run_sync(Base.metadata.create_all)
 
-        logger.info("✅ Database initialization completed")
+        logger.info("✅ 데이터베이스 초기화가 완료되었습니다")
         return True
 
     except SQLAlchemyError as e:
-        logger.error("❌ Database initialization failed: %s", e)
+        logger.error("❌ 데이터베이스 초기화에 실패했습니다: %s", e)
         return False
 
 
 async def reset_database():
     """
-    Reset database (drop and recreate all tables) - Use with caution!
+    데이터베이스 재설정 (모든 테이블 삭제 후 재생성) - 주의해서 사용하세요!
     """
-    logger.warning("⚠️ Resetting database - all data will be lost!")
+    logger.warning("⚠️ 데이터베이스를 재설정하는 중 - 모든 데이터가 손실됩니다!")
 
     try:
         async with engine.begin() as conn:
-            # Drop all tables
+            # 모든 테이블 삭제
             await conn.run_sync(Base.metadata.drop_all)
-            logger.info("🗑️ All tables dropped")
+            logger.info("🗑️ 모든 테이블이 삭제되었습니다")
 
-            # Recreate all tables
+            # 모든 테이블 재생성
             await conn.run_sync(Base.metadata.create_all)
-            logger.info("📊 All tables recreated")
+            logger.info("📊 모든 테이블이 재생성되었습니다")
 
-        logger.info("✅ Database reset completed")
+        logger.info("✅ 데이터베이스 재설정이 완료되었습니다")
         return True
 
     except SQLAlchemyError as e:
-        logger.error("❌ Database reset failed: %s", e)
+        logger.error("❌ 데이터베이스 재설정에 실패했습니다: %s", e)
         return False

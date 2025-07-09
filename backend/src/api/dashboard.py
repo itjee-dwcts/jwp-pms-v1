@@ -7,12 +7,13 @@
 import logging
 from typing import Any, Dict, List
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, status
 from models.user import User
 from services.dashboard import DashboardService
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

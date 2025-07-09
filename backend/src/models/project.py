@@ -9,8 +9,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from constants.project import ProjectMemberRole, ProjectPriority, ProjectStatus
-from core.base import Base
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -25,6 +23,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from constants.project import ProjectMemberRole, ProjectPriority, ProjectStatus
+from core.base import Base
 
 if TYPE_CHECKING:
     pass

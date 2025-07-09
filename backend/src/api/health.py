@@ -10,9 +10,10 @@ from datetime import datetime
 from typing import Any, Dict
 
 import psutil
+from fastapi import APIRouter, HTTPException
+
 from core.config import settings
 from core.database import get_database_health
-from fastapi import APIRouter, HTTPException
 from schemas.common import HealthCheckResponse, SystemInfoResponse
 
 logger = logging.getLogger(__name__)

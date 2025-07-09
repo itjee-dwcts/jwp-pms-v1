@@ -8,16 +8,17 @@ import logging
 import time
 from typing import Optional
 
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from constants.user import UserRole
 from core.database import get_async_session
 from core.security import TokenData, decode_access_token
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from models.project import ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import User
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 

@@ -8,9 +8,12 @@ import logging
 from datetime import date
 from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.calendar import (
     CalendarCreateRequest,
@@ -28,8 +31,6 @@ from schemas.calendar import (
     EventUpdateRequest,
 )
 from services.calendar import CalendarService
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
 from utils.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)

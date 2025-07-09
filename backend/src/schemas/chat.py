@@ -8,8 +8,9 @@ OpenAI API 연동 및 채팅 기능을 위한 요청/응답 스키마들
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from constants.chat import InputMode, OpenAIModel
 from pydantic import BaseModel, Field, field_validator
+
+from constants.chat import InputMode, OpenAIModel
 from schemas.common import UUIDEntity
 
 # ============================================================================

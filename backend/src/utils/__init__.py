@@ -1,7 +1,7 @@
 """
-Utilities Package
+유틸리티 패키지
 
-Common utilities and helper functions for the PMS application.
+PMS 애플리케이션을 위한 공통 유틸리티 및 도우미 함수들입니다.
 """
 
 from .auth import (
@@ -19,18 +19,65 @@ from .exceptions import (
     AuthenticationError,
     AuthorizationError,
     BaseAPIException,
-    BusinessLogicError,
+    BusinessException,
     ConflictError,
     DatabaseError,
     NotFoundError,
     ValidationError,
 )
 from .field_updater import SafeFieldUpdater
-from .helper import generate_random_string
+from .helper import (
+    RateLimitTracker,
+    build_url,
+    calculate_pagination,
+    calculate_password_strength,
+    chunk_list,
+    clean_html,
+    deep_merge_dicts,
+    extract_hashtags,
+    extract_mentions,
+    flatten_dict,
+    format_datetime,
+    format_file_size,
+    generate_color_from_string,
+    generate_numeric_code,
+    generate_pagination_info,
+    generate_random_string,
+    generate_secure_token,
+    generate_uuid,
+    get_age_from_date,
+    get_file_extension,
+    hash_file_content,
+    hash_string,
+    is_allowed_file_type,
+    is_valid_url,
+    mask_sensitive_data,
+    parse_comma_separated,
+    parse_datetime,
+    parse_file_size,
+    parse_filter_params,
+    parse_sort_params,
+    rate_tracker,
+    remove_duplicates,
+    safe_cast,
+    sanitize_filename,
+    save_upload_file,
+    slugify,
+    time_ago,
+    to_camel_case,
+    to_snake_case,
+    truncate_text,
+    url_decode,
+    url_encode,
+    validate_email,
+    validate_phone,
+    validate_url,
+    validate_username,
+)
 from .logger import AuditLogger, SecurityLogger, get_logger, setup_logging
 
 __all__ = [
-    # Auth utilities
+    # 인증 유틸리티
     "AuthManager",
     "create_access_token",
     "create_refresh_token",
@@ -40,22 +87,67 @@ __all__ = [
     "require_scopes",
     "verify_password",
     "verify_token",
-    # Exception classes
+    # 예외 클래스
     "AuthenticationError",
     "AuthorizationError",
     "BaseAPIException",
-    "BusinessLogicError",
+    "BusinessException",
     "ConflictError",
     "DatabaseError",
     "NotFoundError",
     "ValidationError",
-    # Logger utilities
+    # 로거 유틸리티
     "get_logger",
     "setup_logging",
     "AuditLogger",
     "SecurityLogger",
-    # Helper functions
+    # 도우미 함수
+    "build_url",
+    "calculate_pagination",
+    "calculate_password_strength",
+    "chunk_list",
+    "clean_html",
+    "deep_merge_dicts",
+    "extract_hashtags",
+    "extract_mentions",
+    "flatten_dict",
+    "format_datetime",
+    "format_file_size",
+    "generate_color_from_string",
+    "generate_numeric_code",
+    "generate_pagination_info",
     "generate_random_string",
-    # Safe field updater
+    "generate_secure_token",
+    "generate_uuid",
+    "get_age_from_date",
+    "get_file_extension",
+    "hash_file_content",
+    "hash_string",
+    "is_allowed_file_type",
+    "is_valid_url",
+    "mask_sensitive_data",
+    "parse_comma_separated",
+    "parse_datetime",
+    "parse_file_size",
+    "parse_filter_params",
+    "parse_sort_params",
+    "rate_tracker",
+    "RateLimitTracker",
+    "remove_duplicates",
+    "safe_cast",
+    "sanitize_filename",
+    "save_upload_file",
+    "slugify",
+    "time_ago",
+    "to_camel_case",
+    "to_snake_case",
+    "truncate_text",
+    "url_decode",
+    "url_encode",
+    "validate_email",
+    "validate_phone",
+    "validate_url",
+    "validate_username",
+    # 안전한 필드 업데이터
     "SafeFieldUpdater",
 ]

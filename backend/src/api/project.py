@@ -7,9 +7,11 @@
 import logging
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from schemas.project import (
     ProjectCreateRequest,
@@ -19,7 +21,6 @@ from schemas.project import (
     ProjectUpdateRequest,
 )
 from services.project import ProjectService
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -44,7 +45,16 @@ async def list_projects(
             page_no=page_no,
             page_size=page_size,
             search_params=ProjectSearchRequest(
-                search_text=search_text, project_status=project_status
+                search_text=search_text,
+                project_status=project_status,
+                priority=None,
+                owner_id=None,
+                tags=None,
+                start_date_from=None,
+                start_date_to=None,
+                end_date_from=None,
+                end_date_to=None,
+                is_public=None,
             ),
         )
 
