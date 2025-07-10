@@ -6,8 +6,9 @@
 
 from datetime import datetime
 from typing import Annotated, Any, List, Optional
+from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, ValidationInfo, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -78,9 +79,9 @@ class RegisterRequest(BaseModel):
 
     @field_validator("confirm_password", mode="before")
     @classmethod
-    def passwords_match(cls, v: str, values: Any) -> str:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
         """비밀번호 일치 검증"""
-        if "password" in values and v != values["password"]:
+        if info.data and "password" in info.data and v != info.data["password"]:
             raise ValueError("비밀번호가 일치하지 않습니다")
         return v
 
@@ -275,7 +276,7 @@ class TokenRefresh(BaseModel):
 class LoginUserResponse(BaseModel):
     """인증용 사용자 응답 스키마"""
 
-    id: int
+    id: UUID
     username: str
     email: str
     full_name: str

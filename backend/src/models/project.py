@@ -52,7 +52,8 @@ class Project(Base):
         doc="프로젝트 생성 타임스탬프",
     )
     created_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="프로젝트를 생성한 사용자",
     )
@@ -63,7 +64,8 @@ class Project(Base):
         doc="프로젝트 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="프로젝트를 마지막으로 업데이트한 사용자",
     )
@@ -113,7 +115,7 @@ class Project(Base):
 
     # 소유권 및 가시성
     owner_id = Column(
-        Integer,
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="프로젝트를 생성한 사용자",
@@ -138,14 +140,20 @@ class Project(Base):
 
     # 관계
     owner = relationship(
-        "User", back_populates="created_projects", foreign_keys=[owner_id]
+        "User", back_populates="owned_projects", foreign_keys=[owner_id]
     )
 
     members = relationship(
-        "ProjectMember", back_populates="project", cascade="all, delete-orphan"
+        "ProjectMember",
+        back_populates="project",
+        cascade="all, delete-orphan",
     )
 
-    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    tasks = relationship(
+        "Task",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
 
     comments = relationship(
         "ProjectComment",
@@ -206,7 +214,8 @@ class ProjectMember(Base):
         doc="프로젝트 멤버 생성 타임스탬프",
     )
     created_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="프로젝트 멤버 연관을 생성한 사용자",
     )
@@ -217,16 +226,17 @@ class ProjectMember(Base):
         doc="프로젝트 멤버 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="프로젝트 멤버 연관을 마지막으로 업데이트한 사용자",
     )
 
     # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
+        UUID, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="사용자 ID")
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="사용자 ID")
     role = Column(
         String(20),  # Enum(ProjectMemberRole),
         default=ProjectMemberRole.DEVELOPER,
@@ -247,8 +257,15 @@ class ProjectMember(Base):
     )
 
     # 관계
-    project = relationship("Project", back_populates="members")
-    user = relationship("User", back_populates="project_memberships")
+    project = relationship(
+        "Project", back_populates="members", foreign_keys=[project_id]
+    )
+    user = relationship(
+        "User", back_populates="project_memberships", foreign_keys=[user_id]
+    )
+
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     # 제약 조건
     __table_args__ = (
@@ -299,7 +316,8 @@ class ProjectComment(Base):
         doc="댓글 생성 타임스탬프",
     )
     created_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="댓글을 생성한 사용자",
     )
@@ -310,24 +328,25 @@ class ProjectComment(Base):
         doc="댓글 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="댓글을 마지막으로 업데이트한 사용자",
     )
 
     # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
+        UUID, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
     author_id = Column(
-        Integer,
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="댓글 작성자 ID",
     )
     content = Column(Text, nullable=False, doc="댓글 내용")
     parent_id = Column(
-        Integer,
+        UUID,
         ForeignKey("project_comments.id"),
         nullable=True,
         doc="답글을 위한 부모 댓글 ID",
@@ -340,16 +359,26 @@ class ProjectComment(Base):
     )
 
     # 관계
-    project = relationship("Project", back_populates="comments")
-    author = relationship("User")
+    project = relationship(
+        "Project", back_populates="comments", foreign_keys=[project_id]
+    )
+    author = relationship(
+        "User", back_populates="project_comments", foreign_keys=[author_id]
+    )
     parent = relationship(
         "ProjectComment",
-        remote_side=lambda: ProjectComment.id,
+        remote_side=[id],
         back_populates="replies",
+        foreign_keys=[parent_id],
     )
     replies = relationship(
-        "ProjectComment", back_populates="parent", cascade="all, delete-orphan"
+        "ProjectComment",
+        back_populates="parent",
+        cascade="all, delete-orphan",
     )
+
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self) -> str:
         return (
@@ -379,7 +408,8 @@ class ProjectAttachment(Base):
         doc="첨부파일 생성 타임스탬프",
     )
     created_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="첨부파일을 생성한 사용자",
     )
@@ -390,21 +420,22 @@ class ProjectAttachment(Base):
         doc="첨부파일 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="첨부파일을 마지막으로 업데이트한 사용자",
     )
 
     # 기본 정보
     project_id = Column(
-        Integer, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
+        UUID, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
     file_name = Column(String(255), nullable=False, doc="원본 파일명")
     file_path = Column(String(500), nullable=False, doc="파일 저장 경로")
     file_size = Column(Integer, nullable=False, doc="파일 크기 (바이트)")
     mime_type = Column(String(100), nullable=True, doc="파일의 MIME 타입")
     uploaded_by = Column(
-        Integer,
+        UUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="파일을 업로드한 사용자",
@@ -412,8 +443,15 @@ class ProjectAttachment(Base):
     description = Column(Text, nullable=True, doc="파일 설명")
 
     # 관계
-    project = relationship("Project", back_populates="attachments")
-    uploader = relationship("User")
+    project = relationship(
+        "Project", back_populates="attachments", foreign_keys=[project_id]
+    )
+    uploader = relationship(
+        "User", back_populates="uploaded_attachments", foreign_keys=[uploaded_by]
+    )
+
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self) -> str:
         return (

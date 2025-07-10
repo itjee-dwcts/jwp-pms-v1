@@ -64,7 +64,7 @@ async def register(
         hashed_password = get_password_hash(user_data.password)
 
         new_user = User(
-            name=user_data.username,
+            username=user_data.username,
             email=user_data.email,
             full_name=user_data.full_name,
             password=hashed_password,
@@ -72,14 +72,14 @@ async def register(
             status=UserStatus.ACTIVE,
             is_active=True,
             is_verified=False,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
 
-        logger.info("새 사용자 등록: %s", new_user.name)
+        logger.info("새 사용자 등록: %s", new_user.username)
 
         return LoginUserResponse.model_validate(new_user)
 
@@ -93,7 +93,7 @@ async def register(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="회원가입에 실패했습니다",
+            detail=f"회원가입에 실패했습니다: {e}",
         ) from e
 
 

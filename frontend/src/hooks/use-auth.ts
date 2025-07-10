@@ -32,10 +32,10 @@ const mockAuthService = {
   // 로그인 (테스트용 mock 구현)
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     console.log('🔑 Mock 로그인 시도:', credentials);
-    
+
     // 간단한 시뮬레이션 지연
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     // 테스트 계정 검증
     if (credentials.username === 'test' || credentials.username === 'testuser') {
       if (credentials.password.length >= 6) {
@@ -63,7 +63,7 @@ const mockAuthService = {
         };
       }
     }
-    
+
     throw new Error('사용자명 또는 비밀번호가 올바르지 않습니다');
   },
 
@@ -71,7 +71,7 @@ const mockAuthService = {
   register: async (userData: RegisterRequest): Promise<RegisterResponse> => {
     console.log('📝 Mock 회원가입:', userData);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
       username: userData.username,
@@ -101,7 +101,7 @@ const mockAuthService = {
   getCurrentUser: async (): Promise<User> => {
     console.log('👤 Mock 사용자 정보 조회');
     const token = tokenStorage.getAccessToken();
-    
+
     if (!token) {
       throw new Error('인증 토큰이 없습니다');
     }
@@ -125,7 +125,7 @@ const mockAuthService = {
   refreshToken: async (_refreshToken: string): Promise<{ access_token: string; refresh_token: string }> => {
     console.log('🔄 Mock 토큰 갱신');
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     return {
       access_token: 'mock_access_token_refreshed_' + Date.now(),
       refresh_token: 'mock_refresh_token_refreshed_' + Date.now()
@@ -149,7 +149,7 @@ interface AuthActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
-  
+
   // 인증 액션
   login: (credentials: LoginRequest) => Promise<LoginResponse>;
   register: (userData: RegisterRequest) => Promise<RegisterResponse>;
@@ -159,7 +159,7 @@ interface AuthActions {
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
-  
+
   // 상태 관리
   checkAuthStatus: () => Promise<void>;
   getCurrentUser: () => Promise<User>;
@@ -223,7 +223,8 @@ const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
 
-          const response = await mockAuthService.register(userData);
+          //const response = await mockAuthService.register(userData);
+          const response = await authService.register(userData);
 
           set({ isLoading: false, error: null });
           return response;
@@ -263,7 +264,7 @@ const useAuthStore = create<AuthStore>()(
           set({ isLoading: true, error: null });
 
           const token = tokenStorage.getAccessToken();
-          
+
           if (!token) {
             console.log('❌ 토큰 없음 - 미인증 상태');
             set({
@@ -277,7 +278,7 @@ const useAuthStore = create<AuthStore>()(
           // 토큰이 있으면 사용자 정보 조회
           const user = await mockAuthService.getCurrentUser();
           console.log('✅ 사용자 정보 조회 성공:', user.username);
-          
+
           set({
             user,
             isAuthenticated: true,
@@ -418,7 +419,7 @@ export const useAuth = () => {
   // 최초 1회만 인증 상태 확인 (조건부 실행)
   useEffect(() => {
     let mounted = true;
-    
+
     const initAuth = async () => {
       // 이미 인증되어 있거나 로딩 중이면 스킵
       if (store.isAuthenticated || store.isLoading) {
@@ -427,7 +428,7 @@ export const useAuth = () => {
       }
 
       console.log('🚀 인증 상태 초기화 시작');
-      
+
       // 토큰이 있을 때만 상태 확인
       const token = tokenStorage.getAccessToken();
       if (token && mounted) {

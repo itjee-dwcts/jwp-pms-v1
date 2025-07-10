@@ -12,7 +12,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Integer,
+    ForeignKey,
     String,
     Text,
     UniqueConstraint,
@@ -44,7 +44,9 @@ class User(Base):
         nullable=False,
         doc="사용자 생성 타임스탬프",
     )
-    created_by = Column(Integer, nullable=True, doc="이 사용자를 생성한 사용자")
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="이 사용자를 생성한 사용자"
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
@@ -52,7 +54,10 @@ class User(Base):
         doc="사용자 마지막 업데이트 타임스탬프",
     )
     updated_by = Column(
-        Integer, nullable=True, doc="이 사용자를 마지막으로 업데이트한 사용자"
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="이 사용자를 마지막으로 업데이트한 사용자",
     )
 
     # 기본 정보
@@ -121,25 +126,75 @@ class User(Base):
     )
 
     # 관계
-    created_projects = relationship(
+    sessions = relationship(
+        "UserSession", back_populates="user", foreign_keys="UserSession.user_id"
+    )
+
+    activities = relationship(
+        "UserActivityLog", back_populates="user", foreign_keys="UserActivityLog.user_id"
+    )
+
+    owned_projects = relationship(
         "Project", back_populates="owner", foreign_keys="Project.owner_id"
     )
 
-    project_memberships = relationship("ProjectMember", back_populates="user")
+    project_memberships = relationship(
+        "ProjectMember", back_populates="user", foreign_keys="ProjectMember.user_id"
+    )
 
-    task_assignments = relationship("TaskAssignment", back_populates="assignee")
+    project_comments = relationship(
+        "ProjectComment",
+        back_populates="author",
+        foreign_keys="ProjectComment.author_id",
+    )
 
-    created_tasks = relationship(
+    task_assignments = relationship(
+        "TaskAssignment",
+        back_populates="assignee",
+        foreign_keys="TaskAssignment.user_id",
+    )
+
+    owned_tasks = relationship(
         "Task", back_populates="owner", foreign_keys="Task.owner_id"
     )
 
-    calendars = relationship("Calendar", back_populates="owner")
-
-    created_events = relationship(
-        "Event", back_populates="creator", foreign_keys="Event.creator_id"
+    calendars = relationship(
+        "Calendar", back_populates="owner", foreign_keys="Calendar.owner_id"
     )
 
-    activity_logs = relationship("UserActivityLog", back_populates="user")
+    owned_events = relationship(
+        "Event", back_populates="owner", foreign_keys="Event.owner_id"
+    )
+
+    uploaded_attachments = relationship(
+        "ProjectAttachment",
+        back_populates="uploader",
+        foreign_keys="ProjectAttachment.uploaded_by",
+    )
+
+    chat_sessions = relationship(
+        "ChatSession",
+        back_populates="user",
+        foreign_keys="ChatSession.user_id",
+    )
+
+    chat_messages = relationship(
+        "ChatMessage",
+        back_populates="user",
+        foreign_keys="ChatMessage.user_id",
+    )
+
+    chat_templates = relationship(
+        "ChatTemplate",
+        back_populates="user",
+        foreign_keys="ChatTemplate.user_id",
+    )
+
+    chat_usage_stats = relationship(
+        "ChatUsageStats",
+        back_populates="user",
+        foreign_keys="ChatUsageStats.user_id",
+    )
 
     # 제약 조건
     __table_args__ = (
@@ -213,11 +268,14 @@ class UserActivityLog(Base):
         default=datetime.now(timezone.utc),
         doc="로그 항목의 타임스탬프",
     )
-    created_by = Column(Integer, nullable=True, doc="이 로그 항목을 생성한 사용자")
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="이 로그 항목을 생성한 사용자"
+    )
 
     # 기본 정보
     user_id = Column(
-        Integer,
+        UUID,
+        ForeignKey("users.id"),
         nullable=False,
         index=True,
         doc="작업을 수행한 사용자 ID",
@@ -245,7 +303,11 @@ class UserActivityLog(Base):
     extra_data = Column(Text, nullable=True, doc="JSON 문자열로 저장된 추가 메타데이터")
 
     # 관계
-    user = relationship("User", back_populates="activity_logs")
+    user = relationship("User", back_populates="activities", foreign_keys=[user_id])
+
+    creator = relationship(
+        "User", foreign_keys=[created_by], doc="이 로그 항목을 생성한 사용자"
+    )
 
     def __repr__(self) -> str:
         return (
@@ -274,10 +336,14 @@ class UserSession(Base):
         default=datetime.now(timezone.utc),
         doc="세션 생성 타임스탬프",
     )
-    created_by = Column(Integer, nullable=True, doc="이 세션을 생성한 사용자")
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="이 세션을 생성한 사용자"
+    )
 
     # 기본 정보
-    user_id = Column(String(50), nullable=False, index=True, doc="사용자 ID")
+    user_id = Column(
+        UUID, ForeignKey("users.id"), nullable=False, index=True, doc="사용자 ID"
+    )
     session_token = Column(String(255), unique=True, nullable=False, doc="세션 토큰")
     refresh_token = Column(String(255), unique=True, nullable=True, doc="갱신 토큰")
     expires_at = Column(DateTime(timezone=True), nullable=False, doc="세션 만료 시간")
@@ -293,7 +359,11 @@ class UserSession(Base):
     user_agent = Column(String(500), nullable=True, doc="사용자 에이전트 문자열")
 
     # 관계
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id], back_populates="sessions")
+
+    creator = relationship(
+        "User", foreign_keys=[created_by], doc="이 세션을 생성한 사용자"
+    )
 
     def __repr__(self) -> str:
         return (

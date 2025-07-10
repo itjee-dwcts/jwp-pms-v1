@@ -46,6 +46,7 @@ class Task(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="작업을 생성한 사용자",
     )
@@ -57,6 +58,7 @@ class Task(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="작업을 마지막으로 업데이트한 사용자",
     )
@@ -135,13 +137,11 @@ class Task(Base):
     )
 
     # 관계
-    project = relationship("Project", back_populates="tasks")
+    project = relationship("Project", back_populates="tasks", foreign_keys=[project_id])
 
-    owner = relationship(
-        "User", back_populates="created_tasks", foreign_keys=[owner_id]
-    )
-    creator = relationship("User")
-    updater = relationship("User")
+    owner = relationship("User", back_populates="owned_tasks", foreign_keys=[owner_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     parent_task = relationship(
         "Task",
@@ -171,7 +171,7 @@ class Task(Base):
 
     tags = relationship("TaskTag", back_populates="task", cascade="all, delete-orphan")
 
-    events = relationship("Event", back_populates="task")
+    events = relationship("Event", back_populates="task", foreign_keys="Event.task_id")
 
     # 제약 조건
     __table_args__ = (
@@ -245,6 +245,7 @@ class TaskAssignment(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="할당을 생성한 사용자",
     )
@@ -256,6 +257,7 @@ class TaskAssignment(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="할당을 마지막으로 업데이트한 사용자",
     )
@@ -273,12 +275,12 @@ class TaskAssignment(Base):
     )
 
     # 관계
-    task = relationship("Task", back_populates="assignments")
+    task = relationship("Task", back_populates="assignments", foreign_keys=[task_id])
     assignee = relationship(
         "User", back_populates="task_assignments", foreign_keys=[user_id]
     )
-    creator = relationship("User")
-    updater = relationship("User")
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     # 제약 조건
     __table_args__ = (
@@ -311,6 +313,7 @@ class TaskComment(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="댓글을 생성한 사용자",
     )
@@ -322,6 +325,7 @@ class TaskComment(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="댓글을 마지막으로 업데이트한 사용자",
     )
@@ -349,10 +353,10 @@ class TaskComment(Base):
     )
 
     # 관계
-    task = relationship("Task", back_populates="comments")
-    author = relationship("User")
-    creator = relationship("User")
-    updater = relationship("User")
+    task = relationship("Task", back_populates="comments", foreign_keys=[task_id])
+    author = relationship("User", foreign_keys=[author_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
     parent = relationship(
         "TaskComment",
         remote_side=lambda: TaskComment.id,
@@ -394,6 +398,7 @@ class TaskAttachment(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="첨부파일을 생성한 사용자",
     )
@@ -405,6 +410,7 @@ class TaskAttachment(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="첨부파일을 마지막으로 업데이트한 사용자",
     )
@@ -418,9 +424,9 @@ class TaskAttachment(Base):
     description = Column(Text, nullable=True, doc="파일 설명")
 
     # 관계
-    task = relationship("Task", back_populates="attachments")
-    creator = relationship("User")
-    updater = relationship("User")
+    task = relationship("Task", back_populates="attachments", foreign_keys=[task_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self) -> str:
         return (
@@ -451,6 +457,7 @@ class TaskTimeLog(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="시간 로그를 생성한 사용자",
     )
@@ -462,6 +469,7 @@ class TaskTimeLog(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="시간 로그를 마지막으로 업데이트한 사용자",
     )
@@ -478,16 +486,16 @@ class TaskTimeLog(Base):
     description = Column(Text, nullable=True, doc="작업 설명")
     work_date = Column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=datetime.now(timezone.utc),
         nullable=False,
         doc="작업이 수행된 날짜",
     )
 
     # 관계
-    task = relationship("Task", back_populates="time_logs")
-    user = relationship("User")
-    creator = relationship("User")
-    updater = relationship("User")
+    task = relationship("Task", back_populates="time_logs", foreign_keys=[task_id])
+    user = relationship("User", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     # 제약 조건
     __table_args__ = (
@@ -517,6 +525,7 @@ class Tag(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="태그를 생성한 사용자",
     )
@@ -528,6 +537,7 @@ class Tag(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="태그를 마지막으로 업데이트한 사용자",
     )
@@ -543,8 +553,8 @@ class Tag(Base):
     task_tags = relationship(
         "TaskTag", back_populates="tag", cascade="all, delete-orphan"
     )
-    creator = relationship("User")
-    updater = relationship("User")
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self) -> str:
         return f"<Tag(id={self.id}, name='{self.name}')>"
@@ -572,6 +582,7 @@ class TaskTag(Base):
     )
     created_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="태그를 생성한 사용자",
     )
@@ -583,6 +594,7 @@ class TaskTag(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="태그를 마지막으로 업데이트한 사용자",
     )
@@ -592,10 +604,10 @@ class TaskTag(Base):
     tag_id = Column(UUID, ForeignKey("tags.id"), nullable=False, doc="태그 ID")
 
     # 관계
-    task = relationship("Task", back_populates="tags")
-    tag = relationship("Tag", back_populates="task_tags")
-    creator = relationship("User")
-    updater = relationship("User")
+    task = relationship("Task", back_populates="tags", foreign_keys=[task_id])
+    tag = relationship("Tag", back_populates="task_tags", foreign_keys=[tag_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     # 제약 조건
     __table_args__ = (

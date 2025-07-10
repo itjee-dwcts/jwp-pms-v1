@@ -42,6 +42,28 @@ class ChatSession(Base):
 
     # 기본 필드
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        doc="생성 타임스탬프",
+    )
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="생성한 사용자"
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        nullable=True,
+        doc="마지막 업데이트 타임스탬프",
+    )
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="마지막으로 업데이트한 사용자",
+    )
+
     title = Column(String(255), nullable=False, default="새 채팅")
     description = Column(Text, nullable=True)
 
@@ -57,7 +79,7 @@ class ChatSession(Base):
     system_prompt = Column(Text, nullable=True, comment="시스템 프롬프트")
 
     # 사용자 관계
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
 
     # 메타데이터
     chat_meta = Column(JSON, nullable=True, comment="추가 설정 정보")
@@ -70,26 +92,18 @@ class ChatSession(Base):
 
     # 시간 정보
     last_activity_at = Column(
-        DateTime, default=datetime.utcnow, comment="마지막 활동 시간"
-    )
-    created_at = Column(
-        DateTime,
-        nullable=False,
+        DateTime(timezone=True),
         default=datetime.now(timezone.utc),
-        comment="생성 시간",
-    )
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        comment="수정 시간",
+        comment="마지막 활동 시간",
     )
 
     # 관계 설정
-    user = relationship("User", back_populates="chat_sessions")
+    user = relationship("User", back_populates="chat_sessions", foreign_keys=[user_id])
     messages = relationship(
         "ChatMessage", back_populates="session", cascade="all, delete-orphan"
     )
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self):
         return (
@@ -121,6 +135,28 @@ class ChatMessage(Base):
 
     # 기본 필드
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        doc="생성 타임스탬프",
+    )
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="생성한 사용자"
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        nullable=True,
+        doc="마지막 업데이트 타임스탬프",
+    )
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="마지막으로 업데이트한 사용자",
+    )
+
     content = Column(Text, nullable=False, comment="메시지 내용")
     role = Column(String(20), nullable=False, comment="메시지 역할")
 
@@ -155,24 +191,23 @@ class ChatMessage(Base):
         nullable=True,
         comment="부모 메시지 ID (답글용)",
     )
-
-    # 시간 정보
-    created_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, comment="생성 시간"
-    )
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        comment="수정 시간",
-    )
     deleted_at = Column(DateTime, nullable=True, comment="삭제 시간")
 
     # 관계 설정
     session = relationship("ChatSession", back_populates="messages")
-    user = relationship("User", back_populates="chat_messages")
-    parent_message = relationship("ChatMessage", remote_side=[id])
-    replies = relationship("ChatMessage", back_populates="parent_message")
+    user = relationship("User", back_populates="chat_messages", foreign_keys=[user_id])
+    parent = relationship(
+        "ChatMessage",
+        remote_side=[id],
+        back_populates="replies",
+    )
+    replies = relationship(
+        "ChatMessage",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+    )
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self):
         return f"<ChatMessage(id={self.id}, role={self.role}, session_id={self.session_id})>"
@@ -209,6 +244,28 @@ class ChatTemplate(Base):
 
     # 기본 필드
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        doc="생성 타임스탬프",
+    )
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="생성한 사용자"
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        nullable=True,
+        doc="마지막 업데이트 타임스탬프",
+    )
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="마지막으로 업데이트한 사용자",
+    )
+
     name = Column(String(255), nullable=False, comment="템플릿 이름")
     description = Column(Text, nullable=True, comment="템플릿 설명")
     content = Column(Text, nullable=False, comment="템플릿 내용")
@@ -228,19 +285,11 @@ class ChatTemplate(Base):
     usage_count = Column(Integer, default=0, comment="사용 횟수")
     likes_count = Column(Integer, default=0, comment="좋아요 수")
 
-    # 시간 정보
-    created_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, comment="생성 시간"
-    )
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        comment="수정 시간",
-    )
-
     # 관계 설정
-    user = relationship("User", back_populates="chat_templates")
+    user = relationship("User", back_populates="chat_templates", foreign_keys=[user_id])
+
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self):
         return (
@@ -259,6 +308,27 @@ class ChatUsageStats(Base):
 
     # 기본 필드
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=datetime.now(timezone.utc),
+        nullable=False,
+        doc="생성 타임스탬프",
+    )
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="생성한 사용자"
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=datetime.now(timezone.utc),
+        nullable=True,
+        doc="마지막 업데이트 타임스탬프",
+    )
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="마지막으로 업데이트한 사용자",
+    )
 
     # 사용자 관계
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -278,21 +348,13 @@ class ChatUsageStats(Base):
     # 모델별 사용량
     model_usage = Column(JSON, nullable=True, comment="모델별 사용량")
 
-    # 시간 정보
-    created_at = Column(
-        DateTime,
-        nullable=False,
-        default=datetime.now(timezone.utc),
-        comment="생성 시간",
-    )
-    updated_at = Column(
-        DateTime,
-        onupdate=datetime.now(timezone.utc),
-        comment="수정 시간",
+    # 관계 설정
+    user = relationship(
+        "User", back_populates="chat_usage_stats", foreign_keys=[user_id]
     )
 
-    # 관계 설정
-    user = relationship("User", back_populates="chat_usage_stats")
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self):
         return (

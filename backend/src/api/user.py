@@ -13,8 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_session
 from core.dependencies import get_current_active_user, require_admin
 from models.user import User
-from schemas.auth import UserResponse
-from schemas.user import UserCreateRequest, UserUpdateRequest
+from schemas.user import UserCreateRequest, UserResponse, UserUpdateRequest
 from services.user import UserService
 
 logger = logging.getLogger(__name__)

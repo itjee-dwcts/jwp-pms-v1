@@ -52,14 +52,21 @@ class Calendar(Base):
         default=datetime.now(timezone.utc),
         doc="생성 시간",
     )
-    created_by = Column(UUID, nullable=True, doc="이 캘린더를 생성한 사용자")
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="이 캘린더를 생성한 사용자"
+    )
     updated_at = Column(
         DateTime(timezone=True),
         onupdate=datetime.now(timezone.utc),
         nullable=True,
         doc="마지막 수정 시간",
     )
-    updated_by = Column(UUID, nullable=True, doc="이 캘린더를 마지막으로 수정한 사용자")
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="이 캘린더를 마지막으로 수정한 사용자",
+    )
 
     # 기본 정보
     name = Column(String(100), nullable=False, doc="캘린더 이름")
@@ -93,9 +100,9 @@ class Calendar(Base):
     )
 
     # 관계
-    creator = relationship("User")
-    updater = relationship("User")
-    owner = relationship("User", back_populates="calendars")
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
+    owner = relationship("User", foreign_keys=[owner_id], back_populates="calendars")
     events = relationship(
         "Event", back_populates="calendar", cascade="all, delete-orphan"
     )
@@ -122,14 +129,21 @@ class Event(Base):
         default=datetime.now(timezone.utc),
         doc="생성 시간",
     )
-    created_by = Column(UUID, nullable=True, doc="이 이벤트를 생성한 사용자")
+    created_by = Column(
+        UUID, ForeignKey("users.id"), nullable=True, doc="이 이벤트를 생성한 사용자"
+    )
     updated_at = Column(
         DateTime(timezone=True),
         nullable=True,
         onupdate=datetime.now(timezone.utc),
         doc="마지막 수정 시간",
     )
-    updated_by = Column(UUID, nullable=True, doc="이 이벤트를 마지막으로 수정한 사용자")
+    updated_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="이 이벤트를 마지막으로 수정한 사용자",
+    )
 
     # 기본 정보
     title = Column(String(200), nullable=False, doc="이벤트 제목")
@@ -231,14 +245,16 @@ class Event(Base):
     meeting_password = Column(String(100), nullable=True, doc="회의 비밀번호")
 
     # 관계
-    calendar = relationship("Calendar", back_populates="events")
-    project = relationship("Project", back_populates="events")
-    task = relationship("Task", back_populates="events")
-    owner = relationship(
-        "User", back_populates="created_events", foreign_keys=[owner_id]
+    calendar = relationship(
+        "Calendar", foreign_keys=[calendar_id], back_populates="events"
     )
-    creator = relationship("User")
-    updater = relationship("User")
+    project = relationship(
+        "Project", foreign_keys=[project_id], back_populates="events"
+    )
+    task = relationship("Task", foreign_keys=[task_id], back_populates="events")
+    owner = relationship("User", back_populates="owned_events", foreign_keys=[owner_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     # parent_event = relationship("Event", remote_side=[Base.id])
     parent_event = relationship(
@@ -288,7 +304,12 @@ class EventAttendee(Base):
         default=datetime.now(timezone.utc),
         doc="생성 시간",
     )
-    created_by = Column(UUID, nullable=True, doc="이 참석자 기록을 생성한 사용자")
+    created_by = Column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="이 참석자 기록을 생성한 사용자",
+    )
     updated_at = Column(
         DateTime(timezone=True),
         nullable=True,
@@ -297,6 +318,7 @@ class EventAttendee(Base):
     )
     updated_by = Column(
         UUID,
+        ForeignKey("users.id"),
         nullable=True,
         doc="이 참석자 기록을 마지막으로 수정한 사용자",
     )
@@ -325,10 +347,10 @@ class EventAttendee(Base):
     )
 
     # 관계
-    event = relationship("Event", back_populates="attendees")
-    user = relationship("User")
-    creator = relationship("User")
-    updater = relationship("User")
+    event = relationship("Event", back_populates="attendees", foreign_keys=[event_id])
+    user = relationship("User", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self) -> str:
         return (

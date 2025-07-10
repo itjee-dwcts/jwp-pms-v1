@@ -5,7 +5,7 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, cast
 
 from sqlalchemy import desc, or_, select
@@ -79,7 +79,7 @@ class UserService:
                 password_hash=hashed_password,
                 role=user_data.role or UserRole.DEVELOPER,
                 status=user_data.status or UserStatus.ACTIVE,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
                 created_by=created_by,
             )
 
@@ -147,23 +147,23 @@ class UserService:
             logger.error("여러 ID로 사용자 조회에 실패했습니다: %s", e)
             raise
 
-    async def get_user_by_name(self, name: str) -> Optional[User]:
+    async def get_user_by_name(self, username: str) -> Optional[User]:
         """
         사용자명으로 사용자 조회
 
         Args:
-            name: 사용자명
+            username: 사용자명
 
         Returns:
             사용자 객체 (찾은 경우), 없으면 None
         """
         try:
-            query = select(User).where(User.name == name)
+            query = select(User).where(User.username == username)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
 
         except Exception as e:
-            logger.error("사용자명 %s로 사용자 조회에 실패했습니다: %s", name, e)
+            logger.error("사용자명 %s로 사용자 조회에 실패했습니다: %s", username, e)
             raise
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
@@ -198,7 +198,7 @@ class UserService:
         Returns:
             사용자 객체 (찾은 경우), 없으면 None
         """
-        query = select(User).where(or_(User.email == email, User.name == username))
+        query = select(User).where(or_(User.email == email, User.username == username))
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -223,12 +223,12 @@ class UserService:
                 return None
 
             # 필드 업데이트
-            update_data = user_data.dict(exclude_unset=True)
+            update_data = user_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(user, field, value)
 
             user.updated_by = updated_by
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone.utc)
 
             # 활동 로그
             await self._log_activity(
@@ -242,7 +242,7 @@ class UserService:
             await self.db.commit()
             await self.db.refresh(user)
 
-            logger.info("사용자가 성공적으로 업데이트되었습니다: %s", user.name)
+            logger.info("사용자가 성공적으로 업데이트되었습니다: %s", user.username)
             return user
 
         except Exception as e:
@@ -267,8 +267,8 @@ class UserService:
 
             # 비밀번호 업데이트
             user.password = get_password_hash(password_data.new_password)
-            user.password_changed_at = datetime.utcnow()
-            user.updated_at = datetime.utcnow()
+            user.password_changed_at = datetime.now(timezone.utc)
+            user.updated_at = datetime.now(timezone.utc)
             user.updated_by = user_id
 
             # 활동 로그
@@ -308,8 +308,8 @@ class UserService:
 
         # 새 비밀번호 해시화
         user.password = get_password_hash(new_password)
-        user.password_changed_at = datetime.utcnow()
-        user.updated_at = datetime.utcnow()
+        user.password_changed_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(timezone.utc)
         user.updated_by = updated_by
 
         # 활동 로그 생성
@@ -344,7 +344,7 @@ class UserService:
 
         user.is_active = False
         user.status = UserStatus.INACTIVE
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         user.updated_by = deactivated_by
 
         # 활동 로그 생성
@@ -354,7 +354,7 @@ class UserService:
             resource_type="user",
             resource_id=str(user.id),
             description=f"{deactivated_by}에 의해 사용자가 비활성화되었습니다",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         self.db.add(activity_log)
@@ -379,7 +379,7 @@ class UserService:
 
         user.is_active = True
         user.status = UserStatus.ACTIVE
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         user.updated_by = activated_by
 
         # 활동 로그 생성
@@ -389,7 +389,7 @@ class UserService:
             resource_type="user",
             resource_id=str(user.id),
             description=f"{activated_by}에 의해 사용자가 활성화되었습니다",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         self.db.add(activity_log)
@@ -423,7 +423,7 @@ class UserService:
             user.is_active = False
             user.status = UserStatus.INACTIVE
             user.updated_by = deleted_by
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone.utc)
 
             # 활동 로그
             await self._log_activity(
@@ -473,7 +473,7 @@ class UserService:
             if search_text:
                 query = query.where(
                     or_(
-                        User.name.ilike(f"%{search_text}%"),
+                        User.username.ilike(f"%{search_text}%"),
                         User.email.ilike(f"%{search_text}%"),
                         User.full_name.ilike(f"%{search_text}%"),
                     )
@@ -507,10 +507,10 @@ class UserService:
 
             return UserListResponse(
                 users=[UserResponse.model_validate(user) for user in users],
-                total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
                 page_size=page_size,
                 total_pages=total_pages,
+                total_items=total_items if total_items is not None else 0,
             )
 
         except Exception as e:
@@ -544,7 +544,7 @@ class UserService:
             search_term = f"%{search_text}%"
             query = query.where(
                 or_(
-                    User.name.ilike(search_term),
+                    User.username.ilike(search_term),
                     User.email.ilike(search_term),
                     User.full_name.ilike(search_term),
                 )
@@ -580,7 +580,7 @@ class UserService:
             active_users = active_result.scalar()
 
             # 이번 달 신규 사용자
-            month_ago = datetime.utcnow() - timedelta(days=30)
+            month_ago = datetime.now(timezone.utc) - timedelta(days=30)
             new_users_result = await self.db.execute(
                 select(count(User.id)).where(User.created_at >= month_ago)
             )
@@ -630,7 +630,7 @@ class UserService:
             user = result.scalar_one_or_none()
 
             if user:
-                user.last_login = datetime.utcnow()
+                user.last_login = datetime.now(timezone.utc)
                 user.last_login_ip = ip_address
 
                 # 활동 로그
@@ -666,7 +666,7 @@ class UserService:
             # 사용자명 또는 이메일로 사용자 조회
             query = select(User).where(
                 or_(
-                    User.name == username_or_email,
+                    User.username == username_or_email,
                     User.email == username_or_email,
                 )
             )

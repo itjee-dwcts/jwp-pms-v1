@@ -126,29 +126,59 @@ chat_router = APIRouter()
 # 기본 설정으로 시작
 settings = DefaultSettings()
 IMPORT_SUCCESS = False
+IMPORT_STEP = "start"
 
 # 로컬 모듈 imports (경로 설정 후)
+# print("✅ Import 로딩중...", flush=True)
+# sys.stdout.flush()
+
 try:
     # API 라우터 imports
+
+    IMPORT_STEP = "api.auth"
     from api.auth import router as auth_router
+
+    IMPORT_STEP = "api.calendar"
     from api.calendar import router as calendar_router
+
+    IMPORT_STEP = "api.chat"
     from api.chat import router as chat_router
+
+    IMPORT_STEP = "api.dashboard"
     from api.dashboard import router as dashboard_router
+
+    IMPORT_STEP = "api.health"
     from api.health import router as health_router
+
+    IMPORT_STEP = "api.project"
     from api.project import router as projects_router
+
+    IMPORT_STEP = "api.system"
     from api.system import router as system_router
+
+    IMPORT_STEP = "api.task"
     from api.task import router as tasks_router
+
+    IMPORT_STEP = "api.uploads"
     from api.uploads import router as uploads_router
+
+    IMPORT_STEP = "api.user"
     from api.user import router as users_router
 
     # 핵심 모듈 imports
+    IMPORT_STEP = "core.config"
     from core.config import get_settings
+
+    IMPORT_STEP = "core.database"
     from core.database import check_database_connection, create_tables
+
+    IMPORT_STEP = "utils.logger"
     from utils.logger import setup_logging
 
     # 성공적으로 import된 경우 settings 가져오기
     settings = get_settings()
     IMPORT_SUCCESS = True
+    IMPORT_STEP = "complete"
 
     print("✅ 모든 모듈이 성공적으로 import되었습니다.")
 
@@ -157,6 +187,7 @@ except ImportError as e:
     print(f"현재 Python 경로: {sys.path}")
     print(f"src 디렉토리: {src_dir}")
     print(f"backend 디렉토리: {backend_dir}")
+    print(f"import 단계: {IMPORT_STEP}")
 
     # 대체 import 시도 (절대 경로)
     try:

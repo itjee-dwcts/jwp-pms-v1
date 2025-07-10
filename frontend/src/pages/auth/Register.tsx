@@ -41,7 +41,7 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
-  // Redirect if already authenticated
+  // 이미 인증된 사용자는 대시보드로 리디렉션
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       navigate('/dashboard', { replace: true });
@@ -51,48 +51,48 @@ const Register: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<RegisterFormData> = {};
 
-    // Username validation
+    // 사용자명 유효성 검사
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = '사용자명은 필수입니다';
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = '사용자명은 최소 3자 이상이어야 합니다';
     } else if (formData.username.length > 30) {
-      newErrors.username = 'Username must be less than 30 characters';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+      newErrors.username = '사용자명은 30자 미만이어야 합니다';
+    } else if (!/^[a-zA-Z0-9_.@]+$/.test(formData.username)) {
+      newErrors.username = '사용자명은 영문, 숫자, 밑줄(_), 점(.), (@)만 사용할 수 있습니다';
     }
 
-    // Email validation
+    // 이메일 유효성 검사
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = '이메일은 필수입니다';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = '올바른 이메일 주소를 입력해 주세요';
     }
 
-    // First name validation
+    // 이름 유효성 검사
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'First name is required';
+      newErrors.fullName = '이름은 필수입니다';
     }
 
-    // Password validation
+    // 비밀번호 유효성 검사
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = '비밀번호는 필수입니다';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = '비밀번호는 최소 8자 이상이어야 합니다';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+      newErrors.password = '비밀번호는 대문자, 소문자, 숫자를 각각 하나 이상 포함해야 합니다';
     }
 
-    // Confirm password validation
+    // 비밀번호 확인 유효성 검사
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = '비밀번호 확인은 필수입니다';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = '비밀번호가 일치하지 않습니다';
     }
 
-    // Terms agreement validation
+    // 약관 동의 유효성 검사
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = false; // 'You must agree to the terms and conditions';
+      newErrors.agreeToTerms = false;
     }
 
     setErrors(newErrors);
@@ -117,17 +117,17 @@ const Register: React.FC = () => {
         full_name: formData.fullName,
       });
 
-      toast.success('Account created successfully!');
+      toast.success('계정이 성공적으로 생성되었습니다!');
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      const errorMessage = error instanceof Error ? error.message : '회원가입에 실패했습니다';
       toast.error(errorMessage);
 
-      // Handle specific validation errors from backend
+      // 백엔드에서 오는 특정 유효성 검사 오류 처리
       if (errorMessage.toLowerCase().includes('username')) {
-        setErrors(prev => ({ ...prev, username: 'Username is already taken' }));
+        setErrors(prev => ({ ...prev, username: '이미 사용 중인 사용자명입니다' }));
       } else if (errorMessage.toLowerCase().includes('email')) {
-        setErrors(prev => ({ ...prev, email: 'Email is already registered' }));
+        setErrors(prev => ({ ...prev, email: '이미 등록된 이메일입니다' }));
       }
     } finally {
       setLoading(false);
@@ -140,13 +140,13 @@ const Register: React.FC = () => {
     const value = field === 'agreeToTerms' ? e.target.checked : e.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Clear error for this field
+    // 해당 필드의 오류 메시지 제거
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // Show loading spinner while checking authentication
+  // 인증 확인 중일 때 로딩 스피너 표시
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -158,46 +158,63 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
+        {/* 헤더 */}
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-600">
             <UserPlusIcon className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-            Create your account
+            계정 만들기
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
+            이미 계정이 있으신가요?{' '}
             <Link
               to="/login"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
-              Sign in here
+              여기서 로그인하세요
             </Link>
           </p>
         </div>
 
-        {/* Registration Form */}
+        {/* 회원가입 폼 */}
         <Card className="p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 이름 필드 */}
+            <div>
               <div>
                 <label htmlFor="fullName" className="sr-only">
-                  Full Name
+                  이름
                 </label>
-                <Input
+                {/* <Input
                   id="fullName"
                   name="fullName"
                   type="text"
                   autoComplete="given-name"
                   required
                   className={errors.fullName ? 'border-red-500' : ''}
-                  placeholder="Full name"
+                  placeholder="이름"
                   value={formData.fullName}
                   onChange={handleInputChange('fullName')}
                   disabled={loading}
-                />
+                /> */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <UserIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    className={`pl-10 ${errors.fullName ? 'border-red-500' : ''}`}
+                    placeholder="전체이름"
+                    value={formData.fullName}
+                    onChange={handleInputChange('fullName')}
+                    disabled={loading}
+                  />
+                </div>
                 {errors.fullName && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                     {errors.fullName}
@@ -206,10 +223,10 @@ const Register: React.FC = () => {
               </div>
             </div>
 
-            {/* Username Field */}
+            {/* 사용자명 필드 */}
             <div>
               <label htmlFor="username" className="sr-only">
-                Username
+                사용자명
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -222,7 +239,7 @@ const Register: React.FC = () => {
                   autoComplete="username"
                   required
                   className={`pl-10 ${errors.username ? 'border-red-500' : ''}`}
-                  placeholder="Username"
+                  placeholder="사용자명"
                   value={formData.username}
                   onChange={handleInputChange('username')}
                   disabled={loading}
@@ -235,10 +252,10 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* Email Field */}
+            {/* 이메일 필드 */}
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                이메일 주소
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -251,7 +268,7 @@ const Register: React.FC = () => {
                   autoComplete="email"
                   required
                   className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
-                  placeholder="Email address"
+                  placeholder="이메일 주소"
                   value={formData.email}
                   onChange={handleInputChange('email')}
                   disabled={loading}
@@ -264,10 +281,10 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* Password Field */}
+            {/* 비밀번호 필드 */}
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                비밀번호
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -280,7 +297,7 @@ const Register: React.FC = () => {
                   autoComplete="new-password"
                   required
                   className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
-                  placeholder="Password"
+                  placeholder="비밀번호"
                   value={formData.password}
                   onChange={handleInputChange('password')}
                   disabled={loading}
@@ -304,10 +321,10 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* Confirm Password Field */}
+            {/* 비밀번호 확인 필드 */}
             <div>
               <label htmlFor="confirmPassword" className="sr-only">
-                Confirm Password
+                비밀번호 확인
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -320,7 +337,7 @@ const Register: React.FC = () => {
                   autoComplete="new-password"
                   required
                   className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                  placeholder="Confirm password"
+                  placeholder="비밀번호 확인"
                   value={formData.confirmPassword}
                   onChange={handleInputChange('confirmPassword')}
                   disabled={loading}
@@ -344,7 +361,7 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* Terms and Conditions */}
+            {/* 이용약관 동의 */}
             <div>
               <div className="flex items-center">
                 <input
@@ -359,20 +376,21 @@ const Register: React.FC = () => {
                   disabled={loading}
                 />
                 <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                  I agree to the{' '}
+                  {' '}
                   <Link
                     to="/terms"
                     className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
                   >
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
+                    서비스 이용약관
+                  </Link>
+                  {' '}및{' '}
                   <Link
                     to="/privacy"
                     className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
                   >
-                    Privacy Policy
+                    개인정보 처리방침
                   </Link>
+                  에 동의합니다
                 </label>
               </div>
               {errors.agreeToTerms && (
@@ -382,7 +400,7 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* 제출 버튼 */}
             <div>
               <Button
                 type="submit"
@@ -392,26 +410,24 @@ const Register: React.FC = () => {
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
-                    Creating account...
+                    계정 생성 중...
                   </>
                 ) : (
-                  'Create account'
+                  '계정 만들기'
                 )}
               </Button>
             </div>
           </form>
         </Card>
 
-        {/* Password Requirements */}
-        <div className="text-center">
-          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p className="font-medium">Password requirements:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>At least 8 characters long</li>
-              <li>Contains uppercase and lowercase letters</li>
-              <li>Contains at least one number</li>
-            </ul>
-          </div>
+        {/* 비밀번호 요구사항 */}
+        <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400">
+          <h4 className="font-medium mb-2">비밀번호 요구사항:</h4>
+          <ul className="list-disc list-inside space-y-1">
+            <li>최소 8자 이상</li>
+            <li>대문자와 소문자 포함</li>
+            <li>최소 하나의 숫자 포함</li>
+          </ul>
         </div>
       </div>
     </div>
