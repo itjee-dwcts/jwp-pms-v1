@@ -176,17 +176,39 @@ async def refresh_token(
     """
     리프레시 토큰을 사용하여 액세스 토큰 갱신
     """
-    try:
-        tokens = AuthManager.refresh_tokens(refresh_data.refresh_token)
+    print("=" * 50)
+    print("🔄 [터미널] 토큰 갱신 엔드포인트 호출됨!")
+    print(f"📤 [터미널] 요청 데이터: {refresh_data}")
+    print(
+        f"🔑 [터미널] 리프레시 토큰 길이: {len(refresh_data.refresh_token) if refresh_data.refresh_token else 0}"
+    )
+    print(
+        f"🔍 [터미널] 리프레시 토큰 앞 10자리: {refresh_data.refresh_token[:10] if refresh_data.refresh_token else 'None'}..."
+    )
+    print("=" * 50)
 
-        return RefreshTokenResponse(
+    try:
+        print("🚀 [터미널] AuthManager.refresh_tokens 호출 시작")
+        tokens = AuthManager.refresh_tokens(refresh_data.refresh_token)
+        print("✅ [터미널] 토큰 갱신 성공!")
+        print(f"🎫 [터미널] 새 액세스 토큰 길이: {len(str(tokens['access_token']))}")
+        print(f"🔄 [터미널] 새 리프레시 토큰 길이: {len(str(tokens['refresh_token']))}")
+        print(f"⏰ [터미널] 만료 시간: {tokens['expires_in']}초")
+
+        response = RefreshTokenResponse(
             access_token=str(tokens["access_token"]),
             refresh_token=str(tokens["refresh_token"]),
             token_type=str(tokens["token_type"]),
             expires_in=int(tokens["expires_in"]),
         )
 
+        print("📋 [터미널] 응답 준비 완료")
+        return response
+
     except Exception as e:
+        print("❌ [터미널] 토큰 갱신 실패!")
+        print(f"🚨 [터미널] 오류 내용: {str(e)}")
+        print(f"🔍 [터미널] 오류 타입: {type(e).__name__}")
         logger.warning("토큰 갱신 실패: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

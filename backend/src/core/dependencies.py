@@ -7,6 +7,7 @@ FastAPI 의존성
 import logging
 import time
 from typing import Optional
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -33,38 +34,60 @@ async def get_current_user(
     """
     JWT 토큰에서 현재 사용자 조회
     """
+    print("🔐 [DEBUG] get_current_user 함수 시작")
+
     if not credentials:
+        print("❌ [DEBUG] credentials가 없음 - 토큰이 제공되지 않음")
         return None
 
     try:
+        print(f"🔍 [DEBUG] 토큰 검증 시작 - token: {credentials.credentials[:20]}...")
+
         # JWT 토큰 디코딩
         token_data = verify_token(credentials.credentials)
         if token_data is None:
+            print("❌ [DEBUG] 토큰 검증 실패 - verify_token이 None 반환")
             raise ValueError("토큰 검증에 실패했습니다")
 
         if token_data.sub is None:
+            print("❌ [DEBUG] 토큰 데이터에 'sub' 클레임이 없음")
             raise ValueError("토큰 데이터에 'sub' 클레임이 없습니다")
 
+        print(f"✅ [DEBUG] 토큰 검증 성공 - user_id: {token_data.sub}")
+
         # 데이터베이스에서 사용자 조회
-        result = await db.execute(select(User).where(User.id == int(token_data.sub)))
+        print(f"🔍 [DEBUG] 데이터베이스에서 사용자 조회 중 - user_id: {token_data.sub}")
+        result = await db.execute(select(User).where(User.id == UUID(token_data.sub)))
         user = result.scalar_one_or_none()
 
         if not user:
+            print(f"❌ [DEBUG] 사용자를 찾을 수 없음 - user_id: {token_data.sub}")
             logger.warning("토큰 주체에 대한 사용자를 찾을 수 없음: %s", token_data.sub)
             return None
 
+        print(f"✅ [DEBUG] 사용자 조회 성공 - username: {user.username}, id: {user.id}")
+
         user_is_active = getattr(user, "is_active", False)
         if not user_is_active:
+            print(
+                f"❌ [DEBUG] 비활성 사용자 - username: {user.username}, id: {user.id}"
+            )
             logger.warning("비활성 사용자가 접근을 시도함: %s", user.id)
             return None
 
+        print(f"✅ [DEBUG] 활성 사용자 확인 완료 - username: {user.username}")
+
         # 마지막 활성 타임스탬프 업데이트
+        print("🔄 [DEBUG] 마지막 활성 시간 업데이트 중...")
         user.update_last_active()
         await db.commit()
 
+        print(f"✅ [DEBUG] get_current_user 완료 - 사용자: {user.username}")
         return user
 
     except Exception as e:  # pylint: disable=broad-except
+        print(f"❌ [DEBUG] get_current_user 예외 발생: {e}")
+        print(f"❌ [DEBUG] 예외 타입: {type(e)}")
         logger.warning("토큰 검증 실패: %s", e)
         return None
 

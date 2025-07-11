@@ -94,17 +94,33 @@ async def get_dashboard_stats(
     대시보드 통계 데이터 조회
     """
     print("=" * 50)
-    print("🔍 [터미널] 대시보드 엔드포인트 호출됨!")
-    print(f"👤 [터미널] 사용자명: {current_user.username}")
+    print("🔍 [DEBUG] get_dashboard_stats 함수 시작")
+    print(f"👤 [DEBUG] 사용자: {current_user.username}")
+    print(f"📅 [DEBUG] 기간: {period}")
+    print(f"🔍 [DEBUG] 검색어: {search}")
     print("=" * 50)
+
     try:
+        print("📊 [DEBUG] DashboardService 인스턴스 생성 중...")
         dashboard_service = DashboardService(db)
+
+        print("🔑 [DEBUG] 사용자 ID 추출 중...")
         user_id = _extract_user_id(current_user)
+        print(f"✅ [DEBUG] 추출된 사용자 ID: {user_id}")
+
+        print("📈 [DEBUG] 통계 데이터 조회 중...")
         stats = await dashboard_service.get_comprehensive_stats(
             user_id=user_id, period=period, search=search
         )
-        return DashboardStatsResponse(**stats)
+        print(f"✅ [DEBUG] 통계 데이터 조회 완료: {type(stats)}")
+
+        print("📝 [DEBUG] 응답 데이터 생성 중...")
+        response = DashboardStatsResponse(**stats)
+        print("✅ [DEBUG] get_dashboard_stats 함수 완료")
+        return response
     except Exception as e:
+        print(f"❌ [DEBUG] 오류 발생: {e}")
+        print(f"❌ [DEBUG] 오류 타입: {type(e)}")
         logger.error("대시보드 통계 조회 오류: %s", e)
         raise _handle_dashboard_error(e) from e
 

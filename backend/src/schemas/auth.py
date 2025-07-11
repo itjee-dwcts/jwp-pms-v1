@@ -242,23 +242,48 @@ class TokenData(BaseModel):
     type: Optional[str] = None  # 토큰 유형 (access, refresh 등)
 
     # 사용자 정보 필드
-    user_id: Optional[int] = None  # 사용자 ID
+    user_id: Optional[UUID] = None  # 사용자 ID
     username: Optional[str] = None  # 사용자명
     email: Optional[str] = None  # 사용자 이메일
     role: Optional[str] = None  # 사용자 역할
     scopes: Optional[List[str]] = None  # 사용자 권한/범위
 
+    @field_validator("user_id", mode="before")
+    @classmethod
+    def parse_user_id(cls, v):
+        """user_id를 UUID로 변환"""
+        if v is None:
+            return v
+
+        if isinstance(v, UUID):
+            return v
+
+        if isinstance(v, str):
+            try:
+                return UUID(v)  # 문자열을 UUID로 변환
+            except ValueError as exc:
+                raise ValueError(f"유효하지 않은 UUID 형식: {v}") from exc
+
+        # 정수나 기타 타입은 문자열로 변환 후 UUID로 시도
+        try:
+            return UUID(str(v))
+        except ValueError as exc:
+            raise ValueError(f"UUID로 변환할 수 없습니다: {v}") from exc
+
     class Config:
         """TokenData 스키마 설정"""
 
         from_attributes = True
+        json_encoders = {
+            UUID: str  # JSON 직렬화 시 문자열로 변환
+        }
         json_schema_extra = {
             "example": {
                 "sub": "123",
                 "exp": "2023-12-01T11:30:00Z",
                 "iat": "2023-12-01T10:30:00Z",
                 "type": "access",
-                "user_id": 123,
+                "user_id": "123e4567-e89b-12d3-a456-426614174000",
                 "username": "john_doe",
                 "email": "john@example.com",
                 "role": "개발자",

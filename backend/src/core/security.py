@@ -147,7 +147,14 @@ def create_token(
             else:
                 expire = now + timedelta(minutes=30)  # 기본값
 
-        to_encode.update({"exp": expire, "iat": now, "type": token_type})
+        to_encode.update(
+            {
+                "exp": expire,
+                "iat": now,
+                "type": token_type,
+                "sub": str(data.get("user_id", "unknown")),
+            }
+        )
 
         encoded_jwt = jwt.encode(
             to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
@@ -177,65 +184,48 @@ def create_refresh_token(
 def verify_token(token: str, token_type: str = TokenType.ACCESS) -> Optional[TokenData]:
     """JWT 토큰 검증 및 디코딩"""
     try:
+        print("=" * 50)
+        print(f"🔍 [보안] 토큰 검증 시작 - 타입: {token_type}")
+
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
 
+        print("✅ [보안] JWT 디코딩 성공")
+
         # 토큰 유형 확인
         if payload.get("type") != token_type:
-            logger.warning(
-                "토큰 유형이 일치하지 않습니다. 예상: %s, 실제: %s",
-                token_type,
-                payload.get("type"),
-            )
+            print("❌ [보안] 토큰 유형 불일치!")
             return None
 
-        # 표준 JWT 클레임 추출
-        sub = payload.get("sub")
-        exp = payload.get("exp")
-        iat = payload.get("iat")
-        token_type_claim = payload.get("type")
-
-        # 사용자 정보 추출
-        user_id: int = payload.get("user_id")
-        username: str = payload.get("username")
-        email: str = payload.get("email")
-        role: str = payload.get("role")
-        scopes: List[str] = payload.get("scopes", [])
-
-        if user_id is None:
-            logger.warning("토큰에 user_id가 없습니다")
-            return None
-
-        # 타임스탬프를 datetime으로 변환 (있는 경우)
-        exp_datetime = None
-        iat_datetime = None
-
-        if exp:
-            exp_datetime = datetime.fromtimestamp(exp, tz=timezone.utc)
-        if iat:
-            iat_datetime = datetime.fromtimestamp(iat, tz=timezone.utc)
-
-        return TokenData(
-            sub=sub or str(user_id),
-            exp=exp_datetime,
-            iat=iat_datetime,
-            type=token_type_claim,
-            user_id=user_id,
-            username=username,
-            email=email,
-            role=role,
-            scopes=scopes,
+        # TokenData 생성 - Pydantic이 자동으로 타입 변환 처리
+        token_data = TokenData(
+            sub=payload.get("sub"),
+            exp=datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+            if payload.get("exp")
+            else None,
+            iat=datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
+            if payload.get("iat")
+            else None,
+            type=payload.get("type"),
+            user_id=payload.get("user_id"),  # Pydantic이 str → UUID 변환 자동 처리
+            username=payload.get("username"),
+            email=payload.get("email"),
+            role=payload.get("role"),
+            scopes=payload.get("scopes", []),
         )
 
+        print(f"✅ [보안] TokenData 생성 성공 - user_id: {token_data.user_id}")
+        return token_data
+
+    except ValueError as e:
+        print(f"❌ [보안] UUID 변환 실패: {e}")
+        return None
     except jwt.ExpiredSignatureError:
-        logger.warning("%s 토큰이 만료되었습니다", token_type)
+        print("❌ [보안] 토큰 만료")
         return None
-    except jwt.InvalidTokenError as e:
-        logger.warning("잘못된 %s 토큰입니다: %s", token_type, e)
-        return None
-    except (jwt.PyJWTError, ValueError, TypeError) as e:
-        logger.error("%s 토큰 검증에 실패했습니다: %s", token_type, e)
+    except Exception as e:
+        print(f"❌ [보안] 토큰 검증 실패: {e}")
         return None
 
 
@@ -452,26 +442,42 @@ class AuthManager:
     def refresh_tokens(refresh_token: str) -> Dict[str, Union[str, int]]:
         """리프레시 토큰을 사용하여 액세스 토큰 갱신"""
         try:
+            print("🔍 [보안] 리프레시 토큰 검증 시작")
+            print(f"🎫 [보안] 토큰 길이: {len(refresh_token)}")
+
             # 리프레시 토큰 검증
             token_data = AuthManager.verify_refresh_token(refresh_token)
+            print(f"🔍 [보안] 토큰 검증 결과: {token_data is not None}")
+
+            if token_data:
+                print(
+                    f"👤 [보안] 사용자 ID: {token_data.user_id} (타입: {type(token_data.user_id)})"
+                )
+                print(f"👤 [보안] 사용자명: {token_data.username}")
+                print(f"🔑 [보안] 역할: {token_data.role}")
 
             if not token_data:
+                print("❌ [보안] 토큰 검증 실패!")
                 raise AuthenticationError("잘못된 리프레시 토큰입니다")
 
             # 동일한 사용자 데이터로 새 토큰 생성
             user_data = {
-                "user_id": token_data.user_id,
+                "user_id": str(token_data.user_id),  # 문자열로 변환하여 일관성 유지
                 "username": token_data.username,
                 "email": token_data.email,
                 "role": token_data.role,
                 "scopes": token_data.scopes or [],
             }
 
+            print(f"📋 [보안] 새 토큰 생성용 데이터: {user_data}")
+
             # 새 토큰 생성
             access_token = create_access_token(user_data)
             new_refresh_token = create_refresh_token(
-                {"user_id": token_data.user_id, "role": token_data.role}
+                {"user_id": str(token_data.user_id), "role": token_data.role}
             )
+
+            print("✅ [보안] 새 토큰 생성 완료")
 
             return {
                 "access_token": access_token,
@@ -481,6 +487,8 @@ class AuthManager:
             }
 
         except (jwt.PyJWTError, ValueError, TypeError) as e:
+            print(f"❌ [보안] 토큰 갱신 실패: {str(e)}")
+            print(f"🔍 [보안] 오류 타입: {type(e).__name__}")
             logger.error("토큰 갱신에 실패했습니다: %s", e)
             raise AuthenticationError("토큰 갱신에 실패했습니다") from e
 
