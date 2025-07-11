@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_async_session
 from core.dependencies import get_current_active_user
+from core.security import AuthManager, get_password_hash
 from models.user import User, UserRole, UserStatus
 from schemas.auth import (
     LoginRequest,
@@ -23,7 +24,6 @@ from schemas.auth import (
     RegisterRequest,
 )
 from services.user import UserService
-from utils.auth import AuthManager, get_password_hash
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -106,7 +106,20 @@ async def login(
     """
     사용자명/이메일과 비밀번호로 로그인
     """
+    print("=" * 50)
+    print("🔍 [터미널] 로그인 엔드포인트 호출됨!")
+    print(f"📤 [터미널] 요청 데이터: {login_data}")
+    print(f"👤 [터미널] 사용자명: {login_data.username}")
+    print(
+        f"🔑 [터미널] 비밀번호 길이: {len(login_data.password) if login_data.password else 0}"
+    )
+    print(
+        f"🌐 [터미널] 클라이언트 IP: {request.client.host if request.client else 'unknown'}"
+    )
+    print(f"📋 [터미널] 요청 헤더: {dict(request.headers)}")
+    print("=" * 50)
     try:
+        logger.info("사용자 로그인 시도: %s", login_data.username)
         user_service = UserService(db)
 
         # 자격 증명 확인
@@ -131,7 +144,7 @@ async def login(
         # 응답 준비
         user_response = LoginUserResponse.model_validate(user)
 
-        logger.info("사용자 로그인: %s", user.name)
+        logger.info("사용자 로그인: %s", user.username)
 
         return LoginResponse(
             access_token=str(tokens["access_token"]),
@@ -192,7 +205,7 @@ async def logout(
     # 프로덕션 시스템에서는 토큰 블랙리스트를 유지하거나
     # 데이터베이스에 세션 정보를 저장하여 로그아웃을 적절히 처리할 수 있습니다
 
-    logger.info("사용자 로그아웃: %s", current_user.name)
+    logger.info("사용자 로그아웃: %s", current_user.username)
 
     return JSONResponse(
         content={
@@ -241,7 +254,7 @@ async def update_current_user_profile(
         await db.commit()
         await db.refresh(current_user)
 
-        logger.info("사용자 프로필 수정: %s", current_user.name)
+        logger.info("사용자 프로필 수정: %s", current_user.username)
 
         return LoginUserResponse.model_validate(current_user)
 

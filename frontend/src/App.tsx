@@ -22,6 +22,7 @@ const ProfilePage = React.lazy(() => import('./pages/user/Profile'));
 const SettingsPage = React.lazy(() => import('./pages/common/Settings'));
 const ChatPage = React.lazy(() => import('./pages/chat/Chat'));
 const ChatPage2 = React.lazy(() => import('./pages/chat/Chat2'));
+const ChatHome = React.lazy(() => import('./pages/chat/ChatHome'));
 
 // 인증 페이지들
 const LoginPage = React.lazy(() => import('./pages/auth/Login'));
@@ -255,6 +256,7 @@ const AppRouter: React.FC = () => {
             {/* 채팅 */}
             <Route path="chat/*" element={<ChatPage />} />
             <Route path="chat2/*" element={<ChatPage2 />} />
+            <Route path="chathome/*" element={<ChatHome />} />
 
             {/* 사용자 관리 (관리자 전용) */}
             <Route

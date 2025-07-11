@@ -27,6 +27,7 @@ export class AuthService {
    * 로그인
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
+    console.log('🔧 AuthService: 로그인 요청', credentials);
     return apiClient.request<LoginResponse>(`${this.baseUrl}/login`, {
       method: 'POST',
       body: JSON.stringify(credentials),

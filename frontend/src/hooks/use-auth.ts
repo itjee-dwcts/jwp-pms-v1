@@ -192,7 +192,15 @@ const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
 
-          const response = await mockAuthService.login(credentials);
+          let response: LoginResponse;
+
+          if (credentials.username === "test") {
+            console.log('🔧 Mock 서비스 사용 - test 로그인');
+            response = await mockAuthService.login(credentials);
+          } else {
+            console.log('🌐 실제 서비스 사용 - 일반 로그인');
+            response = await authService.login(credentials);
+          }
 
           // 토큰 저장
           tokenStorage.setTokens(response.access_token, response.refresh_token);

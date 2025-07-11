@@ -96,6 +96,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, isMobile = false
       show: true,
     },
     {
+      name: '채팅(Home)',
+      href: '/chathome',
+      icon: ChatBubbleLeftIcon,
+      show: true,
+    },
+    {
       name: '사용자',
       href: '/users',
       icon: UsersIcon,

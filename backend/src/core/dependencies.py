@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from constants.user import UserRole
 from core.database import get_async_session
-from core.security import TokenData, decode_access_token
+from core.security import verify_token
 from models.project import ProjectMember
 from models.task import Task, TaskAssignment
 from models.user import User
@@ -38,7 +38,9 @@ async def get_current_user(
 
     try:
         # JWT 토큰 디코딩
-        token_data: TokenData = decode_access_token(credentials.credentials)
+        token_data = verify_token(credentials.credentials)
+        if token_data is None:
+            raise ValueError("토큰 검증에 실패했습니다")
 
         if token_data.sub is None:
             raise ValueError("토큰 데이터에 'sub' 클레임이 없습니다")

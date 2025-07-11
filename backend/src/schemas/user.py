@@ -133,7 +133,7 @@ class UserPublic(BaseModel):
     """공개 사용자 정보 스키마"""
 
     id: int
-    name: str
+    username: str
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
 

@@ -107,7 +107,13 @@ class DefaultSettings:
     ENVIRONMENT = "development"
     DEBUG = True
     API_V1_STR = "/api/v1"
-    BACKEND_CORS_ORIGINS = ["http://localhost:3000"]
+    # CORS 설정 추가 - 프론트엔드 개발 서버 허용
+    BACKEND_CORS_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",  # 추가 포트
+        "http://127.0.0.1:3001",  # 추가 포트
+    ]
     UPLOAD_PATH = "uploads"
 
 
@@ -315,15 +321,29 @@ app.add_middleware(
 
 # CORS 미들웨어 추가
 cors_origins = getattr(settings, "BACKEND_CORS_ORIGINS", None)
-if cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in cors_origins],
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
-    logger.info("🌐 CORS가 다음 도메인에 대해 활성화되었습니다: %s", cors_origins)
+
+# CORS 설정이 없거나 빈 경우 기본값으로 localhost:3000 추가
+if not cors_origins:
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+else:
+    # 기존 설정에 localhost:3000이 없으면 추가
+    cors_list = [str(origin) for origin in cors_origins]
+    if "http://localhost:3000" not in cors_list:
+        cors_list.append("http://localhost:3000")
+    if "http://127.0.0.1:3000" not in cors_list:
+        cors_list.append("http://127.0.0.1:3000")
+    cors_origins = cors_list
+
+# CORS 미들웨어 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[str(origin) for origin in cors_origins],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+logger.info("🌐 CORS가 다음 도메인에 대해 활성화되었습니다: %s", cors_origins)
 
 # 정적 파일 설정
 UPLOAD_PATH = getattr(settings, "UPLOAD_PATH", "uploads")

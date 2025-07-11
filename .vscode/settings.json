@@ -129,7 +129,16 @@
   "editor.insertSpaces": true,
   "editor.detectIndentation": true,
   "editor.autoIndent": "advanced",
-  "editor.rulers": [88, 120], // Black 기본 + 최대 길이
+  "editor.rulers": [
+    {
+      "column": 88, // Black 기본 줄 길이
+      "color": "#888888" // 연한 회색
+    },
+    {
+      "column": 120, // 최대 줄 길이
+      "color": "#ff0000" // 빨간색 경고 표시
+    }
+  ],
   "editor.wordWrap": "off",
 
   // ============================================================================
@@ -253,6 +262,16 @@
     "editor.rulers": [88, 120] // Markdown에서 긴 줄 제한
   },
 
+  "[typescript]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+
+  "[typescriptreact]": {
+    "editor.tabSize": 4,
+    "editor.insertSpace": true
+  },
+
   // ============================================================================
   // Git 설정
   // ============================================================================
@@ -275,6 +294,9 @@
   // 브래킷 매칭
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": "active",
+  "editor.guides.bracketPairsHorizontal": true,
+  "editor.guides.highlightActiveIndentation": true,
+  "editor.guides.indentation": true,
 
   // ============================================================================
   // 맞춤법 검사 사전 (확장)

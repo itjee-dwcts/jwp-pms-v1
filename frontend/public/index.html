@@ -5,7 +5,7 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="프로젝트 관리 시스템 - 효율적인 프로젝트 및 작업 관리 솔루션" />
-    
+
     <!-- Open Graph / Facebook 메타 태그 -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="%PUBLIC_URL%" />
@@ -27,19 +27,19 @@
     <!-- 외부 도메인에 미리 연결 (성능 최적화) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
+
     <!-- Google 폰트 -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    
+
     <!-- 보안 헤더 -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <!-- CSP 헤더 추가 (보안 강화) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' http: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';" />
 
     <title>PMS - 프로젝트 관리 시스템</title>
-    
+
     <!-- 다양한 크기의 파비콘 -->
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
@@ -52,7 +52,7 @@
         font-family: 'Inter', sans-serif;
         background: #f9fafb;
       }
-      
+
       /* 간단한 로딩 화면 */
       .loading-screen {
         position: fixed;
@@ -70,7 +70,7 @@
         font-family: 'Inter', sans-serif;
         transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
       }
-      
+
       /* 앱이 로드되면 로딩 화면 숨기기 */
       .loading-screen.hidden {
         opacity: 0;
@@ -110,14 +110,14 @@
         opacity: 0.8;
         text-align: center;
       }
-      
+
       /* React 앱 컨테이너 */
       #root {
         min-height: 100vh;
         opacity: 0;
         transition: opacity 0.3s ease-in;
       }
-      
+
       /* 앱이 로드되면 루트 요소 표시 */
       body.app-ready #root {
         opacity: 1;
@@ -153,7 +153,7 @@
         white-space: nowrap;
         border: 0;
       }
-      
+
       /* 에러 상태 스타일 */
       .error-container {
         min-height: 100vh;
@@ -164,7 +164,7 @@
         padding: 20px;
         background: #f9fafb;
       }
-      
+
       .error-content {
         text-align: center;
         max-width: 400px;
@@ -173,20 +173,20 @@
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       }
-      
+
       .error-title {
         color: #ef4444;
         margin-bottom: 16px;
         font-size: 24px;
         font-weight: 600;
       }
-      
+
       .error-message {
         color: #6b7280;
         margin-bottom: 24px;
         line-height: 1.5;
       }
-      
+
       .error-button {
         padding: 12px 24px;
         background: #3b82f6;
@@ -197,7 +197,7 @@
         font-weight: 500;
         transition: background-color 0.2s;
       }
-      
+
       .error-button:hover {
         background: #2563eb;
       }
@@ -215,7 +215,7 @@
         </p>
       </div>
     </noscript>
-    
+
     <!-- 로딩 화면 -->
     <div id="loading-screen" class="loading-screen">
       <div class="loading-spinner"></div>
@@ -232,26 +232,26 @@
         'use strict';
 
         console.log('🚀 로딩 스크립트를 시작합니다');
-        
+
         let hideLoadingCalled = false;
-        
+
         // 로딩 화면 숨기기 함수
         function hideLoadingScreen() {
           if (hideLoadingCalled) {
             console.log('⚠️ hideLoadingScreen이 이미 호출됨');
             return;
           }
-          
+
           hideLoadingCalled = true;
           const elapsedTime = Date.now() - startTime;
           console.log(`✅ 로딩 화면 숨기기 (${elapsedTime}ms 경과)`);
-          
+
           try {
             const loadingScreen = document.getElementById('loading-screen');
             if (loadingScreen) {
               loadingScreen.classList.add('hidden');
               document.body.classList.add('app-ready');
-              
+
               // 완전히 숨긴 후 DOM에서 제거
               setTimeout(() => {
                 if (loadingScreen.parentNode) {
@@ -263,12 +263,12 @@
             console.error('❌ 로딩 화면 숨기기 실패:', error);
           }
         }
-        
+
         // 에러 페이지 표시 함수
         function showErrorPage(errorMessage) {
           console.error('❌ 앱 로딩 실패:', errorMessage);
           hideLoadingScreen();
-          
+
           const root = document.getElementById('root');
           if (root) {
             root.innerHTML = `
@@ -288,11 +288,11 @@
             `;
           }
         }
-        
+
         // 전역 함수로 등록
         window.hideLoadingScreen = hideLoadingScreen;
         window.showErrorPage = showErrorPage;
-        
+
         // React 준비 완료 콜백
         window.onReactReady = function() {
           console.log('✅ React 앱 준비 완료!');
@@ -307,7 +307,7 @@
         function autoHideLoadingScreen() {
           const elapsed = Date.now() - startTime;
           const remainingTime = Math.max(0, minLoadTime - elapsed);
-          
+
           console.log(`⏱️ 최소 로딩 시간 대기 중... (${remainingTime}ms 남음)`);
           setTimeout(hideLoadingScreen, remainingTime);
         }
@@ -323,7 +323,7 @@
             autoHideLoadingScreen();
           });
         }
-        
+
         // 자동 타임아웃 (10초)
         setTimeout(() => {
           if (!hideLoadingCalled) {
@@ -331,25 +331,25 @@
             hideLoadingScreen();
           }
         }, 10000);
-        
+
         // 5초 후 경고
         setTimeout(() => {
           if (!hideLoadingCalled) {
             console.warn('⚠️ React 앱이 5초 내에 로드되지 않았습니다');
           }
         }, 5000);
-        
+
         // 에러 핸들링
         window.addEventListener('error', function(event) {
           console.error('❌ 윈도우 오류:', event.error);
           showErrorPage(event.error?.toString() || '알 수 없는 오류가 발생했습니다');
         });
-        
+
         window.addEventListener('unhandledrejection', function(event) {
           console.error('❌ Promise 거부:', event.reason);
           showErrorPage(event.reason?.toString() || 'Promise 오류가 발생했습니다');
         });
-        
+
         console.log('🚀 로딩 스크립트 초기화 완료');
       })();
     </script>
