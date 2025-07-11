@@ -136,8 +136,9 @@ const Dashboard: React.FC = () => {
 
   // 초기 데이터 로드
   useEffect(() => {
+    console.log('useEffect 실행:', { filterPeriod, filterType, searchQuery });
     loadDashboardData();
-  }, [loadDashboardData]);
+  }, [filterPeriod, filterType, searchQuery]);
 
   // 차트 데이터 포맷팅
   const formatChartData = (data: Record<string, number>) => {

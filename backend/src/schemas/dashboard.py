@@ -609,27 +609,3 @@ class DashboardErrorResponse(BaseModel):
         """
 
         json_encoders = {datetime: lambda v: v.isoformat()}
-
-
-# ============================================================================
-# 기존 호환성 유지를 위한 별칭들
-# ============================================================================
-
-# 기존 코드와의 호환성을 위한 별칭 정의
-ProjectStatsResponse = ProjectStatusStatsResponse
-TaskStatsResponse = TaskStatusStatsResponse
-WorkloadSummaryResponse = UserWorkloadStatsResponse
-QuickActionsResponse = Dict[str, Any]  # 임시로 Dict 타입으로 정의
-TeamOverviewResponse = Dict[str, Any]  # 임시로 Dict 타입으로 정의
-AnalyticsResponse = Dict[str, Any]  # 임시로 Dict 타입으로 정의
-
-# 요청 모델 별칭
-DashboardStatsRequest = Dict[str, Any]  # 임시로 Dict 타입으로 정의
-ActivityLogRequest = UserActivityLogRequest
-
-# 페이지네이션 응답 별칭
-PaginatedActivityResponse = UserActivitiesResponse
-PaginatedNotificationResponse = DashboardNotificationsResponse
-
-# 실시간 업데이트 별칭
-RealtimeDataResponse = Dict[str, Any]  # 임시로 Dict 타입으로 정의
