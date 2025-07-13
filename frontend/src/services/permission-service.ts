@@ -10,8 +10,10 @@ import type {
 } from '../types/permission';
 
 export class PermissionService {
+  private readonly baseUrl = '/api/v1/permissions';
+
   async getUserPermissions(userId: string): Promise<UserPermissions> {
-    return apiClient.request<UserPermissions>(`/users/${userId}/permissions`);
+    return apiClient.request<UserPermissions>(`${this.baseUrl}/users/${userId}/permissions`);
   }
 
   async checkResourcePermission(
@@ -20,7 +22,7 @@ export class PermissionService {
     permission: Permission
   ): Promise<PermissionCheckResult> {
     return apiClient.request<PermissionCheckResult>(
-      `/permissions/check/${resourceType}/${resourceId}`,
+      `${this.baseUrl}/check/${resourceType}/${resourceId}`,
       {
         method: 'POST',
         body: JSON.stringify({ permission }),
@@ -32,14 +34,14 @@ export class PermissionService {
     userId: string,
     permissions: Permission[]
   ): Promise<UserPermissions> {
-    return apiClient.request<UserPermissions>(`/users/${userId}/permissions`, {
+    return apiClient.request<UserPermissions>(`${this.baseUrl}/users/${userId}/permissions`, {
       method: 'PUT',
       body: JSON.stringify({ permissions }),
     });
   }
 
   async assignRole(userId: string, role: Role): Promise<UserPermissions> {
-    return apiClient.request<UserPermissions>(`/users/${userId}/role`, {
+    return apiClient.request<UserPermissions>(`${this.baseUrl}/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     });

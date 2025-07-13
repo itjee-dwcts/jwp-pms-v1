@@ -6,6 +6,7 @@
 
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,7 +22,10 @@ class CalendarBase(BaseModel):
     color: str = Field(
         default="#3b82f6", max_length=7, description="캘린더 색상 (16진수)"
     )
+    owner_id: UUID = Field(..., description="캘린더 소유자 ID")
+    is_default: bool = Field(default=False, description="기본 캘린더 여부")
     is_public: bool = Field(default=False, description="공개 캘린더 여부")
+    is_active: bool = Field(default=True, description="활성 캘린더 여부")
 
     @field_validator("color")
     @classmethod
@@ -42,37 +46,22 @@ class CalendarCreateRequest(CalendarBase):
     """캘린더 생성 스키마"""
 
 
-class CalendarUpdateRequest(BaseModel):
+class CalendarUpdateRequest(CalendarBase):
     """캘린더 수정 스키마"""
-
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    color: Optional[str] = Field(None, max_length=7)
-    is_public: Optional[bool] = None
-
-    @field_validator("color")
-    @classmethod
-    def validate_color(cls, v):
-        """색상 형식 검증"""
-        # 색상이 16진수 형식인지 확인 (예: #3b82f6)
-        if v is not None and (not v.startswith("#") or len(v) != 7):
-            raise ValueError("색상은 16진수 형식이어야 합니다 (예: #3b82f6)")
-        return v
-
-    class Config:
-        """CalendarUpdateRequest 설정"""
-
-        from_attributes = True
 
 
 class CalendarResponse(CalendarBase):
     """캘린더 응답 스키마"""
 
-    id: int
-    owner_id: int
+    id: UUID
+    owner_id: UUID
     created_at: datetime
+    created_by: UUID
     updated_at: datetime
+    updated_by: UUID
     owner: UserPublic
+    creator: UserPublic
+    updater: UserPublic
 
     class Config:
         """CalendarResponse 설정"""
@@ -134,9 +123,9 @@ class EventBase(BaseModel):
 class EventCreateRequest(EventBase):
     """이벤트 생성 스키마"""
 
-    calendar_id: int = Field(..., description="캘린더 ID")
-    start_datetime: datetime = Field(..., description="이벤트 시작 날짜 및 시간")
-    end_datetime: datetime = Field(..., description="이벤트 종료 날짜 및 시간")
+    calendar_id: UUID = Field(..., description="캘린더 ID")
+    start_time: datetime = Field(..., description="이벤트 시작 날짜 및 시간")
+    end_time: datetime = Field(..., description="이벤트 종료 날짜 및 시간")
     is_all_day: bool = Field(default=False, description="종일 이벤트 여부")
     location: Optional[str] = Field(None, max_length=200, description="이벤트 장소")
     recurrence_type: str = Field(default="none", description="반복 유형")
@@ -144,18 +133,18 @@ class EventCreateRequest(EventBase):
     reminder_minutes: Optional[int] = Field(
         None, ge=0, description="이벤트 전 알림 시간(분)"
     )
-    project_id: Optional[int] = Field(None, description="연관된 프로젝트 ID")
-    task_id: Optional[int] = Field(None, description="연관된 작업 ID")
-    attendee_ids: Optional[List[int]] = Field(
+    project_id: Optional[UUID] = Field(None, description="연관된 프로젝트 ID")
+    task_id: Optional[UUID] = Field(None, description="연관된 작업 ID")
+    attendee_ids: Optional[List[UUID]] = Field(
         default=[], description="참석자 사용자 ID 목록"
     )
 
-    @field_validator("end_datetime")
+    @field_validator("end_time")
     @classmethod
     def validate_end_datetime(cls, v, values):
         """종료 날짜시간 검증"""
         # 종료 날짜시간이 시작 날짜시간보다 늦은지 확인
-        if "start_datetime" in values and v <= values["start_datetime"]:
+        if "start_time" in values and v <= values["start_time"]:
             raise ValueError("종료 날짜시간은 시작 날짜시간보다 늦어야 합니다")
         return v
 
@@ -184,8 +173,8 @@ class EventUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     event_type: Optional[str] = None
     status: Optional[str] = None
-    start_datetime: Optional[datetime] = None
-    end_datetime: Optional[datetime] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     is_all_day: Optional[bool] = None
     location: Optional[str] = Field(None, max_length=200)
     recurrence_type: Optional[str] = None
@@ -259,12 +248,19 @@ class EventUpdateRequest(BaseModel):
 class EventAttendeeResponse(BaseModel):
     """이벤트 참석자 응답 스키마"""
 
-    id: int
-    event_id: int
-    user_id: int
-    response_status: str
-    added_at: datetime
-    user: UserPublic
+    id: UUID
+    created_at: datetime
+    created_by: UUID
+    updated_at: datetime
+    updated_by: UUID
+    event_id: UUID
+    attendee_id: UUID
+    status: str
+    response_at: datetime
+    is_organizer: bool = False
+    attendee: UserPublic
+    creator: UserPublic
+    updater: UserPublic
 
     class Config:
         """EventAttendeeResponse 설정"""
@@ -275,21 +271,25 @@ class EventAttendeeResponse(BaseModel):
 class EventResponse(EventBase):
     """이벤트 응답 스키마"""
 
-    id: int
-    calendar_id: int
-    creator_id: int
-    start_datetime: datetime
-    end_datetime: datetime
+    id: UUID
+    created_at: datetime
+    created_by: UUID
+    updated_at: datetime
+    updated_by: UUID
+    calendar_id: UUID
+    creator_id: UUID
+    start_time: datetime
+    end_time: datetime
     is_all_day: bool = False
     location: Optional[str] = None
     recurrence_type: str = "none"
     recurrence_end_date: Optional[datetime] = None
     reminder_minutes: Optional[int] = None
-    project_id: Optional[int] = None
-    task_id: Optional[int] = None
-    created_at: datetime
-    updated_at: datetime
+    project_id: Optional[UUID] = None
+    task_id: Optional[UUID] = None
     creator: UserPublic
+    updater: UserPublic
+    owner: UserPublic
     calendar: CalendarResponse
     attendees: List[EventAttendeeResponse] = []
 
@@ -303,10 +303,10 @@ class EventListResponse(BaseModel):
     """이벤트 목록 응답 스키마"""
 
     events: List[EventResponse]
-    total_items: int
     page_no: int
     page_size: int
     total_pages: int
+    total_items: int
 
     class Config:
         """EventListResponse 설정"""
@@ -318,10 +318,10 @@ class CalendarListResponse(BaseModel):
     """캘린더 목록 응답 스키마"""
 
     calendars: List[CalendarResponse]
-    total_items: int
     page_no: int
     page_size: int
     total_pages: int
+    total_items: int
 
     class Config:
         """CalendarListResponse 설정"""
@@ -333,15 +333,15 @@ class EventSearchRequest(BaseModel):
     """이벤트 검색 요청 스키마"""
 
     query: Optional[str] = Field(None, description="검색 쿼리")
-    calendar_id: Optional[int] = None
+    calendar_id: Optional[UUID] = None
     event_type: Optional[str] = None
     event_status: Optional[str] = None
     start_date_from: Optional[datetime] = None
     start_date_to: Optional[datetime] = None
     end_date_from: Optional[datetime] = None
     end_date_to: Optional[datetime] = None
-    project_id: Optional[int] = None
-    task_id: Optional[int] = None
+    project_id: Optional[UUID] = None
+    task_id: Optional[UUID] = None
     is_all_day: Optional[bool] = None
 
     @field_validator("event_type")
@@ -464,7 +464,7 @@ class EventDashboardResponse(BaseModel):
 class EventAttendeeRequest(BaseModel):
     """이벤트 참석자 요청 스키마"""
 
-    user_ids: List[int] = Field(..., description="참석자로 추가할 사용자 ID 목록")
+    attendee_ids: List[UUID] = Field(..., description="참석자로 추가할 사용자 ID 목록")
 
     class Config:
         """EventAttendeeRequest 설정"""

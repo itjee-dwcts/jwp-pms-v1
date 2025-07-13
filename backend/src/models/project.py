@@ -139,9 +139,7 @@ class Project(Base):
     tags = Column(Text, nullable=True, doc="프로젝트 태그 (쉼표로 구분)")
 
     # 관계
-    owner = relationship(
-        "User", back_populates="owned_projects", foreign_keys=[owner_id]
-    )
+    owner = relationship("User", back_populates="projects", foreign_keys=[owner_id])
 
     members = relationship(
         "ProjectMember",
@@ -236,7 +234,7 @@ class ProjectMember(Base):
     project_id = Column(
         UUID, ForeignKey("projects.id"), nullable=False, doc="프로젝트 ID"
     )
-    user_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="사용자 ID")
+    member_id = Column(UUID, ForeignKey("users.id"), nullable=False, doc="멤버 ID")
     role = Column(
         String(20),  # Enum(ProjectMemberRole),
         default=ProjectMemberRole.DEVELOPER,
@@ -260,8 +258,8 @@ class ProjectMember(Base):
     project = relationship(
         "Project", back_populates="members", foreign_keys=[project_id]
     )
-    user = relationship(
-        "User", back_populates="project_memberships", foreign_keys=[user_id]
+    member = relationship(
+        "User", back_populates="project_memberships", foreign_keys=[member_id]
     )
 
     creator = relationship("User", foreign_keys=[created_by])
@@ -270,14 +268,14 @@ class ProjectMember(Base):
     # 제약 조건
     __table_args__ = (
         UniqueConstraint(
-            "project_id", "user_id", name="ux_project_members__project_user"
+            "project_id", "member_id", name="ux_project_members__project_member"
         ),
     )
 
     def __repr__(self) -> str:
         return (
             f"<ProjectMember(project_id={self.project_id}, "
-            f"user_id={self.user_id}, role='{self.role}')>"
+            f"member_id={self.member_id}, role='{self.role}')>"
         )
 
     def can_manage_project(self) -> bool:
@@ -455,6 +453,6 @@ class ProjectAttachment(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<ProjectAttachment(id={self.id}, filename='{self.file_name}', "
+            f"<ProjectAttachment(id={self.id}, file_name='{self.file_name}', "
             f"project_id={self.project_id})>"
         )

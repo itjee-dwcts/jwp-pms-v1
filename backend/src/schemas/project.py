@@ -7,6 +7,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -82,6 +83,7 @@ class ProjectCreateRequest(ProjectBase):
         None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
     )
     is_public: bool = Field(default=False, description="프로젝트 공개 여부")
+    owner_id: UUID = Field(..., description="프로젝트 소유자 ID")
 
     @field_validator("end_date")
     @classmethod
@@ -123,6 +125,7 @@ class ProjectUpdateRequest(BaseModel):
         None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
     )
     is_public: Optional[bool] = Field(None, description="프로젝트 공개 여부")
+    owner_id: UUID = Field(..., description="프로젝트 소유자 ID")
 
     @field_validator("status")
     @classmethod
@@ -165,7 +168,7 @@ class ProjectUpdateRequest(BaseModel):
 class ProjectMemberBase(BaseModel):
     """기본 프로젝트 멤버 스키마"""
 
-    user_id: int = Field(..., description="사용자 ID")
+    member_id: UUID = Field(..., description="멤버 ID")
     role: str = Field(default="developer", description="멤버 역할")
 
     @field_validator("role")
@@ -189,8 +192,6 @@ class ProjectMemberBase(BaseModel):
 
 class ProjectMemberCreateRequest(ProjectMemberBase):
     """프로젝트 멤버 추가 스키마"""
-
-    pass
 
 
 class ProjectMemberUpdateRequest(BaseModel):
@@ -220,12 +221,12 @@ class ProjectMemberUpdateRequest(BaseModel):
 class ProjectMemberResponse(BaseModel):
     """프로젝트 멤버 응답 스키마"""
 
-    id: int
-    project_id: int
-    user_id: int
+    id: UUID
+    project_id: UUID
+    member_id: UUID
     role: str
     joined_at: datetime
-    user: UserPublic
+    member: UserPublic
 
     class Config:
         """ProjectMemberResponse 설정"""
@@ -242,7 +243,7 @@ class ProjectCommentBase(BaseModel):
 class ProjectCommentCreateRequest(ProjectCommentBase):
     """프로젝트 댓글 생성 스키마"""
 
-    parent_id: Optional[int] = Field(None, description="답글을 위한 부모 댓글 ID")
+    parent_id: Optional[UUID] = Field(None, description="답글을 위한 부모 댓글 ID")
 
 
 class ProjectCommentUpdateRequest(BaseModel):
@@ -254,10 +255,10 @@ class ProjectCommentUpdateRequest(BaseModel):
 class ProjectCommentResponse(BaseModel):
     """프로젝트 댓글 응답 스키마"""
 
-    id: int
-    project_id: int
-    author_id: int
-    parent_id: Optional[int] = None
+    id: UUID
+    project_id: UUID
+    author_id: UUID
+    parent_id: Optional[UUID] = None
     content: str
     created_at: datetime
     updated_at: datetime
@@ -273,14 +274,14 @@ class ProjectCommentResponse(BaseModel):
 class ProjectAttachmentResponse(BaseModel):
     """프로젝트 첨부파일 응답 스키마"""
 
-    id: int
-    project_id: int
+    id: UUID
+    project_id: UUID
     file_name: str
     file_path: str
     file_size: int
     mime_type: Optional[str] = None
     description: Optional[str] = None
-    uploaded_by: int
+    uploaded_by: UUID
     created_at: datetime
     uploader: UserPublic
 
@@ -293,8 +294,8 @@ class ProjectAttachmentResponse(BaseModel):
 class ProjectResponse(ProjectBase):
     """프로젝트 응답 스키마"""
 
-    id: int
-    owner_id: int
+    id: UUID
+    owner_id: UUID
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     budget: Optional[Decimal] = None
@@ -320,11 +321,76 @@ class ProjectResponse(ProjectBase):
 class ProjectListResponse(BaseModel):
     """프로젝트 목록 응답 스키마"""
 
-    projects: List[ProjectResponse]
-    total_items: int
-    page_no: int
-    page_size: int
-    total_pages: int
+    projects: List[ProjectResponse] = Field(..., description="프로젝트 목록")
+    page_no: int = Field(..., ge=0, description="현재 페이지 번호")
+    page_size: int = Field(..., ge=1, le=100, description="페이지 크기")
+    total_pages: int = Field(..., ge=0, description="전체 페이지 수")
+    total_items: int = Field(..., ge=0, description="전체 항목 수")
+    has_next: bool = Field(..., description="다음 페이지 존재 여부")
+    has_prev: bool = Field(..., description="이전 페이지 존재 여부")
+
+    @classmethod
+    def create_response(
+        cls,
+        projects: List[ProjectResponse],
+        page_no: int,
+        page_size: int,
+        total_items: int,
+    ) -> "ProjectListResponse":
+        """ProjectListResponse 생성 헬퍼 메서드"""
+        total_pages = (
+            (total_items + page_size - 1) // page_size if total_items > 0 else 0
+        )
+        has_next = page_no < total_pages - 1 if total_pages > 0 else False
+        has_prev = page_no > 0
+
+        return cls(
+            projects=projects,
+            page_no=page_no,
+            page_size=page_size,
+            total_pages=total_pages,
+            total_items=total_items,
+            has_next=has_next,
+            has_prev=has_prev,
+        )
+
+    class Config:
+        """ProjectListResponse 설정"""
+
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "projects": [
+                    {
+                        "id": "123e4567-e89b-12d3-a456-426614174000",
+                        "name": "웹 애플리케이션 개발",
+                        "description": "새로운 웹 애플리케이션 프로젝트",
+                        "status": "active",
+                        "priority": "high",
+                        "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                        "progress": 65,
+                        "is_public": False,
+                        "created_at": "2025-07-13T10:00:00Z",
+                        "updated_at": "2025-07-13T10:00:00Z",
+                        "owner": {
+                            "id": "123e4567-e89b-12d3-a456-426614174001",
+                            "username": "project_owner",
+                            "email": "owner@example.com",
+                            "full_name": "프로젝트 소유자",
+                        },
+                        "members": [],
+                        "comments": [],
+                        "attachments": [],
+                    }
+                ],
+                "page_no": 0,
+                "page_size": 20,
+                "total_pages": 5,
+                "total_items": 100,
+                "has_next": True,
+                "has_previous": False,
+            }
+        }
 
 
 class ProjectStatsResponse(BaseModel):
@@ -344,7 +410,7 @@ class ProjectSearchRequest(BaseModel):
     search_text: Optional[str] = Field(None, description="검색 쿼리")
     project_status: Optional[str] = Field(None, description="프로젝트 상태")
     priority: Optional[str] = Field(None, description="우선순위")
-    owner_id: Optional[int] = Field(None, description="소유자 ID")
+    owner_id: Optional[UUID] = Field(None, description="소유자 ID")
     tags: Optional[List[str]] = Field(None, description="태그 목록")
     start_date_from: Optional[datetime] = Field(None, description="시작일 범위 시작")
     start_date_to: Optional[datetime] = Field(None, description="시작일 범위 끝")

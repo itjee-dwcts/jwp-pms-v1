@@ -488,6 +488,7 @@ class UserService:
 
     async def list_users(
         self,
+        user_id: UUID,
         page_no: int = 1,
         page_size: int = 20,
         search_text: Optional[str] = None,
@@ -508,6 +509,12 @@ class UserService:
             UserListResponse 객체
         """
         try:
+            # 사용자가 존재하는지 검증
+            print(f"사용자 존재 검증 User ID: {user_id}")
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 쿼리 구성
             query = select(User)
 
@@ -527,13 +534,31 @@ class UserService:
             if user_status:
                 query = query.where(User.status == user_status)
 
+            # 페이지 번호 검증 및 정규화
+            page_no = max(0, page_no)  # 음수 방지
+            page_size = max(1, min(100, page_size))  # 범위 제한
+
             # 총 개수 조회
             count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
-            # 페이지네이션 적용
-            offset = (page_no - 1) * page_size
+            # 총 페이지 수 계산
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
+
+            # 페이지 번호가 범위를 벗어나는 경우 조정
+            if total_pages > 0 and page_no >= total_pages:
+                page_no = max(0, total_pages - 1)
+
+            # 페이지네이션과 정렬 적용
+            offset = page_no * page_size
+
+            print(
+                f"[DEBUG] 페이지네이션 계산 - page_no: {page_no}, page_size: {page_size}, offset: {offset}, total_pages: {total_pages}"
+            )
+
             query = (
                 query.offset(offset).limit(page_size).order_by(desc(User.created_at))
             )
@@ -543,9 +568,12 @@ class UserService:
             users = result.scalars().all()
 
             # 페이지네이션 정보 계산
-            total_pages = (
-                (total_items if total_items is not None else 0) + page_size - 1
-            ) // page_size
+            has_next = (page_no + 1) < total_pages if total_pages > 0 else False
+            has_prev = page_no > 0
+
+            print(
+                f"사용자 목록 조회 - 페이지: {page_no}, 총 개수: {total_items}, offset: {offset}"
+            )
 
             return UserListResponse(
                 users=[UserResponse.model_validate(user) for user in users],
@@ -553,6 +581,8 @@ class UserService:
                 page_size=page_size,
                 total_pages=total_pages,
                 total_items=total_items if total_items is not None else 0,
+                has_next=has_next,
+                has_prev=has_prev,
             )
 
         except Exception as e:

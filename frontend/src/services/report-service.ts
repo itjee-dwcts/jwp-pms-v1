@@ -15,15 +15,17 @@ import type {
 import { buildQueryParams } from '../utils/query-params';
 
 export class ReportService {
+  private readonly baseUrl = '/api/v1/reports';
+
   // Comprehensive Reports
   async getReports(filters: ReportFilters): Promise<ReportData> {
     const queryString = buildQueryParams(filters);
-    return apiClient.request<ReportData>(`/api/v1/reports?${queryString}`);
+    return apiClient.request<ReportData>(`${this.baseUrl}?${queryString}`);
   }
 
   async getReportMetrics(filters: Partial<ReportFilters> = {}): Promise<ReportMetrics> {
     const queryString = buildQueryParams(filters);
-    return apiClient.request<ReportMetrics>(`/api/v1/reports/metrics?${queryString}`);
+    return apiClient.request<ReportMetrics>(`${this.baseUrl}/metrics?${queryString}`);
   }
 
   // Specific Report Types
@@ -39,12 +41,12 @@ export class ReportService {
 
   async getTaskReport(filters: Partial<ReportFilters> = {}): Promise<TaskReport> {
     const queryString = buildQueryParams(filters);
-    return apiClient.request<TaskReport>(`/api/v1/reports/tasks?${queryString}`);
+    return apiClient.request<TaskReport>(`${this.baseUrl}/tasks?${queryString}`);
   }
 
   async getTimeTrackingReport(filters: Partial<ReportFilters> = {}): Promise<TimeTrackingReport> {
     const queryString = buildQueryParams(filters);
-    return apiClient.request<TimeTrackingReport>(`/api/v1/reports/time-tracking?${queryString}`);
+    return apiClient.request<TimeTrackingReport>(`${this.baseUrl}/time-tracking?${queryString}`);
   }
 
   // Export Reports (즉시 다운로드)
@@ -58,7 +60,7 @@ export class ReportService {
       include_raw_data: options.include_raw_data,
     });
 
-    const response = await fetch(`${apiClient.baseUrl}/api/v1/reports/export?${queryString}`, {
+    const response = await fetch(`${this.baseUrl}/export?${queryString}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
@@ -74,7 +76,7 @@ export class ReportService {
 
   // 비동기 Export 관련 메서드들 (추가)
   async startAsyncExport(options: ExportOptions): Promise<string> {
-    const response = await apiClient.request<{ export_id: string }>('/api/v1/reports/export/async', {
+    const response = await apiClient.request<{ export_id: string }>(`${this.baseUrl}/export/async`, {
       method: 'POST',
       body: JSON.stringify(options),
     });
@@ -82,11 +84,11 @@ export class ReportService {
   }
 
   async getExportStatus(exportId: string): Promise<ExportStatus> {
-    return apiClient.request<ExportStatus>(`/api/v1/reports/export/${exportId}/status`);
+    return apiClient.request<ExportStatus>(`${this.baseUrl}/export/${exportId}/status`);
   }
 
   async downloadExport(exportId: string): Promise<Blob> {
-    const response = await fetch(`${apiClient.baseUrl}/api/v1/reports/export/${exportId}/download`, {
+    const response = await fetch(`${this.baseUrl}/export/${exportId}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
@@ -101,7 +103,7 @@ export class ReportService {
   }
 
   async cancelExport(exportId: string): Promise<void> {
-    await apiClient.request(`/api/v1/reports/export/${exportId}/cancel`, {
+    await apiClient.request(`${this.baseUrl}/export/${exportId}/cancel`, {
       method: 'POST',
     });
   }
@@ -118,7 +120,7 @@ export class ReportService {
     page_size: number;
   }> {
     const queryString = buildQueryParams(params || {});
-    return apiClient.request(`/api/v1/reports/export/history?${queryString}`);
+    return apiClient.request(`${this.baseUrl}/export/history?${queryString}`);
   }
 
   async downloadReport(blob: Blob, filename: string): Promise<void> {
@@ -134,50 +136,50 @@ export class ReportService {
 
   // Report Templates
   async getReportTemplates(): Promise<ReportTemplate[]> {
-    return apiClient.request<ReportTemplate[]>('/api/v1/reports/templates');
+    return apiClient.request<ReportTemplate[]>(`${this.baseUrl}/templates`);
   }
 
   async createReportTemplate(template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> {
-    return apiClient.request<ReportTemplate>('/api/v1/reports/templates', {
+    return apiClient.request<ReportTemplate>(`${this.baseUrl}/templates`, {
       method: 'POST',
       body: JSON.stringify(template),
     });
   }
 
   async updateReportTemplate(id: string, template: Partial<ReportTemplate>): Promise<ReportTemplate> {
-    return apiClient.request<ReportTemplate>(`/api/v1/reports/templates/${id}`, {
+    return apiClient.request<ReportTemplate>(`${this.baseUrl}/templates/${id}`, {
       method: 'PUT',
       body: JSON.stringify(template),
     });
   }
 
   async deleteReportTemplate(id: string): Promise<void> {
-    await apiClient.request(`/api/v1/reports/templates/${id}`, {
+    await apiClient.request(`${this.baseUrl}/templates/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Scheduled Reports
   async getScheduledReports(): Promise<ScheduledReport[]> {
-    return apiClient.request<ScheduledReport[]>('/api/v1/reports/scheduled');
+    return apiClient.request<ScheduledReport[]>(`${this.baseUrl}/scheduled`);
   }
 
   async createScheduledReport(report: Omit<ScheduledReport, 'id'>): Promise<ScheduledReport> {
-    return apiClient.request<ScheduledReport>('/api/v1/reports/scheduled', {
+    return apiClient.request<ScheduledReport>(`${this.baseUrl}/scheduled`, {
       method: 'POST',
       body: JSON.stringify(report),
     });
   }
 
   async updateScheduledReport(id: string, report: Partial<ScheduledReport>): Promise<ScheduledReport> {
-    return apiClient.request<ScheduledReport>(`/api/v1/reports/scheduled/${id}`, {
+    return apiClient.request<ScheduledReport>(`${this.baseUrl}/scheduled/${id}`, {
       method: 'PUT',
       body: JSON.stringify(report),
     });
   }
 
   async deleteScheduledReport(id: string): Promise<void> {
-    await apiClient.request(`/api/v1/reports/scheduled/${id}`, {
+    await apiClient.request(`${this.baseUrl}/scheduled/${id}`, {
       method: 'DELETE',
     });
   }

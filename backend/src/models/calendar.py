@@ -252,7 +252,7 @@ class Event(Base):
         "Project", foreign_keys=[project_id], back_populates="events"
     )
     task = relationship("Task", foreign_keys=[task_id], back_populates="events")
-    owner = relationship("User", back_populates="owned_events", foreign_keys=[owner_id])
+    owner = relationship("User", back_populates="events", foreign_keys=[owner_id])
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
 
@@ -325,7 +325,7 @@ class EventAttendee(Base):
 
     # 기본 정보
     event_id = Column(UUID, ForeignKey("events.id"), nullable=False, doc="이벤트 ID")
-    user_id = Column(
+    attendee_id = Column(
         UUID, ForeignKey("users.id"), nullable=False, doc="참석자 사용자 ID"
     )
     status = Column(
@@ -348,7 +348,7 @@ class EventAttendee(Base):
 
     # 관계
     event = relationship("Event", back_populates="attendees", foreign_keys=[event_id])
-    user = relationship("User", foreign_keys=[user_id])
+    attendee = relationship("User", foreign_keys=[attendee_id])
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
 

@@ -5,8 +5,9 @@
 """
 
 import logging
-from datetime import date
+from datetime import date, datetime, time
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
@@ -47,13 +48,13 @@ async def list_events(
     page_no: int = Query(1, ge=1, description="페이지 번호"),
     page_size: int = Query(20, ge=1, le=100, description="페이지 크기"),
     search_text: Optional[str] = Query(None, description="제목 또는 설명으로 검색"),
-    calendar_id: Optional[int] = Query(None, description="캘린더별 필터"),
+    calendar_id: Optional[UUID] = Query(None, description="캘린더별 필터"),
     event_type: Optional[str] = Query(None, description="일정 유형별 필터"),
     event_status: Optional[str] = Query(None, description="일정 상태별 필터"),
     start_date_from: Optional[date] = Query(None, description="시작 날짜 범위 (시작)"),
     start_date_to: Optional[date] = Query(None, description="시작 날짜 범위 (끝)"),
-    project_id: Optional[int] = Query(None, description="프로젝트별 필터"),
-    task_id: Optional[int] = Query(None, description="작업별 필터"),
+    project_id: Optional[UUID] = Query(None, description="프로젝트별 필터"),
+    task_id: Optional[UUID] = Query(None, description="작업별 필터"),
     is_all_day: Optional[bool] = Query(None, description="종일 일정 필터"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
@@ -62,10 +63,20 @@ async def list_events(
     현재 사용자가 접근 가능한 일정 목록 조회
     """
     try:
+        print("[DEBUG] list_events 호출됨")
+        print(f"[DEBUG] 사용자 ID: {current_user.id}")
+        print(f"[DEBUG] 페이지 번호: {page_no}, 페이지 크기: {page_size}")
+        print(f"[DEBUG] 검색 텍스트: {search_text}")
+        print(
+            f"[DEBUG] 필터 조건 - 캘린더ID: {calendar_id}, 일정유형: {event_type}, 일정상태: {event_status}"
+        )
+        print(f"[DEBUG] 날짜 범위: {start_date_from} ~ {start_date_to}")
+        print(
+            f"[DEBUG] 프로젝트ID: {project_id}, 작업ID: {task_id}, 종일일정: {is_all_day}"
+        )
+
         logger.info("일정 목록 조회 요청: user_id=%s", current_user.id)
         calendar_service = CalendarService(db)
-
-        from datetime import datetime, time
 
         def date_to_datetime(d):
             return datetime.combine(d, time.min) if d else None
@@ -82,38 +93,46 @@ async def list_events(
             is_all_day=is_all_day,
         )
 
+        print(f"[DEBUG] 검색 파라미터 생성 완료: {search_params}")
+
         result = await calendar_service.list_events(
+            user_id=UUID(str(current_user.id)),
             page_no=page_no,
             page_size=page_size,
-            user_id=int(str(current_user.id)),
             search_params=search_params,
         )
 
+        print(
+            f"[DEBUG] 서비스 호출 완료, 결과: {len(result.events) if hasattr(result, 'events') else 'N/A'}개 일정"
+        )
         return result
 
     except ValidationError as e:
+        print(f"[ERROR] 유효성 검사 실패: {e}")
         logger.warning("일정 목록 조회 유효성 검사 실패: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from e
     except SQLAlchemyError as e:
+        print(f"[ERROR] 데이터베이스 오류: {e}")
         logger.error("데이터베이스 오류로 일정 목록 조회 실패: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="데이터베이스 오류가 발생했습니다.",
         ) from e
     except Exception as e:
+        print(f"[ERROR] 예상치 못한 오류: {e}")
         logger.error("일정 목록 조회 오류: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="일정 목록을 조회할 수 없습니다",
+            detail=f"일정 목록을 조회할 수 없습니다: {e}",
         ) from e
 
 
 @router.get("/events/{event_id}", response_model=EventResponse)
 async def get_event(
-    event_id: int,
+    event_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -127,7 +146,7 @@ async def get_event(
         calendar_service = CalendarService(db)
 
         event = await calendar_service.get_event_by_id(
-            event_id, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), event_id=event_id
         )
 
         return event
@@ -176,7 +195,7 @@ async def create_event(
         calendar_service = CalendarService(db)
 
         event = await calendar_service.create_event(
-            event_data, creator_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), event_data=event_data
         )
 
         logger.info("일정이 %s에 의해 생성됨: %s", current_user.name, event.title)
@@ -216,7 +235,7 @@ async def create_event(
 
 @router.put("/events/{event_id}", response_model=EventResponse)
 async def update_event(
-    event_id: int,
+    event_id: UUID,
     event_data: EventUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
@@ -231,7 +250,7 @@ async def update_event(
         calendar_service = CalendarService(db)
 
         event = await calendar_service.update_event(
-            event_id, event_data, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), event_id=event_id, event_data=event_data
         )
 
         logger.info("일정이 %s에 의해 수정됨: %s", current_user.name, event.title)
@@ -271,7 +290,7 @@ async def update_event(
 
 @router.delete("/events/{event_id}")
 async def delete_event(
-    event_id: int,
+    event_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -285,7 +304,7 @@ async def delete_event(
         calendar_service = CalendarService(db)
 
         success = await calendar_service.delete_event(
-            event_id, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), event_id=event_id
         )
 
         if not success:
@@ -343,9 +362,9 @@ async def list_calendars(
         calendar_service = CalendarService(db)
 
         result = await calendar_service.list_calendars(
+            user_id=UUID(str(current_user.id)),
             page_no=page_no,
             page_size=page_size,
-            user_id=int(str(current_user.id)),
         )
 
         return result
@@ -380,7 +399,7 @@ async def create_calendar(
         calendar_service = CalendarService(db)
 
         calendar = await calendar_service.create_calendar(
-            calendar_data, owner_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), calendar_data=calendar_data
         )
 
         logger.info("캘린더가 %s에 의해 생성됨: %s", current_user.name, calendar.name)
@@ -414,7 +433,7 @@ async def create_calendar(
 
 @router.get("/calendars/{calendar_id}", response_model=CalendarResponse)
 async def get_calendar(
-    calendar_id: int,
+    calendar_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -428,7 +447,7 @@ async def get_calendar(
         calendar_service = CalendarService(db)
 
         calendar = await calendar_service.get_calendar_by_id(
-            calendar_id, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), calendar_id=calendar_id
         )
 
         return calendar
@@ -461,7 +480,7 @@ async def get_calendar(
 
 @router.put("/calendars/{calendar_id}", response_model=CalendarResponse)
 async def update_calendar(
-    calendar_id: int,
+    calendar_id: UUID,
     calendar_data: CalendarUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
@@ -476,7 +495,9 @@ async def update_calendar(
         calendar_service = CalendarService(db)
 
         calendar = await calendar_service.update_calendar(
-            calendar_id, calendar_data, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)),
+            calendar_id=calendar_id,
+            calendar_data=calendar_data,
         )
 
         logger.info("캘린더가 %s에 의해 수정됨: %s", current_user.name, calendar.name)
@@ -516,7 +537,7 @@ async def update_calendar(
 
 @router.delete("/calendars/{calendar_id}")
 async def delete_calendar(
-    calendar_id: int,
+    calendar_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -530,7 +551,7 @@ async def delete_calendar(
         calendar_service = CalendarService(db)
 
         success = await calendar_service.delete_calendar(
-            calendar_id, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), calendar_id=calendar_id
         )
 
         if not success:
@@ -575,7 +596,7 @@ async def delete_calendar(
 
 @router.post("/events/{event_id}/attendees")
 async def add_event_attendees(
-    event_id: int,
+    event_id: UUID,
     attendee_data: EventAttendeeRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
@@ -590,7 +611,9 @@ async def add_event_attendees(
         calendar_service = CalendarService(db)
 
         success = await calendar_service.add_event_attendees(
-            event_id, attendee_data.user_ids, added_by=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)),
+            event_id=event_id,
+            attendee_ids=attendee_data.attendee_ids,
         )
 
         if not success:
@@ -636,8 +659,8 @@ async def add_event_attendees(
 
 @router.delete("/events/{event_id}/attendees/{user_id}")
 async def remove_event_attendee(
-    event_id: int,
-    user_id: int,
+    event_id: UUID,
+    attendee_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -645,11 +668,15 @@ async def remove_event_attendee(
     일정에서 참석자 제거
     """
     try:
-        logger.info("일정 참석자 제거 요청: event_id=%s, user_id=%s", event_id, user_id)
+        logger.info(
+            "일정 참석자 제거 요청: event_id=%s, user_id=%s", event_id, attendee_id
+        )
         calendar_service = CalendarService(db)
 
         success = await calendar_service.remove_event_attendee(
-            event_id, user_id, removed_by=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)),
+            event_id=event_id,
+            attendee_id=attendee_id,
         )
 
         if not success:
@@ -658,7 +685,7 @@ async def remove_event_attendee(
                 detail="참석자를 찾을 수 없습니다",
             )
 
-        logger.info("일정 %s에서 참석자 %s가 제거됨", event_id, user_id)
+        logger.info("일정 %s에서 참석자 %s가 제거됨", event_id, attendee_id)
         return {"message": "참석자가 성공적으로 제거되었습니다"}
 
     except NotFoundError as e:
@@ -680,7 +707,7 @@ async def remove_event_attendee(
             detail="데이터베이스 오류가 발생했습니다.",
         ) from e
     except Exception as e:
-        logger.error("일정 %s 참석자 %s 제거 오류: %s", event_id, user_id, e)
+        logger.error("일정 %s 참석자 %s 제거 오류: %s", event_id, attendee_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="참석자를 제거할 수 없습니다",
@@ -710,7 +737,7 @@ async def get_calendar_view(
         calendar_service = CalendarService(db)
 
         result = await calendar_service.get_calendar_view(
-            view_request, user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), view_request=view_request
         )
 
         return result
@@ -748,7 +775,7 @@ async def get_calendar_stats(
         calendar_service = CalendarService(db)
 
         stats = await calendar_service.get_calendar_stats(
-            user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id))
         )
 
         return stats
@@ -780,7 +807,7 @@ async def get_event_dashboard(
         calendar_service = CalendarService(db)
 
         dashboard = await calendar_service.get_event_dashboard(
-            user_id=int(str(current_user.id))
+            user_id=UUID(str(current_user.id))
         )
 
         return dashboard

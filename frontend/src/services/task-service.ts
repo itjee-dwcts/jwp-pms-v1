@@ -27,35 +27,37 @@ import type {
 import { buildQueryParams } from '../utils/query-params';
 
 export class TaskService {
+  private readonly baseUrl = '/api/v1/tasks';
+
   // CRUD Operations
   async getTasks(params?: TaskSearchParams): Promise<TaskListResponse> {
     const queryString = params ? buildQueryParams(params) : '';
     const response = await apiClient.request<TaskListResponse>(
-      `/tasks${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}${queryString ? `?${queryString}` : ''}`
     );
     return response;
   }
 
   async getTask(id: string): Promise<Task> {
-    return apiClient.request<Task>(`/tasks/${id}`);
+    return apiClient.request<Task>(`${this.baseUrl}/${id}`);
   }
 
   async createTask(data: TaskCreateRequest): Promise<Task> {
-    return apiClient.request<Task>('/tasks', {
+    return apiClient.request<Task>(`${this.baseUrl}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateTask(id: string, data: Partial<TaskCreateRequest>): Promise<Task> {
-    return apiClient.request<Task>(`/tasks/${id}`, {
+    return apiClient.request<Task>(`${this.baseUrl}/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteTask(id: string): Promise<void> {
-    await apiClient.request(`/tasks/${id}`, {
+    await apiClient.request(`${this.baseUrl}/${id}`, {
       method: 'DELETE',
     });
   }
@@ -71,7 +73,7 @@ export class TaskService {
     };
     const queryString = buildQueryParams(searchParams);
     const response = await apiClient.request<TaskListResponse>(
-      `/tasks${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}${queryString ? `?${queryString}` : ''}`
     );
     return response;
   }
@@ -80,18 +82,18 @@ export class TaskService {
   async getTaskStats(params?: TaskSearchParams): Promise<TaskStatsResponse> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<TaskStatsResponse>(
-      `/tasks/stats${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}/stats${queryString ? `?${queryString}` : ''}`
     );
   }
 
   // Kanban Board
   async getKanbanBoard(projectId?: string): Promise<TaskKanbanBoard> {
     const params = projectId ? `?project_id=${projectId}` : '';
-    return apiClient.request<TaskKanbanBoard>(`/tasks/kanban${params}`);
+    return apiClient.request<TaskKanbanBoard>(`${this.baseUrl}/kanban${params}`);
   }
 
   async updateTaskStatus(id: string, status: string): Promise<Task> {
-    return apiClient.request<Task>(`/tasks/${id}/status`, {
+    return apiClient.request<Task>(`${this.baseUrl}/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
@@ -100,34 +102,34 @@ export class TaskService {
   // Gantt Chart
   async getGanttChart(projectId?: string): Promise<TaskGanttChart> {
     const params = projectId ? `?project_id=${projectId}` : '';
-    return apiClient.request<TaskGanttChart>(`/tasks/gantt${params}`);
+    return apiClient.request<TaskGanttChart>(`${this.baseUrl}/gantt${params}`);
   }
 
   // Task Assignments
   async getTaskAssignees(taskId: string): Promise<TaskAssignee[]> {
-    return apiClient.request<TaskAssignee[]>(`/tasks/${taskId}/assignees`);
+    return apiClient.request<TaskAssignee[]>(`${this.baseUrl}/${taskId}/assignees`);
   }
 
   async assignTask(taskId: string, data: AssignTaskRequest): Promise<TaskAssignee[]> {
-    return apiClient.request<TaskAssignee[]>(`/tasks/${taskId}/assign`, {
+    return apiClient.request<TaskAssignee[]>(`${this.baseUrl}/${taskId}/assign`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async unassignTask(taskId: string, userId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/assignees/${userId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/assignees/${userId}`, {
       method: 'DELETE',
     });
   }
 
   // Task Comments
   async getTaskComments(taskId: string): Promise<TaskComment[]> {
-    return apiClient.request<TaskComment[]>(`/tasks/${taskId}/comments`);
+    return apiClient.request<TaskComment[]>(`${this.baseUrl}/${taskId}/comments`);
   }
 
   async addTaskComment(taskId: string, data: CommentCreateRequest): Promise<TaskComment> {
-    return apiClient.request<TaskComment>(`/tasks/${taskId}/comments`, {
+    return apiClient.request<TaskComment>(`${this.baseUrl}/${taskId}/comments`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -138,28 +140,28 @@ export class TaskService {
     commentId: string,
     data: CommentUpdateRequest
   ): Promise<TaskComment> {
-    return apiClient.request<TaskComment>(`/tasks/${taskId}/comments/${commentId}`, {
+    return apiClient.request<TaskComment>(`${this.baseUrl}/${taskId}/comments/${commentId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteTaskComment(taskId: string, commentId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/comments/${commentId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/comments/${commentId}`, {
       method: 'DELETE',
     });
   }
 
   // Task Attachments
   async getTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
-    return apiClient.request<TaskAttachment[]>(`/tasks/${taskId}/attachments`);
+    return apiClient.request<TaskAttachment[]>(`${this.baseUrl}/${taskId}/attachments`);
   }
 
   async uploadTaskFile(taskId: string, file: File): Promise<TaskAttachment> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${apiClient.baseUrl}/tasks/${taskId}/attachments`, {
+    const response = await fetch(`${this.baseUrl}/${taskId}/attachments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
@@ -176,18 +178,18 @@ export class TaskService {
   }
 
   async deleteTaskAttachment(taskId: string, attachmentId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/attachments/${attachmentId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/attachments/${attachmentId}`, {
       method: 'DELETE',
     });
   }
 
   // Task Time Logs
   async getTaskTimeLogs(taskId: string): Promise<TaskTimeLog[]> {
-    return apiClient.request<TaskTimeLog[]>(`/tasks/${taskId}/time-logs`);
+    return apiClient.request<TaskTimeLog[]>(`${this.baseUrl}/${taskId}/time-logs`);
   }
 
   async addTimeLog(taskId: string, data: TimeLogCreateRequest): Promise<TaskTimeLog> {
-    return apiClient.request<TaskTimeLog>(`/tasks/${taskId}/time-logs`, {
+    return apiClient.request<TaskTimeLog>(`${this.baseUrl}/${taskId}/time-logs`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -198,64 +200,64 @@ export class TaskService {
     timeLogId: string,
     data: Partial<TimeLogCreateRequest>
   ): Promise<TaskTimeLog> {
-    return apiClient.request<TaskTimeLog>(`/tasks/${taskId}/time-logs/${timeLogId}`, {
+    return apiClient.request<TaskTimeLog>(`${this.baseUrl}/${taskId}/time-logs/${timeLogId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteTimeLog(taskId: string, timeLogId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/time-logs/${timeLogId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/time-logs/${timeLogId}`, {
       method: 'DELETE',
     });
   }
 
   // Task Tags
   async getTags(): Promise<TaskTag[]> {
-    return apiClient.request<TaskTag[]>('/tasks/tags');
+    return apiClient.request<TaskTag[]>(`${this.baseUrl}/tags`);
   }
 
   async createTag(data: TagCreateRequest): Promise<TaskTag> {
-    return apiClient.request<TaskTag>('/tasks/tags', {
+    return apiClient.request<TaskTag>(`${this.baseUrl}/tags`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async addTaskTags(taskId: string, tagIds: string[]): Promise<TaskTag[]> {
-    return apiClient.request<TaskTag[]>(`/tasks/${taskId}/tags`, {
+    return apiClient.request<TaskTag[]>(`${this.baseUrl}/${taskId}/tags`, {
       method: 'POST',
       body: JSON.stringify({ tag_ids: tagIds }),
     });
   }
 
   async removeTaskTag(taskId: string, tagId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/tags/${tagId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/tags/${tagId}`, {
       method: 'DELETE',
     });
   }
 
   // Task Dependencies
   async getTaskDependencies(taskId: string): Promise<TaskDependency[]> {
-    return apiClient.request<TaskDependency[]>(`/tasks/${taskId}/dependencies`);
+    return apiClient.request<TaskDependency[]>(`${this.baseUrl}/${taskId}/dependencies`);
   }
 
   async addTaskDependency(taskId: string, data: DependencyCreateRequest): Promise<TaskDependency> {
-    return apiClient.request<TaskDependency>(`/tasks/${taskId}/dependencies`, {
+    return apiClient.request<TaskDependency>(`${this.baseUrl}/${taskId}/dependencies`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async removeTaskDependency(taskId: string, dependencyId: string): Promise<void> {
-    await apiClient.request(`/tasks/${taskId}/dependencies/${dependencyId}`, {
+    await apiClient.request(`${this.baseUrl}/${taskId}/dependencies/${dependencyId}`, {
       method: 'DELETE',
     });
   }
 
   // Advanced Operations
   async duplicateTask(id: string, options?: TaskDuplicateOptions): Promise<Task> {
-    return apiClient.request<Task>(`/tasks/${id}/duplicate`, {
+    return apiClient.request<Task>(`${this.baseUrl}/${id}/duplicate`, {
       method: 'POST',
       body: JSON.stringify(options || {}),
     });
@@ -263,21 +265,21 @@ export class TaskService {
 
   // Bulk Operations
   async bulkUpdateTasks(data: BulkTaskUpdateRequest): Promise<Task[]> {
-    return apiClient.request<Task[]>('/tasks/bulk-update', {
+    return apiClient.request<Task[]>(`${this.baseUrl}/bulk-update`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async bulkDeleteTasks(data: BulkTaskDeleteRequest): Promise<void> {
-    await apiClient.request('/tasks/bulk-delete', {
+    await apiClient.request(`${this.baseUrl}/bulk-delete`, {
       method: 'DELETE',
       body: JSON.stringify(data),
     });
   }
 
   async bulkAssignTasks(data: BulkTaskAssignRequest): Promise<void> {
-    await apiClient.request('/tasks/bulk-assign', {
+    await apiClient.request(`${this.baseUrl}/bulk-assign`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -295,7 +297,7 @@ export class TaskService {
     const queryString = buildQueryParams(params);
 
     const response = await apiClient.request<TaskListResponse>(
-      `/tasks/search?${queryString}`
+      `${this.baseUrl}/search?${queryString}`
     );
     return response.tasks;
   }
@@ -305,7 +307,7 @@ export class TaskService {
     const params = { format, ...filters };
     const queryString = buildQueryParams(params);
 
-    const response = await fetch(`${apiClient.baseUrl}/tasks/export?${queryString}`, {
+    const response = await fetch(`${this.baseUrl}/export?${queryString}`, {
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
       },

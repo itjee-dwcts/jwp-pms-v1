@@ -6,6 +6,7 @@
 
 import logging
 from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from models.user import User
 from schemas.task import (
     TaskCommentResponse,
     TaskCreateRequest,
+    TaskListResponse,  # <-- Add this import
     TaskResponse,
     TaskSearchRequest,
     TaskUpdateRequest,
@@ -26,12 +28,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=List[TaskResponse])
+@router.get("/", response_model=TaskListResponse)
 async def list_tasks(
     page_no: int = Query(0, ge=0, description="건너뛸 레코드 수"),
     page_size: int = Query(50, ge=1, le=100, description="반환할 레코드 수"),
-    project_id: Optional[int] = Query(None, description="프로젝트별 필터"),
-    assignee_id: Optional[int] = Query(None, description="담당자별 필터"),
+    project_id: Optional[UUID] = Query(None, description="프로젝트별 필터"),
+    assignee_id: Optional[UUID] = Query(None, description="담당자별 필터"),
     task_status: Optional[str] = Query(None, description="상태별 필터"),
     priority: Optional[str] = Query(None, description="우선순위별 필터"),
     search_text: Optional[str] = Query(None, description="제목 또는 설명으로 검색"),
@@ -42,9 +44,13 @@ async def list_tasks(
     현재 사용자가 접근 가능한 작업 목록 조회
     """
     try:
+        print("[DEBUG] list_projects 호출됨")
+        print(f"[DEBUG] 사용자 ID: {current_user.id}")
+        print(f"[DEBUG] 페이지 번호: {page_no}, 페이지 크기: {page_size}")
+
         task_service = TaskService(db)
-        tasks = await task_service.list_tasks(
-            user_id=int(str(current_user.id)),
+        result = await task_service.list_tasks(
+            user_id=UUID(str(current_user.id)),
             page_no=page_no,
             page_size=page_size,
             search_params=TaskSearchRequest(
@@ -54,7 +60,7 @@ async def list_tasks(
                 priority=priority,
                 search_text=search_text,
                 task_type=None,
-                creator_id=None,
+                owner_id=None,
                 tag_ids=None,
                 due_date_from=None,
                 due_date_to=None,
@@ -63,7 +69,36 @@ async def list_tasks(
             ),
         )
 
-        return [TaskResponse.model_validate(task) for task in tasks]
+        print(f"[DEBUG] 서비스 호출 완료, 반환 타입: {type(result)}")
+
+        # result가 None이거나 반복 불가한 경우 빈 리스트 반환
+        if result is None:
+            return TaskListResponse.create_response(
+                tasks=[],
+                page_no=page_no,
+                page_size=page_size,
+                total_items=0,
+            )
+
+        # 이미 ProjectListResponse라면 그대로 반환
+        if isinstance(result, TaskListResponse):
+            return result
+
+        # 리스트라면 TaskListResponse로 변환
+        if isinstance(result, list):
+            tasks = [
+                TaskResponse.model_validate(task)
+                for task in result  # type: ignore
+            ]
+            return TaskListResponse.create_response(
+                tasks=tasks,
+                page_no=page_no,
+                page_size=page_size,
+                total_items=len(tasks),
+            )
+
+        # 기타 경우 오류 처리
+        raise ValueError(f"예상치 못한 반환 타입: {type(result)}")
 
     except Exception as e:
         logger.error("작업 목록 조회 오류: %s", e)
@@ -75,7 +110,7 @@ async def list_tasks(
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
-    task_id: int,
+    task_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -84,7 +119,9 @@ async def get_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.check_task_access(task_id, int(str(current_user.id)))
+        task = await task_service.check_task_access(
+            user_id=UUID(str(current_user.id)), task_id=task_id
+        )
 
         if not task:
             raise HTTPException(
@@ -114,7 +151,9 @@ async def create_task(
     """
     try:
         task_service = TaskService(db)
-        task = await task_service.create_task(task_data, int(str(current_user.id)))
+        task = await task_service.create_task(
+            user_id=UUID(str(current_user.id)), task_data=task_data
+        )
 
         logger.info("작업이 %s에 의해 생성됨: %s", current_user.name, task.title)
 
@@ -131,7 +170,7 @@ async def create_task(
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(
-    task_id: int,
+    task_id: UUID,
     task_data: TaskUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
@@ -142,7 +181,7 @@ async def update_task(
     try:
         task_service = TaskService(db)
         task = await task_service.update_task(
-            task_id, task_data, int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), task_id=task_id, task_data=task_data
         )
 
         if not task:
@@ -167,7 +206,7 @@ async def update_task(
 
 @router.delete("/{task_id}")
 async def delete_task(
-    task_id: int,
+    task_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -176,7 +215,9 @@ async def delete_task(
     """
     try:
         task_service = TaskService(db)
-        success = await task_service.delete_task(task_id, int(str(current_user.id)))
+        success = await task_service.delete_task(
+            user_id=UUID(str(current_user.id)), task_id=task_id
+        )
 
         if not success:
             raise HTTPException(
@@ -200,7 +241,7 @@ async def delete_task(
 
 @router.get("/{task_id}/comments", response_model=List[TaskCommentResponse])
 async def list_task_comments(
-    task_id: int,
+    task_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -210,7 +251,7 @@ async def list_task_comments(
     try:
         task_service = TaskService(db)
         comments = await task_service.list_task_comments(
-            task_id, int(str(current_user.id))
+            user_id=UUID(str(current_user.id)), task_id=task_id
         )
 
         return [TaskCommentResponse.model_validate(comment) for comment in comments]

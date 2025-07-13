@@ -27,55 +27,57 @@ import type {
 import { buildQueryParams } from '../utils/query-params';
 
 export class UserService {
+  private readonly baseUrl = '/api/v1/users';
+
   // CRUD Operations
   async getUsers(params?: UserSearchParams): Promise<User[]> {
     const queryString = params ? buildQueryParams(params) : '';
     const response = await apiClient.request<UserListResponse>(
-      `/users${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}${queryString ? `?${queryString}` : ''}`
     );
     return response.users;
   }
 
   async getUser(id: string): Promise<User> {
-    return apiClient.request<User>(`/users/${id}`);
+    return apiClient.request<User>(`${this.baseUrl}/${id}`);
   }
 
   async createUser(data: UserCreateRequest): Promise<User> {
-    return apiClient.request<User>('/users', {
+    return apiClient.request<User>(`${this.baseUrl}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateUser(id: string, data: UserUpdateRequest): Promise<User> {
-    return apiClient.request<User>(`/users/${id}`, {
+    return apiClient.request<User>(`${this.baseUrl}/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteUser(id: string): Promise<void> {
-    await apiClient.request(`/users/${id}`, {
+    await apiClient.request(`${this.baseUrl}/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Statistics
   async getUserStats(id?: string): Promise<UserStatsResponse | UserStats> {
-    const endpoint = id ? `/users/${id}/stats` : '/users/stats';
+    const endpoint = id ? `${this.baseUrl}/${id}/stats` : `${this.baseUrl}/stats`;
     return apiClient.request<UserStatsResponse | UserStats>(endpoint);
   }
 
   // Preferences
   async getUserPreferences(id: string): Promise<UserPreferences> {
-    return apiClient.request<UserPreferences>(`/users/${id}/preferences`);
+    return apiClient.request<UserPreferences>(`${this.baseUrl}/${id}/preferences`);
   }
 
   async updateUserPreferences(
     id: string,
     preferences: Partial<UserPreferences>
   ): Promise<UserPreferences> {
-    return apiClient.request<UserPreferences>(`/users/${id}/preferences`, {
+    return apiClient.request<UserPreferences>(`${this.baseUrl}/${id}/preferences`, {
       method: 'PUT',
       body: JSON.stringify(preferences),
     });
@@ -85,22 +87,22 @@ export class UserService {
   async getUserActivity(id: string, params?: UserActivityParams): Promise<UserActivityLog[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<UserActivityLog[]>(
-      `/users/${id}/activity${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}/${id}/activity${queryString ? `?${queryString}` : ''}`
     );
   }
 
   async getUserSessions(id: string): Promise<UserSession[]> {
-    return apiClient.request<UserSession[]>(`/users/${id}/sessions`);
+    return apiClient.request<UserSession[]>(`${this.baseUrl}/${id}/sessions`);
   }
 
   async revokeUserSession(userId: string, sessionId: string): Promise<void> {
-    await apiClient.request(`/users/${userId}/sessions/${sessionId}`, {
+    await apiClient.request(`${this.baseUrl}/${userId}/sessions/${sessionId}`, {
       method: 'DELETE',
     });
   }
 
   async revokeAllUserSessions(id: string): Promise<void> {
-    await apiClient.request(`/users/${id}/sessions`, {
+    await apiClient.request(`${this.baseUrl}/${id}/sessions`, {
       method: 'DELETE',
     });
   }
@@ -111,7 +113,7 @@ export class UserService {
     formData.append('avatar', file);
 
     // Direct fetch for file upload
-    const response = await fetch(`${apiClient.baseUrl}/users/${id}/avatar`, {
+    const response = await fetch(`${this.baseUrl}/${id}/avatar`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
@@ -128,84 +130,84 @@ export class UserService {
   }
 
   async deleteAvatar(id: string): Promise<void> {
-    await apiClient.request(`/users/${id}/avatar`, {
+    await apiClient.request(`${this.baseUrl}/${id}/avatar`, {
       method: 'DELETE',
     });
   }
 
   // Password Management
   async changeUserPassword(id: string, data: PasswordChangeRequest): Promise<void> {
-    await apiClient.request(`/users/${id}/change-password`, {
+    await apiClient.request(`${this.baseUrl}/${id}/change-password`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async resetUserPassword(id: string): Promise<{ temporary_password: string }> {
-    return apiClient.request<{ temporary_password: string }>(`/users/${id}/reset-password`, {
+    return apiClient.request<{ temporary_password: string }>(`${this.baseUrl}/${id}/reset-password`, {
       method: 'POST',
     });
   }
 
   // User Invitations
   async inviteUser(data: UserInviteRequest): Promise<UserInviteResponse> {
-    return apiClient.request<UserInviteResponse>('/users/invite', {
+    return apiClient.request<UserInviteResponse>(`${this.baseUrl}/invite`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getInvitations(): Promise<UserInviteResponse[]> {
-    return apiClient.request<UserInviteResponse[]>('/users/invitations');
+    return apiClient.request<UserInviteResponse[]>(`${this.baseUrl}/invitations`);
   }
 
   async resendInvitation(inviteId: string): Promise<void> {
-    await apiClient.request(`/users/invitations/${inviteId}/resend`, {
+    await apiClient.request(`${this.baseUrl}/invitations/${inviteId}/resend`, {
       method: 'POST',
     });
   }
 
   async cancelInvitation(inviteId: string): Promise<void> {
-    await apiClient.request(`/users/invitations/${inviteId}`, {
+    await apiClient.request(`${this.baseUrl}/invitations/${inviteId}`, {
       method: 'DELETE',
     });
   }
 
   // Status Management
   async activateUser(id: string): Promise<User> {
-    return apiClient.request<User>(`/users/${id}/activate`, {
+    return apiClient.request<User>(`${this.baseUrl}/${id}/activate`, {
       method: 'POST',
     });
   }
 
   async deactivateUser(id: string): Promise<User> {
-    return apiClient.request<User>(`/users/${id}/deactivate`, {
+    return apiClient.request<User>(`${this.baseUrl}/${id}/deactivate`, {
       method: 'POST',
     });
   }
 
   async suspendUser(id: string, reason?: string): Promise<User> {
-    return apiClient.request<User>(`/users/${id}/suspend`, {
+    return apiClient.request<User>(`${this.baseUrl}/${id}/suspend`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
     });
   }
 
   async unsuspendUser(id: string): Promise<User> {
-    return apiClient.request<User>(`/users/${id}/unsuspend`, {
+    return apiClient.request<User>(`${this.baseUrl}/${id}/unsuspend`, {
       method: 'POST',
     });
   }
 
   // Email Verification
   async sendVerificationEmail(id: string): Promise<void> {
-    await apiClient.request(`/users/${id}/send-verification`, {
+    await apiClient.request(`${this.baseUrl}/${id}/send-verification`, {
       method: 'POST',
     });
   }
 
   async verifyEmail(token: string): Promise<void> {
-    await apiClient.request('/users/verify-email', {
+    await apiClient.request(`${this.baseUrl}/verify-email`, {
       method: 'POST',
       body: JSON.stringify({ token }),
     });
@@ -221,21 +223,21 @@ export class UserService {
     const queryString = buildQueryParams(params);
 
     const response = await apiClient.request<UserListResponse>(
-      `/users/search?${queryString}`
+      `${this.baseUrl}/search?${queryString}`
     );
     return response.users;
   }
 
   // Bulk Operations
   async bulkUpdateUsers(data: BulkUpdateRequest): Promise<User[]> {
-    return apiClient.request<User[]>('/users/bulk-update', {
+    return apiClient.request<User[]>(`${this.baseUrl}/bulk-update`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async bulkDeleteUsers(data: BulkDeleteRequest): Promise<void> {
-    await apiClient.request('/users/bulk-delete', {
+    await apiClient.request(`${this.baseUrl}/bulk-delete`, {
       method: 'DELETE',
       body: JSON.stringify(data),
     });
@@ -245,7 +247,7 @@ export class UserService {
     const params = { format, ...filters };
     const queryString = buildQueryParams(params);
 
-    const response = await fetch(`${apiClient.baseUrl}/users/export?${queryString}`, {
+    const response = await fetch(`${this.baseUrl}/export?${queryString}`, {
       headers: {
         'Authorization': `Bearer ${apiClient.accessToken}`,
       },
@@ -260,25 +262,25 @@ export class UserService {
 
   // Roles and Permissions
   async getUserRoles(): Promise<string[]> {
-    return apiClient.request<string[]>('/users/roles');
+    return apiClient.request<string[]>(`${this.baseUrl}/roles`);
   }
 
   async getUserPermissions(id: string): Promise<string[]> {
-    return apiClient.request<string[]>(`/users/${id}/permissions`);
+    return apiClient.request<string[]>(`${this.baseUrl}/${id}/permissions`);
   }
 
   // User Content
   async getUserProjects(id: string, params?: UserProjectParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
-      `/users/${id}/projects${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}/${id}/projects${queryString ? `?${queryString}` : ''}`
     );
   }
 
   async getUserTasks(id: string, params?: UserTaskParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
-      `/users/${id}/tasks${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}/${id}/tasks${queryString ? `?${queryString}` : ''}`
     );
   }
 
@@ -286,36 +288,36 @@ export class UserService {
   async getUserNotifications(id: string, params?: UserNotificationParams): Promise<any[]> {
     const queryString = params ? buildQueryParams(params) : '';
     return apiClient.request<any[]>(
-      `/users/${id}/notifications${queryString ? `?${queryString}` : ''}`
+      `${this.baseUrl}/${id}/notifications${queryString ? `?${queryString}` : ''}`
     );
   }
 
   async markNotificationAsRead(userId: string, notificationId: string): Promise<void> {
-    await apiClient.request(`/users/${userId}/notifications/${notificationId}/read`, {
+    await apiClient.request(`${this.baseUrl}/${userId}/notifications/${notificationId}/read`, {
       method: 'PUT',
     });
   }
 
   async markAllNotificationsAsRead(id: string): Promise<void> {
-    await apiClient.request(`/users/${id}/notifications/read-all`, {
+    await apiClient.request(`${this.baseUrl}/${id}/notifications/read-all`, {
       method: 'PUT',
     });
   }
 
   // Team Management
   async getUserTeams(id: string): Promise<any[]> {
-    return apiClient.request<any[]>(`/users/${id}/teams`);
+    return apiClient.request<any[]>(`${this.baseUrl}/${id}/teams`);
   }
 
   async addUserToTeam(userId: string, teamId: string, role?: string): Promise<void> {
-    await apiClient.request(`/users/${userId}/teams/${teamId}`, {
+    await apiClient.request(`${this.baseUrl}/${userId}/teams/${teamId}`, {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
   }
 
   async removeUserFromTeam(userId: string, teamId: string): Promise<void> {
-    await apiClient.request(`/users/${userId}/teams/${teamId}`, {
+    await apiClient.request(`${this.baseUrl}/${userId}/teams/${teamId}`, {
       method: 'DELETE',
     });
   }

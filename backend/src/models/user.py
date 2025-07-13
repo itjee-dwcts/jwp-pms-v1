@@ -134,12 +134,12 @@ class User(Base):
         "UserActivityLog", back_populates="user", foreign_keys="UserActivityLog.user_id"
     )
 
-    owned_projects = relationship(
+    projects = relationship(
         "Project", back_populates="owner", foreign_keys="Project.owner_id"
     )
 
     project_memberships = relationship(
-        "ProjectMember", back_populates="user", foreign_keys="ProjectMember.user_id"
+        "ProjectMember", back_populates="member", foreign_keys="ProjectMember.member_id"
     )
 
     project_comments = relationship(
@@ -148,21 +148,19 @@ class User(Base):
         foreign_keys="ProjectComment.author_id",
     )
 
+    tasks = relationship("Task", back_populates="owner", foreign_keys="Task.owner_id")
+
     task_assignments = relationship(
         "TaskAssignment",
         back_populates="assignee",
-        foreign_keys="TaskAssignment.user_id",
-    )
-
-    owned_tasks = relationship(
-        "Task", back_populates="owner", foreign_keys="Task.owner_id"
+        foreign_keys="TaskAssignment.assignee_id",
     )
 
     calendars = relationship(
         "Calendar", back_populates="owner", foreign_keys="Calendar.owner_id"
     )
 
-    owned_events = relationship(
+    events = relationship(
         "Event", back_populates="owner", foreign_keys="Event.owner_id"
     )
 

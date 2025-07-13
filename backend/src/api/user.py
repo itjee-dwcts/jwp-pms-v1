@@ -5,7 +5,7 @@
 """
 
 import logging
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -14,29 +14,47 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_session
 from core.dependencies import get_current_active_user, require_admin
 from models.user import User
-from schemas.user import UserCreateRequest, UserResponse, UserUpdateRequest
+from schemas.user import (
+    UserCreateRequest,
+    UserListResponse,
+    UserResponse,
+    UserUpdateRequest,
+)
 from services.user import UserService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("/", response_model=UserListResponse)
 async def list_users(
     page_no: int = Query(0, ge=0, description="건너뛸 레코드 수"),
     page_size: int = Query(50, ge=1, le=100, description="반환할 레코드 수"),
     search_text: Optional[str] = Query(None, description="이름 또는 이메일로 검색"),
     user_role: Optional[str] = Query(None, description="역할별 필터"),
     user_status: Optional[str] = Query(None, description="상태별 필터"),
-    # current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
     필터링 및 페이지네이션을 지원하는 사용자 목록 조회
     """
     try:
+        print("[DEBUG] list_projects 호출됨")
+        print(f"[DEBUG] 사용자 ID: {current_user.id}")
+        print(f"[DEBUG] 페이지 번호: {page_no}, 페이지 크기: {page_size}")
+
+        # 사용자 서비스 인스턴스 생성
         user_service = UserService(db)
-        users = await user_service.list_users(
+
+        # 사용자 목록 조회
+        print(f"[DEBUG] 사용자 목록 조회 시작: 페이지 {page_no}, 크기 {page_size}")
+        print(
+            f"[DEBUG] 검색 텍스트: {search_text}, 역할: {user_role}, 상태: {user_status}"
+        )
+        print(f"[DEBUG] 현재 사용자 ID: {current_user.id}")
+        result = await user_service.list_users(
+            user_id=UUID(str(current_user.id)),
             page_no=page_no,
             page_size=page_size,
             search_text=search_text,
@@ -44,7 +62,36 @@ async def list_users(
             user_status=user_status,
         )
 
-        return [UserResponse.model_validate(user) for user in users]
+        print(f"[DEBUG] 서비스 호출 완료, 반환 타입: {type(result)}")
+
+        # result가 None이거나 반복 불가한 경우 빈 리스트 반환
+        if result is None:
+            return UserListResponse.create_response(
+                users=[],
+                page_no=page_no,
+                page_size=page_size,
+                total_items=0,
+            )
+
+        # 이미 UserListResponse라면 그대로 반환
+        if isinstance(result, UserListResponse):
+            return result
+
+        # 리스트라면 UserListResponse로 변환
+        if isinstance(result, list):
+            user_responses = [
+                UserResponse.model_validate(user)
+                for user in result  # type: ignore
+            ]
+            return UserListResponse.create_response(
+                users=user_responses,
+                page_no=page_no,
+                page_size=page_size,
+                total_items=len(user_responses),
+            )
+
+        # 기타 경우 오류 처리
+        raise ValueError(f"예상치 못한 반환 타입: {type(result)}")
 
     except Exception as e:
         logger.error("사용자 목록 조회 오류: %s", e)

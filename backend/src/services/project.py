@@ -7,6 +7,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, cast
+from uuid import UUID
 
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +34,7 @@ from schemas.project import (
     ProjectStatsResponse,
     ProjectUpdateRequest,
 )
+from services.user import UserService
 from utils.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -48,19 +50,28 @@ class ProjectService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.user_service = UserService(db)
 
     async def create_project(
-        self, project_data: ProjectCreateRequest, creator_id: int
+        self,
+        user_id: UUID,
+        project_data: ProjectCreateRequest,
     ) -> ProjectResponse:
         """새 프로젝트 생성"""
         try:
-            # 생성자가 존재하는지 검증
-            creator_result = await self.db.execute(
-                select(User).where(User.id == creator_id)
-            )
-            creator = creator_result.scalar_one_or_none()
-            if not creator:
-                raise NotFoundError(f"ID {creator_id}인 생성자를 찾을 수 없습니다")
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
+            if not project_data.owner_id:
+                project_data.owner_id = user_id
+
+            owner = self.user_service.get_user_by_id(project_data.owner_id)
+            if not owner:
+                raise NotFoundError(
+                    f"ID {project_data.owner_id}인 소유자를 찾을 수 없습니다"
+                )
 
             # 프로젝트 생성
             project = Project(
@@ -75,9 +86,8 @@ class ProjectService:
                 documentation_url=project_data.documentation_url,
                 tags=project_data.tags,
                 is_public=project_data.is_public,
-                owner_id=creator_id,
-                created_by=creator_id,
-                updated_by=creator_id,
+                owner_id=project_data.owner_id,
+                created_by=user_id,
             )
 
             self.db.add(project)
@@ -86,9 +96,9 @@ class ProjectService:
             # 생성자를 프로젝트 소유자로 추가
             project_member = ProjectMember(
                 project_id=project.id,
-                user_id=creator_id,
+                member_id=project_data.owner_id,
                 role=ProjectMemberRole.OWNER,
-                created_by=creator_id,
+                created_by=user_id,
             )
 
             self.db.add(project_member)
@@ -114,7 +124,7 @@ class ProjectService:
             raise
 
     async def get_project_by_id(
-        self, project_id: int, user_id: Optional[int] = None
+        self, user_id: UUID, project_id: UUID
     ) -> ProjectResponse:
         """ID로 프로젝트 조회"""
         try:
@@ -140,7 +150,7 @@ class ProjectService:
 
             # 접근 권한 확인
             if not bool(project.is_public) and user_id:
-                has_access = await self.check_project_access(project_id, user_id)
+                has_access = await self.check_project_access(user_id, project_id)
                 if not has_access:
                     raise AuthorizationError("이 프로젝트에 대한 접근이 거부되었습니다")
 
@@ -151,13 +161,18 @@ class ProjectService:
             raise
 
     async def update_project(
-        self, project_id: int, project_data: ProjectUpdateRequest, user_id: int
+        self, user_id: UUID, project_id: UUID, project_data: ProjectUpdateRequest
     ) -> ProjectResponse:
         """프로젝트 정보 업데이트"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 사용자가 프로젝트를 업데이트할 권한이 있는지 확인
             can_edit = await self.check_project_permission(
-                project_id, user_id, ["owner", "manager"]
+                user_id, project_id, ["owner", "manager"]
             )
             if not can_edit:
                 raise AuthorizationError("프로젝트를 업데이트할 권한이 부족합니다")
@@ -199,12 +214,17 @@ class ProjectService:
             logger.error("프로젝트 %d 업데이트에 실패했습니다: %s", project_id, e)
             raise
 
-    async def delete_project(self, project_id: int, user_id: int) -> bool:
+    async def delete_project(self, user_id: UUID, project_id: UUID) -> bool:
         """프로젝트 삭제 (소프트 삭제)"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 사용자가 프로젝트를 삭제할 권한이 있는지 확인
             can_delete = await self.check_project_permission(
-                project_id, user_id, ["owner"]
+                user_id, project_id, ["owner"]
             )
             if not can_delete:
                 raise AuthorizationError("프로젝트를 삭제할 권한이 부족합니다")
@@ -220,7 +240,7 @@ class ProjectService:
             # 상태 변경으로 소프트 삭제
             project.status = ProjectStatus.CANCELLED
             project.updated_by = user_id
-            project.updated_at = datetime.utcnow()
+            project.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
 
@@ -234,24 +254,30 @@ class ProjectService:
 
     async def list_projects(
         self,
+        user_id: UUID,
         page_no: int = 1,
         page_size: int = 20,
-        user_id: Optional[int] = None,
         search_params: Optional[ProjectSearchRequest] = None,
     ) -> ProjectListResponse:
         """페이지네이션과 필터로 프로젝트 목록 조회"""
         try:
+            # 사용자가 존재하는지 검증
+            print(f"사용자 존재 검증 User ID: {user_id}")
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 기본 쿼리 구성
             query = select(Project).options(
                 selectinload(Project.owner),
-                selectinload(Project.members).selectinload(ProjectMember.user),
+                selectinload(Project.members).selectinload(ProjectMember.member),
             )
 
             # 접근 제어 적용
             if user_id:
                 # 사용자는 공개 프로젝트나 멤버인 프로젝트를 볼 수 있음
                 member_subquery = select(ProjectMember.project_id).where(
-                    ProjectMember.user_id == user_id
+                    ProjectMember.member_id == user_id
                 )
                 query = query.where(
                     or_(
@@ -305,13 +331,31 @@ class ProjectService:
                 if search_params.is_public is not None:
                     query = query.where(Project.is_public == search_params.is_public)
 
+            # 페이지 번호 검증 및 정규화
+            page_no = max(0, page_no)  # 음수 방지
+            page_size = max(1, min(100, page_size))  # 범위 제한
+
             # 총 개수 조회
             count_query = select(count()).select_from(query.subquery())
             total_result = await self.db.execute(count_query)
             total_items = total_result.scalar()
 
+            # 총 페이지 수 계산
+            total_pages = (
+                (total_items if total_items is not None else 0) + page_size - 1
+            ) // page_size
+
+            # 페이지 번호가 범위를 벗어나는 경우 조정
+            if total_pages > 0 and page_no >= total_pages:
+                page_no = max(0, total_pages - 1)
+
             # 페이지네이션과 정렬 적용
-            offset = (page_no - 1) * page_size
+            offset = page_no * page_size
+
+            print(
+                f"[DEBUG] 페이지네이션 계산 - page_no: {page_no}, page_size: {page_size}, offset: {offset}, total_pages: {total_pages}"
+            )
+
             query = (
                 query.offset(offset).limit(page_size).order_by(desc(Project.created_at))
             )
@@ -321,18 +365,23 @@ class ProjectService:
             projects = result.scalars().all()
 
             # 페이지네이션 정보 계산
-            total_pages = (
-                (total_items if total_items is not None else 0) + page_size - 1
-            ) // page_size
+            has_next = (page_no + 1) < total_pages if total_pages > 0 else False
+            has_prev = page_no > 0
+
+            print(
+                f"프로젝트 목록 조회 - 페이지: {page_no}, 총 개수: {total_items}, offset: {offset}"
+            )
 
             return ProjectListResponse(
                 projects=[
                     ProjectResponse.model_validate(project) for project in projects
                 ],
-                total_items=total_items if total_items is not None else 0,
                 page_no=page_no,
                 page_size=page_size,
                 total_pages=total_pages,
+                total_items=total_items if total_items is not None else 0,
+                has_next=has_next,
+                has_prev=has_prev,
             )
 
         except Exception as e:
@@ -341,15 +390,20 @@ class ProjectService:
 
     async def add_project_member(
         self,
-        project_id: int,
+        user_id: UUID,
+        project_id: UUID,
         member_data: ProjectMemberCreateRequest,
-        added_by: int,
     ) -> bool:
         """프로젝트에 멤버 추가"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 사용자가 멤버를 추가할 권한이 있는지 확인
             can_add = await self.check_project_permission(
-                project_id, added_by, ["owner", "manager"]
+                user_id, project_id, ["owner", "manager"]
             )
             if not can_add:
                 raise AuthorizationError("멤버를 추가할 권한이 부족합니다")
@@ -359,7 +413,7 @@ class ProjectService:
                 select(ProjectMember).where(
                     and_(
                         ProjectMember.project_id == project_id,
-                        ProjectMember.user_id == member_data.user_id,
+                        ProjectMember.member_id == member_data.member_id,
                     )
                 )
             )
@@ -368,19 +422,19 @@ class ProjectService:
 
             # 대상 사용자가 존재하는지 확인
             user_result = await self.db.execute(
-                select(User).where(User.id == member_data.user_id)
+                select(User).where(User.id == member_data.member_id)
             )
             if not user_result.scalar_one_or_none():
                 raise NotFoundError(
-                    f"ID {member_data.user_id}인 사용자를 찾을 수 없습니다"
+                    f"ID {member_data.member_id}인 사용자를 찾을 수 없습니다"
                 )
 
             # 멤버 추가
             project_member = ProjectMember(
                 project_id=project_id,
-                user_id=member_data.user_id,
+                member_id=member_data.member_id,
                 role=member_data.role,
-                created_by=added_by,
+                created_by=user_id,
             )
 
             self.db.add(project_member)
@@ -389,7 +443,7 @@ class ProjectService:
             logger.info(
                 "프로젝트 %d에 멤버가 추가되었습니다: 사용자 %d",
                 project_id,
-                member_data.user_id,
+                member_data.member_id,
             )
             return True
 
@@ -399,13 +453,18 @@ class ProjectService:
             raise
 
     async def remove_project_member(
-        self, project_id: int, user_id: int, removed_by: int
+        self, user_id: UUID, project_id: UUID, member_id: UUID
     ) -> bool:
         """프로젝트에서 멤버 제거"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 사용자가 멤버를 제거할 권한이 있는지 확인
             can_remove = await self.check_project_permission(
-                project_id, removed_by, ["owner", "manager"]
+                user_id, project_id, ["owner", "manager"]
             )
             if not can_remove:
                 raise AuthorizationError("멤버를 제거할 권한이 부족합니다")
@@ -415,7 +474,7 @@ class ProjectService:
                 select(ProjectMember).where(
                     and_(
                         ProjectMember.project_id == project_id,
-                        ProjectMember.user_id == user_id,
+                        ProjectMember.member_id == member_id,
                     )
                 )
             )
@@ -431,7 +490,9 @@ class ProjectService:
             await self.db.commit()
 
             logger.info(
-                "프로젝트 %d에서 멤버가 제거되었습니다: 사용자 %d", project_id, user_id
+                "프로젝트 %d에서 멤버가 제거되었습니다: 사용자 %d",
+                project_id,
+                member_id,
             )
             return True
 
@@ -440,16 +501,19 @@ class ProjectService:
             logger.error("프로젝트 %d에서 멤버 제거에 실패했습니다: %s", project_id, e)
             raise
 
-    async def get_project_stats(
-        self, user_id: Optional[int] = None
-    ) -> ProjectStatsResponse:
+    async def get_project_stats(self, user_id: UUID) -> ProjectStatsResponse:
         """프로젝트 통계 조회"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 접근 제어와 함께 기본 쿼리 구성
             base_query = select(Project)
             if user_id:
                 member_subquery = select(ProjectMember.project_id).where(
-                    ProjectMember.user_id == user_id
+                    ProjectMember.member_id == user_id
                 )
                 base_query = base_query.where(
                     or_(
@@ -521,12 +585,17 @@ class ProjectService:
             logger.error("프로젝트 통계 조회에 실패했습니다: %s", e)
             raise
 
-    async def get_project_dashboard(self, user_id: int) -> ProjectDashboardResponse:
+    async def get_project_dashboard(self, user_id: UUID) -> ProjectDashboardResponse:
         """사용자를 위한 프로젝트 대시보드 데이터 조회"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 사용자의 프로젝트 조회
             member_subquery = select(ProjectMember.project_id).where(
-                ProjectMember.user_id == user_id
+                ProjectMember.member_id == user_id
             )
 
             # 내 프로젝트
@@ -560,8 +629,9 @@ class ProjectService:
                 .options(selectinload(Project.owner))
                 .where(
                     and_(
-                        Project.end_date > datetime.utcnow(),
-                        Project.end_date < datetime.utcnow() + timedelta(days=30),
+                        Project.end_date > datetime.now(timezone.utc),
+                        Project.end_date
+                        < datetime.now(timezone.utc) + timedelta(days=30),
                         Project.status.in_(["planning", "active"]),
                         or_(
                             Project.is_public.is_(True),
@@ -613,9 +683,14 @@ class ProjectService:
             logger.error("프로젝트 대시보드 조회에 실패했습니다: %s", e)
             raise
 
-    async def get_accessible_projects(self, user_id: int) -> List[int]:
+    async def get_accessible_projects(self, user_id: UUID) -> List[int]:
         """사용자가 접근할 수 있는 프로젝트 ID 목록 조회"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 공개 프로젝트 조회
             public_result = await self.db.execute(
                 select(Project.id).where(Project.is_public.is_(True))
@@ -624,7 +699,9 @@ class ProjectService:
 
             # 사용자가 멤버인 프로젝트 조회
             member_result = await self.db.execute(
-                select(ProjectMember.project_id).where(ProjectMember.user_id == user_id)
+                select(ProjectMember.project_id).where(
+                    ProjectMember.member_id == user_id
+                )
             )
             member_projects = [row[0] for row in member_result.fetchall()]
 
@@ -635,9 +712,14 @@ class ProjectService:
             logger.error("접근 가능한 프로젝트 조회에 실패했습니다: %s", e)
             return []
 
-    async def check_project_access(self, project_id: int, user_id: int) -> bool:
+    async def check_project_access(self, user_id: UUID, project_id: UUID) -> bool:
         """사용자가 프로젝트에 접근할 수 있는지 확인"""
         try:
+            # 사용자가 존재하는지 검증
+            user = self.user_service.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
+
             # 프로젝트가 공개인지 확인
             project_result = await self.db.execute(
                 select(Project.is_public).where(Project.id == project_id)
@@ -655,7 +737,7 @@ class ProjectService:
                 select(ProjectMember).where(
                     and_(
                         ProjectMember.project_id == project_id,
-                        ProjectMember.user_id == user_id,
+                        ProjectMember.member_id == user_id,
                     )
                 )
             )
@@ -667,7 +749,7 @@ class ProjectService:
             return False
 
     async def check_project_permission(
-        self, project_id: int, user_id: int, required_roles: List[str]
+        self, user_id: UUID, project_id: UUID, required_roles: List[str]
     ) -> bool:
         """사용자가 프로젝트에서 필요한 역할을 가지고 있는지 확인"""
         try:
@@ -675,7 +757,7 @@ class ProjectService:
                 select(ProjectMember).where(
                     and_(
                         ProjectMember.project_id == project_id,
-                        ProjectMember.user_id == user_id,
+                        ProjectMember.member_id == user_id,
                     )
                 )
             )
@@ -691,19 +773,21 @@ class ProjectService:
             return False
 
     async def list_project_members(
-        self,
-        project_id: int,
-        user_id: int,
-    ):
+        self, user_id: UUID, project_id: UUID, member_id: Optional[UUID] = None
+    ) -> List[ProjectMember]:
         """
         사용자를 위한 프로젝트 멤버 목록 조회
         """
+        # 사용자가 존재하는지 검증
+        user = self.user_service.get_user_by_id(user_id)
+        if not user:
+            raise NotFoundError(f"ID {user_id}인 사용자를 찾을 수 없습니다")
 
         stmt = select(ProjectMember).where(ProjectMember.project_id == project_id)
-        if user_id:
-            stmt = stmt.where(ProjectMember.user_id == user_id)
+        if member_id:
+            stmt = stmt.where(ProjectMember.member_id == member_id)
         result = await self.db.execute(stmt)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
 
 async def get_project_service(

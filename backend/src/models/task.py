@@ -139,7 +139,7 @@ class Task(Base):
     # 관계
     project = relationship("Project", back_populates="tasks", foreign_keys=[project_id])
 
-    owner = relationship("User", back_populates="owned_tasks", foreign_keys=[owner_id])
+    owner = relationship("User", back_populates="tasks", foreign_keys=[owner_id])
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
 
@@ -264,7 +264,7 @@ class TaskAssignment(Base):
 
     # 작업 및 사용자 연관
     task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
-    user_id = Column(
+    assignee_id = Column(
         UUID, ForeignKey("users.id"), nullable=False, doc="할당된 사용자 ID"
     )
     is_active = Column(
@@ -277,18 +277,22 @@ class TaskAssignment(Base):
     # 관계
     task = relationship("Task", back_populates="assignments", foreign_keys=[task_id])
     assignee = relationship(
-        "User", back_populates="task_assignments", foreign_keys=[user_id]
+        "User", back_populates="task_assignments", foreign_keys=[assignee_id]
     )
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
 
     # 제약 조건
     __table_args__ = (
-        UniqueConstraint("task_id", "user_id", name="uq_task_assignments_task_user"),
+        UniqueConstraint(
+            "task_id", "assignee_id", name="uq_task_assignments_task_assignee"
+        ),
     )
 
     def __repr__(self) -> str:
-        return f"<TaskAssignment(task_id={self.task_id}, user_id={self.user_id})>"
+        return (
+            f"<TaskAssignment(task_id={self.task_id}, assignee_id={self.assignee_id})>"
+        )
 
 
 class TaskComment(Base):
@@ -430,7 +434,7 @@ class TaskAttachment(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TaskAttachment(id={self.id}, filename='{self.file_name}', "
+            f"<TaskAttachment(id={self.id}, file_name='{self.file_name}', "
             f"task_id={self.task_id})>"
         )
 
@@ -476,7 +480,7 @@ class TaskTimeLog(Base):
 
     # 작업 및 사용자 연관
     task_id = Column(UUID, ForeignKey("tasks.id"), nullable=False, doc="작업 ID")
-    user_id = Column(
+    assignee_id = Column(
         UUID,
         ForeignKey("users.id"),
         nullable=False,
@@ -493,7 +497,7 @@ class TaskTimeLog(Base):
 
     # 관계
     task = relationship("Task", back_populates="time_logs", foreign_keys=[task_id])
-    user = relationship("User", foreign_keys=[user_id])
+    assignee = relationship("User", foreign_keys=[assignee_id])
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
 
