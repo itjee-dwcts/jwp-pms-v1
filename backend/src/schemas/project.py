@@ -79,21 +79,40 @@ class ProjectCreateRequest(ProjectBase):
     documentation_url: Optional[str] = Field(
         None, max_length=500, description="문서 URL"
     )
-    tags: Optional[str] = Field(
-        None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
+    tags: Optional[List[str]] = Field(
+        None, max_length=500, description="프로젝트 태그 (배열)"
     )
     is_public: bool = Field(default=False, description="프로젝트 공개 여부")
-    owner_id: UUID = Field(..., description="프로젝트 소유자 ID")
+    owner_id: Optional[UUID] = Field(None, description="프로젝트 소유자 ID")
+
+    @field_validator("start_date", mode="before")
+    @classmethod
+    def parse_start_date(cls, v):
+        """시작일 문자열을 datetime으로 변환"""
+        if isinstance(v, str):
+            return datetime.fromisoformat(v)
+        return v
+
+    @field_validator("end_date", mode="before")
+    @classmethod
+    def parse_end_date(cls, v):
+        """종료일 문자열을 datetime으로 변환"""
+        if isinstance(v, str):
+            return datetime.fromisoformat(v)
+        return v
 
     @field_validator("end_date")
     @classmethod
     def validate_end_date(cls, v: Optional[datetime], values) -> Optional[datetime]:
         """종료일이 시작일 이후인지 검증"""
+        # print("[DEBUG] validate_end_date values:", values)
+        # print("[DEBUG] validate_end_date values.data:", values.data)
+        # print("[DEBUG] validate_end_date value:", v)
         if (
             v
-            and "start_date" in values
-            and values["start_date"]
-            and v < values["start_date"]
+            and "start_date" in values.data
+            and values.data["start_date"]
+            and v < values.data["start_date"]
         ):
             raise ValueError("종료일은 시작일 이후여야 합니다")
         return v
@@ -121,11 +140,11 @@ class ProjectUpdateRequest(BaseModel):
     documentation_url: Optional[str] = Field(
         None, max_length=500, description="문서 URL"
     )
-    tags: Optional[str] = Field(
-        None, max_length=500, description="프로젝트 태그 (쉼표로 구분)"
+    tags: Optional[List[str]] = Field(
+        None, max_length=500, description="프로젝트 태그 (배열)"
     )
     is_public: Optional[bool] = Field(None, description="프로젝트 공개 여부")
-    owner_id: UUID = Field(..., description="프로젝트 소유자 ID")
+    owner_id: Optional[UUID] = Field(None, description="프로젝트 소유자 ID")
 
     @field_validator("status")
     @classmethod
@@ -275,15 +294,16 @@ class ProjectAttachmentResponse(BaseModel):
     """프로젝트 첨부파일 응답 스키마"""
 
     id: UUID
+    created_at: datetime
+    created_by: UUID
+    updated_at: datetime
+    updated_by: UUID
     project_id: UUID
     file_name: str
     file_path: str
     file_size: int
     mime_type: Optional[str] = None
     description: Optional[str] = None
-    uploaded_by: UUID
-    created_at: datetime
-    uploader: UserPublic
 
     class Config:
         """ProjectAttachmentResponse 설정"""
@@ -303,14 +323,22 @@ class ProjectResponse(ProjectBase):
     progress: int = 0
     repository_url: Optional[str] = None
     documentation_url: Optional[str] = None
-    tags: Optional[str] = None
+    tags: Optional[List[str]] = None
     is_public: bool = False
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     owner: UserPublic
     members: List[ProjectMemberResponse] = []
     comments: List[ProjectCommentResponse] = []
     attachments: List[ProjectAttachmentResponse] = []
+
+    @field_validator("tags")
+    @classmethod
+    def serialize_tags(cls, tags):
+        """태그를 문자열로 변환"""
+        if isinstance(tags, str):
+            return [tag.strip() for tag in tags.split(",") if tag.strip()]
+        return tags
 
     class Config:
         """ProjectResponse 설정"""

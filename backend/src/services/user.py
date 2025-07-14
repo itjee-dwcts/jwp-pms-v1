@@ -747,6 +747,10 @@ class UserService:
             자격증명이 유효한 경우 User 객체, 그렇지 않으면 None
         """
         try:
+            print(
+                f"[DEBUG] verify_user_credentials 호출됨: username_or_email={username_or_email}"
+            )
+
             # 사용자명 또는 이메일로 사용자 조회
             query = select(User).where(
                 or_(
@@ -758,21 +762,33 @@ class UserService:
             result = await self.db.execute(query)
             user = result.scalar_one_or_none()
 
+            print(f"[DEBUG] 조회된 사용자: {user}")
+
             if not user:
+                print("[DEBUG] 사용자 없음")
                 return None
 
             user_is_active = getattr(user, "is_active", False)
             user_status = getattr(user, "status", "inactive")
 
+            print(f"[DEBUG] 사용자 활성화 여부: {user_is_active}, 상태: {user_status}")
+
             if not user_is_active:
+                print("[DEBUG] 사용자 비활성화 상태")
                 return None
 
             if user_status != "active":
+                print("[DEBUG] 사용자 상태가 active가 아님")
                 return None
 
+            print(
+                f"[DEBUG] 사용자 비밀번호: {password}, 저장된 비밀번호: {user.password}"
+            )
             if not verify_password(password, str(user.password)):
+                print("[DEBUG] 비밀번호 불일치")
                 return None
 
+            print("[DEBUG] 자격증명 검증 성공")
             return user
 
         except Exception as e:

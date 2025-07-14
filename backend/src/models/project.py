@@ -117,7 +117,7 @@ class Project(Base):
     owner_id = Column(
         UUID,
         ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="프로젝트를 생성한 사용자",
     )
     is_active = Column(
@@ -259,11 +259,14 @@ class ProjectMember(Base):
         "Project", back_populates="members", foreign_keys=[project_id]
     )
     member = relationship(
-        "User", back_populates="project_memberships", foreign_keys=[member_id]
+        "User", back_populates="project_members", foreign_keys=[member_id]
     )
 
     creator = relationship("User", foreign_keys=[created_by])
     updater = relationship("User", foreign_keys=[updated_by])
+    # If you need an 'uploaded_by' relationship, define the column first:
+    # uploaded_by = Column(UUID, ForeignKey("users.id"), nullable=True, doc="첨부파일을 업로드한 사용자")
+    # uploader = relationship("User", foreign_keys=[uploaded_by])
 
     # 제약 조건
     __table_args__ = (
@@ -432,20 +435,11 @@ class ProjectAttachment(Base):
     file_path = Column(String(500), nullable=False, doc="파일 저장 경로")
     file_size = Column(Integer, nullable=False, doc="파일 크기 (바이트)")
     mime_type = Column(String(100), nullable=True, doc="파일의 MIME 타입")
-    uploaded_by = Column(
-        UUID,
-        ForeignKey("users.id"),
-        nullable=False,
-        doc="파일을 업로드한 사용자",
-    )
     description = Column(Text, nullable=True, doc="파일 설명")
 
     # 관계
     project = relationship(
         "Project", back_populates="attachments", foreign_keys=[project_id]
-    )
-    uploader = relationship(
-        "User", back_populates="uploaded_attachments", foreign_keys=[uploaded_by]
     )
 
     creator = relationship("User", foreign_keys=[created_by])

@@ -5,9 +5,10 @@ export interface Task {
   status: string;
   priority: string;
   type: string;
-  due_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
+  start_date?: string;
+  end_date?: string;
+  estimated_days?: number;
+  actual_days?: number;
   created_at: string;
   updated_at: string;
   project: {

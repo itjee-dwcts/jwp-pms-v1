@@ -104,8 +104,8 @@ class Task(Base):
     )
 
     # 시간 추적
-    estimated_hours = Column(Integer, nullable=True, doc="완료까지 예상 시간")
-    actual_hours = Column(Integer, default=0, nullable=False, doc="실제 소요 시간")
+    estimated_days = Column(Integer, nullable=True, doc="완료까지 예상 일수")
+    actual_days = Column(Integer, default=0, nullable=False, doc="실제 소요 시간")
 
     # 일정
     start_date = Column(DateTime(timezone=True), nullable=True, doc="작업 시작일")
@@ -120,7 +120,7 @@ class Task(Base):
     owner_id = Column(
         UUID,
         ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         doc="작업을 생성한 사용자",
     )
 

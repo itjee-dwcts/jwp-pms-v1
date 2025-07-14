@@ -158,7 +158,7 @@ async def login(
         logger.warning("로그인 실패: %s", login_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="잘못된 자격 증명입니다",
+            detail=f"잘못된 자격 증명입니다: {exc}",
         ) from exc
     except Exception as e:
         logger.error("로그인 오류: %s", e)

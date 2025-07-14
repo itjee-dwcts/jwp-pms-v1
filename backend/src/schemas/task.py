@@ -78,10 +78,10 @@ class TaskCreateRequest(TaskBase):
 
     project_id: UUID = Field(..., description="프로젝트 ID")
     parent_id: Optional[UUID] = Field(None, description="하위 작업을 위한 상위 작업 ID")
-    owner_id: UUID = Field(..., description="소유자 ID")
-    start_time: Optional[datetime] = Field(None, description="작업 시작일")
-    end_time: Optional[datetime] = Field(None, description="작업 마감일")
-    estimated_hours: Optional[int] = Field(None, ge=0, description="예상 시간")
+    owner_id: Optional[UUID] = Field(..., description="소유자 ID")
+    start_date: Optional[datetime] = Field(None, description="작업 시작일")
+    end_date: Optional[datetime] = Field(None, description="작업 마감일")
+    estimated_days: Optional[int] = Field(None, ge=0, description="예상 일수")
     story_points: Optional[int] = Field(None, ge=0, description="스토리 포인트")
     acceptance_criteria: Optional[str] = Field(
         None, max_length=2000, description="수락 기준"
@@ -94,15 +94,15 @@ class TaskCreateRequest(TaskBase):
     )
     tag_ids: Optional[List[UUID]] = Field(default=[], description="태그 ID 목록")
 
-    @field_validator("end_time")
+    @field_validator("end_date")
     @classmethod
-    def validate_end_time(cls, v: str, values: Any):
+    def validate_end_date(cls, v: str, values: Any):
         """마감일 검증"""
         if (
             v
-            and "start_time" in values
-            and values["start_time"]
-            and v < values["start_time"]
+            and "start_date" in values.data
+            and values.data["start_date"]
+            and v < values.data["start_date"]
         ):
             raise ValueError("마감일은 시작일 이후여야 합니다")
         return v
@@ -119,9 +119,9 @@ class TaskUpdateRequest(BaseModel):
     priority: Optional[str] = Field(None, description="작업 우선순위")
     task_type: Optional[str] = Field(None, description="작업 유형")
     parent_id: Optional[UUID] = Field(None, description="상위 작업 ID")
-    start_time: Optional[datetime] = Field(None, description="작업 시작일")
-    end_time: Optional[datetime] = Field(None, description="작업 마감일")
-    estimated_hours: Optional[int] = Field(None, ge=0, description="예상 시간")
+    start_date: Optional[datetime] = Field(None, description="작업 시작일")
+    end_date: Optional[datetime] = Field(None, description="작업 마감일")
+    estimated_days: Optional[int] = Field(None, ge=0, description="예상 시간")
     actual_hours: Optional[int] = Field(None, ge=0, description="실제 시간")
     story_points: Optional[int] = Field(None, ge=0, description="스토리 포인트")
     acceptance_criteria: Optional[str] = Field(
@@ -361,10 +361,10 @@ class TaskResponse(TaskBase):
     project_id: UUID
     owner_id: UUID
     parent_id: Optional[UUID] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    estimated_hours: Optional[int] = None
-    actual_hours: int = 0
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    estimated_days: Optional[int] = None
+    actual_days: int = 0
     story_points: Optional[int] = None
     acceptance_criteria: Optional[str] = None
     external_id: Optional[str] = None

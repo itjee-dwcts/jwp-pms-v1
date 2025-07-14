@@ -138,7 +138,7 @@ class User(Base):
         "Project", back_populates="owner", foreign_keys="Project.owner_id"
     )
 
-    project_memberships = relationship(
+    project_members = relationship(
         "ProjectMember", back_populates="member", foreign_keys="ProjectMember.member_id"
     )
 
@@ -162,12 +162,6 @@ class User(Base):
 
     events = relationship(
         "Event", back_populates="owner", foreign_keys="Event.owner_id"
-    )
-
-    uploaded_attachments = relationship(
-        "ProjectAttachment",
-        back_populates="uploader",
-        foreign_keys="ProjectAttachment.uploaded_by",
     )
 
     chat_sessions = relationship(

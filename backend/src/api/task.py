@@ -150,16 +150,22 @@ async def create_task(
     새 작업 생성
     """
     try:
+        print("[DEBUG] create_task 호출됨")
+        print(f"[DEBUG] 사용자 ID: {current_user.id}")
+        print(f"[DEBUG] 작업 데이터: {task_data}")
+
         task_service = TaskService(db)
         task = await task_service.create_task(
             user_id=UUID(str(current_user.id)), task_data=task_data
         )
 
         logger.info("작업이 %s에 의해 생성됨: %s", current_user.name, task.title)
+        print(f"[DEBUG] 생성된 작업: {task}")
 
         return TaskResponse.model_validate(task)
 
     except Exception as e:
+        print(f"[ERROR] 작업 생성 중 오류 발생: {e}")
         logger.error("작업 생성 오류: %s", e)
         await db.rollback()
         raise HTTPException(

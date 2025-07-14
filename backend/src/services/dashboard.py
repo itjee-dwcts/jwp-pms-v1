@@ -847,7 +847,7 @@ class DashboardService:
             # 사용자에게 할당된 작업 수
             assigned_subquery = select(TaskAssignment.task_id).where(
                 and_(
-                    TaskAssignment.user_id == user_id,
+                    TaskAssignment.assignee_id == user_id,
                     TaskAssignment.is_active.is_(True),
                 )
             )
@@ -879,7 +879,7 @@ class DashboardService:
                 FROM tasks t
                 JOIN task_assignments ta ON t.id = ta.task_id
                 WHERE t.project_id = ANY(:project_ids)
-                  AND ta.user_id = :user_id
+                  AND ta.assignee_id = :user_id
                   AND ta.is_active = true
                 GROUP BY t.status
             """)
@@ -904,7 +904,7 @@ class DashboardService:
 
             # 담당자별 작업 분포
             assignee_query = (
-                select(TaskAssignment.user_id, count(TaskAssignment.task_id))
+                select(TaskAssignment.assignee_id, count(TaskAssignment.task_id))
                 .select_from(TaskAssignment)
                 .join(Task, Task.id == TaskAssignment.task_id)
                 .where(
@@ -913,7 +913,7 @@ class DashboardService:
                         TaskAssignment.is_active.is_(True),
                     )
                 )
-                .group_by(TaskAssignment.user_id)
+                .group_by(TaskAssignment.assignee_id)
             )
             assignee_result = await self.db.execute(assignee_query)
             by_assignee = {str(row[0]): row[1] for row in assignee_result.fetchall()}

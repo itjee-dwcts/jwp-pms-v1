@@ -16,13 +16,7 @@ from sqlalchemy.sql.functions import count
 
 from constants.project import ProjectStatus
 from core.database import get_async_session
-from models.project import (
-    Project,
-    ProjectAttachment,
-    ProjectComment,
-    ProjectMember,
-    ProjectMemberRole,
-)
+from models.project import Project, ProjectComment, ProjectMember, ProjectMemberRole
 from models.user import User
 from schemas.project import (
     ProjectCreateRequest,
@@ -84,7 +78,7 @@ class ProjectService:
                 budget=project_data.budget,
                 repository_url=project_data.repository_url,
                 documentation_url=project_data.documentation_url,
-                tags=project_data.tags,
+                tags=",".join(project_data.tags) if project_data.tags else None,
                 is_public=project_data.is_public,
                 owner_id=project_data.owner_id,
                 created_by=user_id,
@@ -109,7 +103,7 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.owner),
-                    selectinload(Project.members).selectinload(ProjectMember.user),
+                    selectinload(Project.members).selectinload(ProjectMember.member),
                 )
                 .where(Project.id == project.id)
             )
@@ -133,11 +127,9 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.owner),
-                    selectinload(Project.members).selectinload(ProjectMember.user),
+                    selectinload(Project.members).selectinload(ProjectMember.member),
                     selectinload(Project.comments).selectinload(ProjectComment.author),
-                    selectinload(Project.attachments).selectinload(
-                        ProjectAttachment.uploader
-                    ),
+                    selectinload(Project.attachments),
                 )
                 .where(Project.id == project_id)
             )
@@ -188,7 +180,12 @@ class ProjectService:
             # 필드 업데이트
             update_data = project_data.dict(exclude_unset=True)
             for field, value in update_data.items():
-                setattr(project, field, value)
+                if hasattr(project, field):
+                    if field == "tags":
+                        # 태그는 쉼표로 구분된 문자열로 저장
+                        setattr(project, field, ",".join(value) if value else None)
+                    else:
+                        setattr(project, field, value)
 
             project.updated_by = user_id
             project.updated_at = datetime.now(timezone.utc)
@@ -200,7 +197,7 @@ class ProjectService:
                 select(Project)
                 .options(
                     selectinload(Project.owner),
-                    selectinload(Project.members).selectinload(ProjectMember.user),
+                    selectinload(Project.members).selectinload(ProjectMember.member),
                 )
                 .where(Project.id == project_id)
             )
@@ -271,6 +268,8 @@ class ProjectService:
             query = select(Project).options(
                 selectinload(Project.owner),
                 selectinload(Project.members).selectinload(ProjectMember.member),
+                selectinload(Project.comments),
+                selectinload(Project.attachments),
             )
 
             # 접근 제어 적용

@@ -149,8 +149,20 @@ async def create_project(
 ):
     """
     새 프로젝트 생성
+
+    - project_data: 생성할 프로젝트 정보 (이름, 설명 등)
+    - current_user: 인증된 사용자 정보 (프로젝트 소유자)
+    - db: 비동기 DB 세션
+
+    반환값:
+    - 생성된 프로젝트의 상세 정보 (ProjectResponse)
+    - 오류 발생 시 HTTPException 반환
     """
     try:
+        print("[DEBUG] create_project 호출됨")
+        print(f"[DEBUG] 사용자 ID: {current_user.id}")
+        print(f"[DEBUG] 프로젝트 데이터: {project_data}")
+
         project_service = ProjectService(db)
         project = await project_service.create_project(
             user_id=UUID(str(current_user.id)), project_data=project_data
@@ -160,9 +172,12 @@ async def create_project(
             "프로젝트가 %s에 의해 생성됨: %s", current_user.username, project.name
         )
 
+        print(f"[DEBUG] 생성된 프로젝트: {project}")
+
         return ProjectResponse.model_validate(project)
 
     except Exception as e:
+        print(f"[ERROR] 프로젝트 생성 중 오류 발생: {e}")
         logger.error("프로젝트 생성 오류: %s", e)
         await db.rollback()
         raise HTTPException(

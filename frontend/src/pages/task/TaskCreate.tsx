@@ -31,8 +31,9 @@ interface TaskFormData {
   status: string;
   priority: string;
   type: string;
-  due_date: string;
-  estimated_hours: string;
+  start_date: string;
+  end_date: string;
+  estimated_days: string;
   parent_task_id: string;
   assignee_ids: string[];
   tags: string[];
@@ -58,8 +59,9 @@ const TaskCreate: React.FC = () => {
     status: 'todo',
     priority: 'medium',
     type: 'task',
-    due_date: '',
-    estimated_hours: '',
+    start_date: '',
+    end_date: '',
+    estimated_days: '',
     parent_task_id: '',
     assignee_ids: [],
     tags: [],
@@ -141,18 +143,18 @@ const TaskCreate: React.FC = () => {
       newErrors.project_id = '프로젝트를 선택해주세요';
     }
 
-    // 예상 시간 검증
-    if (formData.estimated_hours && (isNaN(Number(formData.estimated_hours)) || Number(formData.estimated_hours) < 0)) {
-      newErrors.estimated_hours = '예상 시간은 0 이상의 숫자여야 합니다';
+    // 예상 일수 검증
+    if (formData.estimated_days && (isNaN(Number(formData.estimated_days)) || Number(formData.estimated_days) < 0)) {
+      newErrors.estimated_days = '예상 일수는 0 이상의 숫자여야 합니다';
     }
 
     // 마감일 검증
-    if (formData.due_date) {
-      const dueDate = new Date(formData.due_date);
+    if (formData.end_date) {
+      const endDate = new Date(formData.end_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      if (dueDate < today) {
+      if (endDate < today) {
         newErrors.due_date = '마감일은 오늘 이후여야 합니다';
       }
     }
@@ -183,8 +185,9 @@ const TaskCreate: React.FC = () => {
         status: formData.status,
         priority: formData.priority,
         type: formData.type,
-        ...(formData.due_date && { due_date: formData.due_date }),
-        ...(formData.estimated_hours && { estimated_hours: parseFloat(formData.estimated_hours) }),
+        ...(formData.start_date && { start_date: formData.start_date }),
+        ...(formData.end_date && { end_date: formData.end_date }),
+        ...(formData.estimated_days && { estimated_days: parseFloat(formData.estimated_days) }),
         ...(formData.parent_task_id && { parent_task_id: formData.parent_task_id }),
         ...(formData.assignee_ids.length > 0 && { assignee_ids: formData.assignee_ids }),
         ...(formData.tags.length > 0 && { tag_ids: formData.tags.map(tag => tag) }),
@@ -469,44 +472,62 @@ const TaskCreate: React.FC = () => {
 
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* 마감일 */}
+              {/* 시작일 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  마감일 (선택사항)
+                  시작일 (선택사항)
                 </label>
                 <Input
                   type="date"
-                  value={formData.due_date}
-                  onChange={handleInputChange('due_date')}
-                  className={errors.due_date ? 'border-red-500' : ''}
+                  value={formData.start_date}
+                  onChange={handleInputChange('start_date')}
+                  className={errors.start_date ? 'border-red-500' : ''}
                   disabled={loading}
-                  min={new Date().toISOString().split('T')[0]}
                 />
-                {errors.due_date && (
+                {errors.start_date && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.due_date}
+                    {errors.start_date}
                   </p>
                 )}
               </div>
 
-              {/* 예상 시간 */}
+              {/* 종료일 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  예상 시간 (시간, 선택사항)
+                  종료일 (선택사항)
+                </label>
+                <Input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={handleInputChange('end_date')}
+                  className={errors.end_date ? 'border-red-500' : ''}
+                  disabled={loading}
+                  min={formData.start_date || undefined}
+                />
+                {errors.end_date && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.end_date}
+                  </p>
+                )}
+              </div>
+              {/* 예상 기간(일) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  예상 기간 (일, 선택사항)
                 </label>
                 <Input
                   type="number"
-                  value={formData.estimated_hours}
-                  onChange={handleInputChange('estimated_hours')}
-                  className={errors.estimated_hours ? 'border-red-500' : ''}
+                  value={formData.estimated_days}
+                  onChange={handleInputChange('estimated_days')}
+                  className={errors.estimated_days ? 'border-red-500' : ''}
                   placeholder="0"
                   min="0"
-                  step="0.5"
+                  step="1"
                   disabled={loading}
                 />
-                {errors.estimated_hours && (
+                {errors.estimated_days && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.estimated_hours}
+                    {errors.estimated_days}
                   </p>
                 )}
               </div>

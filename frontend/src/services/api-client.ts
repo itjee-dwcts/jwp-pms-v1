@@ -181,6 +181,8 @@ export class ApiClient {
             } catch (refreshError) {
                 console.error('❌ [API클라이언트] 토큰 갱신 실패:', refreshError);
                 this.clearTokens();
+                // 로그인 페이지로 강제 이동
+                window.location.href = '/login';
                 throw new Error('인증에 실패했습니다. 다시 로그인해주세요.');
             }
         }

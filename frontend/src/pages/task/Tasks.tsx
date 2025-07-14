@@ -319,36 +319,6 @@ const Tasks: React.FC = () => {
   };
 
   /**
-   * 마감일까지 남은 일수 계산
-   */
-  const getDaysUntilDue = (dueDate: string) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return `${Math.abs(diffDays)}일 지연`;
-    if (diffDays === 0) return '오늘 마감';
-    if (diffDays === 1) return '내일 마감';
-    return `${diffDays}일 남음`;
-  };
-
-  /**
-   * 마감일 색상 반환
-   */
-  const getDueDateColor = (dueDate: string) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return 'text-red-600 dark:text-red-400';
-    if (diffDays <= 1) return 'text-orange-600 dark:text-orange-400';
-    if (diffDays <= 3) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-600 dark:text-gray-400';
-  };
-
-  /**
    * 사용자가 작업 담당자인지 확인
    */
   const isTaskAssignee = (task: Task) => {
@@ -652,11 +622,19 @@ const Tasks: React.FC = () => {
                       </span>
                     )}
 
-                    {/* 마감일 */}
-                    {task.due_date && (
-                      <span className={`flex items-center space-x-1 ${getDueDateColor(task.due_date)}`}>
+                    {/* 시작일 */}
+                    {task.start_date && (
+                      <span className="flex items-center space-x-1">
                         <CalendarIcon className="h-3 w-3" />
-                        <span>{getDaysUntilDue(task.due_date)}</span>
+                        <span>시작: {formatDate(task.start_date)}</span>
+                      </span>
+                    )}
+
+                    {/* 종료일 */}
+                    {task.end_date && (
+                      <span className="flex items-center space-x-1">
+                        <CalendarIcon className="h-3 w-3" />
+                        <span>종료: {formatDate(task.end_date)}</span>
                       </span>
                     )}
 

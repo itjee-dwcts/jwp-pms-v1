@@ -224,6 +224,7 @@ const TaskDetail: React.FC = () => {
    * 날짜 포맷팅
    */
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
@@ -250,13 +251,11 @@ const TaskDetail: React.FC = () => {
     return `${Math.floor(diffInDays / 365)}년 전`;
   };
 
-  /**
-   * 마감일까지 남은 일수 계산
-   */
-  const getDaysUntilDue = (dueDate: string) => {
+  // 종료일 남은 일수 계산
+  const getDaysUntilEnd = (endDate: string) => {
     const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return { text: `${Math.abs(diffDays)}일 지연`, color: 'text-red-600' };
@@ -326,7 +325,10 @@ const TaskDetail: React.FC = () => {
 
   const nextStatus = getNextStatus(task.status);
   const previousStatus = getPreviousStatus(task.status);
-  const dueInfo = task.due_date ? getDaysUntilDue(task.due_date) : null;
+
+  // 종료일 정보
+  const endInfo = task.end_date ? getDaysUntilEnd(task.end_date) : null;
+
 
   /**
    * 우선순위별 색상 반환
@@ -589,47 +591,58 @@ const TaskDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* 마감일 */}
-              {task.due_date && (
+              {/* 시작일 */}
+              {task.start_date && (
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">마감일</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">시작일</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {formatDate(task.start_date)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {/* 종료일 */}
+              {task.end_date && (
+                <div className="flex items-center space-x-3">
+                  <CalendarIcon className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">종료일</p>
                     <div className="flex items-center space-x-2">
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {formatDate(task.due_date).split(' ')[0]}
+                        {formatDate(task.end_date).split(' ')[0]}
                       </p>
-                      {dueInfo && (
-                        <span className={`text-sm ${dueInfo.color}`}>
-                          ({dueInfo.text})
+                      {endInfo && (
+                        <span className={`text-sm ${endInfo.color}`}>
+                          ({endInfo.text})
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* 예상/실제 시간 */}
-              {(task.estimated_hours || task.actual_hours) && (
+              {/* 예상 기간(일) */}
+              {task.estimated_days && (
                 <div className="flex items-center space-x-3">
                   <ClockIcon className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">작업 시간</p>
-                    <div className="text-sm">
-                      {task.estimated_hours && (
-                        <span className="text-gray-600 dark:text-gray-400">
-                          예상: {task.estimated_hours}h
-                        </span>
-                      )}
-                      {task.estimated_hours && task.actual_hours && (
-                        <span className="mx-1">•</span>
-                      )}
-                      {task.actual_hours && (
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          실제: {task.actual_hours}h
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">예상 기간</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {task.estimated_days}일
+                    </p>
+                  </div>
+                </div>
+              )}
+              {/* 실제 시간 */}
+              {task.actual_days && (
+                <div className="flex items-center space-x-3">
+                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">실제 기간</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {task.actual_days}일
+                    </p>
                   </div>
                 </div>
               )}

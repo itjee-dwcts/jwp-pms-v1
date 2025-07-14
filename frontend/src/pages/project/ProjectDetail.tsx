@@ -200,11 +200,27 @@ const ProjectDetail: React.FC = () => {
    * 날짜 포맷팅
    */
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  /**
+   * 종료일 남은 일수 계산
+   */
+  const getDaysUntilEnd = (endDate: string) => {
+    const today = new Date();
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { text: `${Math.abs(diffDays)}일 지연`, color: 'text-red-600' };
+    if (diffDays === 0) return { text: '오늘 마감', color: 'text-orange-600' };
+    if (diffDays === 1) return { text: '내일 마감', color: 'text-yellow-600' };
+    return { text: `${diffDays}일 남음`, color: 'text-gray-600' };
   };
 
   /**
@@ -223,6 +239,9 @@ const ProjectDetail: React.FC = () => {
     if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}개월 전`;
     return `${Math.floor(diffInDays / 365)}년 전`;
   };
+
+  // 종료일 정보
+  const endInfo = project?.end_date ? getDaysUntilEnd(project.end_date) : null;
 
   // 로딩 중
   if (loading) {
@@ -377,9 +396,16 @@ const ProjectDetail: React.FC = () => {
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
                           {getPriorityText(task.priority)}
                         </span>
-                        {task.due_date && (
+                        {/* 시작일 */}
+                        {task.start_date && (
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            마감: {formatDate(task.due_date)}
+                            시작: {formatDate(task.start_date)}
+                          </span>
+                        )}
+                        {/* 종료일 */}
+                        {task.end_date && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            종료: {formatDate(task.end_date)}
                           </span>
                         )}
                       </div>
@@ -468,9 +494,16 @@ const ProjectDetail: React.FC = () => {
                   <ClockIcon className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">종료일</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDate(project.end_date)}
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {formatDate(project.end_date)}
+                      </p>
+                      {endInfo && (
+                        <span className={`text-sm ${endInfo.color}`}>
+                          ({endInfo.text})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -513,7 +546,7 @@ const ProjectDetail: React.FC = () => {
           </Card>
 
           {/* 태그 */}
-          {project.tags!==undefined && project.tags.length > 0 && (
+          {project.tags && project.tags !== undefined && project.tags.length > 0 && (
             <Card className="p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <TagIcon className="h-5 w-5 text-gray-400" />
@@ -523,13 +556,13 @@ const ProjectDetail: React.FC = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 {project.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                      <span
+                        key={index}
+                        className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
+                      >
+                        {tag}
+                      </span>
+                    ))}
               </div>
             </Card>
           )}

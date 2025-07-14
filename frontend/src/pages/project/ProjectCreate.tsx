@@ -138,8 +138,12 @@ const ProjectCreate: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('[DEBUG] 프로젝트 생성 폼 제출됨');
+    console.log('[DEBUG] formData:', formData);
+
     if (!validateForm()) {
       toast.error('폼에 오류가 있습니다. 확인해주세요');
+      console.log('[DEBUG] 폼 유효성 검사 실패:', errors);
       return;
     }
 
@@ -151,12 +155,17 @@ const ProjectCreate: React.FC = () => {
         ...formData,
       };
 
+      console.log('[DEBUG] 서버로 전송할 projectData:', projectData);
+
       const newProject = await createProject(projectData);
+      console.log('[DEBUG] 생성된 프로젝트:', newProject);
+
       toast.success('프로젝트가 성공적으로 생성되었습니다!');
       navigate(`/projects/${newProject.id}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '프로젝트 생성에 실패했습니다';
       toast.error(errorMessage);
+      console.error('[ERROR] 프로젝트 생성 실패:', errorMessage);
 
       // 백엔드 유효성 검사 오류 처리
       if (errorMessage.toLowerCase().includes('name')) {
